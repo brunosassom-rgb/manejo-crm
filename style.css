@@ -1217,7 +1217,7 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
 .rail-brand .brand-sub { font-size: 12px; color: #E6EADF; }
 .rail-sep { display: none; }
 .rail-nav {
-  flex-direction: row; flex: 1 1 auto; gap: 3px; overflow-x: auto;
+  flex-direction: row; flex: 1 1 auto; gap: 3px; overflow-x: auto; min-width: 0;
   scrollbar-width: none; -ms-overflow-style: none;
 }
 .rail-nav::-webkit-scrollbar { display: none; }
@@ -1455,11 +1455,35 @@ body::after {
    vez de vazar da página. Conversão completa das tabelas densas em cards
    fica para uma passada futura, guiada por uso real no celular. ---------- */
 @media (max-width: 480px) {
+  html, body { overflow-x: hidden; }
+
+  /* Barra de busca/relógio do topo não cabia com o menu — relógio já é
+     redundante com o do próprio celular, então some; busca encolhe. */
+  .appbar-clock { display: none; }
+  .appbar-search input { width: 150px; }
+
+  /* A navegação horizontal só mostrava 1 dos 8 ícones, com o resto escondido
+     numa rolagem sem nenhuma pista visual de que dava pra arrastar. Agora
+     marca/usuário ficam numa linha e os ícones quebram em baixo, todos à
+     vista de uma vez. */
+  .rail { height: auto; flex-wrap: wrap; row-gap: 6px; padding: 10px 12px; }
+  .rail-brand { order: 1; }
+  .rail-user { order: 2; margin-left: auto; }
+  .rail-nav { order: 3; flex-basis: 100%; flex-wrap: wrap; overflow-x: visible; justify-content: flex-start; }
+
   .detalhe-grid,
   .categoria-situacao-grid,
   .agenda-grid,
   .visita-doc-idblock { grid-template-columns: 1fr; }
   .visita-doc-fotos { grid-template-columns: repeat(2, 1fr); }
+  .metrica-cards, .stat-tiles { grid-template-columns: 1fr; }
+
+  /* Pipeline (kanban) e cards de relatório dividiam a tela igualmente entre
+     todas as colunas/cards, espremendo o texto a ponto de virar sopa de
+     letrinhas. Agora cada um tem uma largura mínima confortável e vira um
+     carrossel horizontal (arrastar com o dedo) em vez de espremer. */
+  .kanban-col { flex: 0 0 220px; min-width: 220px; }
+  .report-card { flex: 0 0 150px; min-width: 150px; }
 
   .modal { max-width: 100%; width: 100%; height: 100%; max-height: 100%; border-radius: 0; padding: 16px 14px; }
   .modal-overlay { padding: 0; }
