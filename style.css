@@ -1238,13 +1238,18 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
   /* 8 abas com rótulo completo (Dashboard/Pipeline/.../Configurações) só cabem
      numa única linha em monitores bem largos — em qualquer notebook comum
      (1440px, 1366px...) os rótulos já não cabem todos e o menu ficava cortado
-     no meio, com rolagem escondida sem nenhuma pista visual. Some o texto,
-     fica só ícone, e quebra em duas linhas pra todos os 8 continuarem
-     visíveis de uma vez, sem precisar arrastar. */
+     no meio, com rolagem escondida sem nenhuma pista visual. Some o texto e
+     fica só ícone — nesse modo os 8 cabem numa linha só até uma tela bem
+     estreita (ver breakpoint de 820px abaixo), sem gastar altura extra. */
   .tab-btn .label-text { display: none; }
   .rail-nav .tab-btn { padding: 8px 10px; }
   .rail-user .who, .rail-user .role { display: none; }
   .appbar-search input { width: 190px; }
+}
+@media (max-width: 820px) {
+  /* Só abaixo disso os 8 ícones + marca + usuário deixam de caber numa
+     linha só — aí sim quebra em duas linhas pra continuar tudo visível
+     de uma vez, sem esconder abas numa rolagem sem indicação. */
   .rail { height: auto; flex-wrap: wrap; row-gap: 6px; padding: 10px 20px; }
   .rail-brand { order: 1; }
   .rail-user { order: 2; margin-left: auto; }
