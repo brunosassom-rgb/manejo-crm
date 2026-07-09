@@ -1,0 +1,9 @@
+# Segredos — nunca commitar
+.env
+
+# Dependências do script de migração (não faz parte do app)
+node_modules/
+
+# Backups de dados exportados localmente (contêm dados reais de clientes)
+manejo-crm-backup-*.json
+brunosasso_crm_dados.json

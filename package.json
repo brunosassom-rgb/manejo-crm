@@ -1,0 +1,13 @@
+{
+  "name": "manejo-crm-migration",
+  "private": true,
+  "type": "module",
+  "description": "Script auxiliar de migração única para o Supabase. Não faz parte do app (que continua sem build step).",
+  "scripts": {
+    "migrate": "node migrate-to-supabase.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2",
+    "dotenv": "^16"
+  }
+}

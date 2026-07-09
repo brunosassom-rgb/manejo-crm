@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manejo CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+<link rel="apple-touch-icon" href="assets/favicon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4B5347">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Manejo">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <datalist id="fornecedores-datalist"></datalist>
+  <header class="appbar">
+    <div class="appbar-search">
+      <input type="text" id="global-search" placeholder="Buscar cliente, fazenda, cidade...">
+    </div>
+    <div class="appbar-spacer"></div>
+    <div class="appbar-clock" id="appbar-clock"></div>
+    <button class="appbar-bell" id="appbar-bell" title="Notificações">
+      <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="bell-badge" id="bell-badge" style="display:none">0</span>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" title="Alternar modo escuro">Dark</button>
+  </header>
+
+  <div class="app-shell">
+  <nav class="rail">
+    <div class="rail-brand"><img class="rail-logo" src="assets/brand-mark.png" alt="Manejo CRM"><div class="rail-brand-text"><span class="brand-name" id="rail-brand-name">Manejo</span><span class="brand-sub">CRM</span></div></div>
+    <div class="rail-sep"></div>
+    <div class="rail-nav">
+      <button class="tab-btn active" data-tab="dashboard"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span><span class="label-text">Dashboard</span></button>
+      <button class="tab-btn" data-tab="pipeline"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span><span class="label-text">Pipeline</span></button>
+      <button class="tab-btn" data-tab="clientes"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label-text">Clientes</span></button>
+      <button class="tab-btn" data-tab="leads"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c0-4 2-6 2-10"/><path d="M9.5 9.4c-3-1-3.5-3.4-3.5-5.4 4 0 6 2 6.5 4"/><path d="M14.5 9.4c3-1 3.5-3.4 3.5-5.4-4 0-6 2-6.5 4"/></svg></span><span class="label-text">Leads</span></button>
+      <button class="tab-btn" data-tab="agenda"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span><span class="label-text">Agenda</span></button>
+      <button class="tab-btn" data-tab="competitiva"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span class="label-text">Intel. Competitiva</span></button>
+      <button class="tab-btn" data-tab="relatorios"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span><span class="label-text">Relatórios</span></button>
+      <button class="tab-btn" data-tab="configuracoes"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="label-text">Configurações</span></button>
+    </div>
+    <div class="rail-user">
+      <div class="avatar" id="rail-user-avatar">BS</div>
+      <div>
+        <div class="who" id="rail-user-nome">Bruno Sasso</div>
+        <div class="role" id="rail-user-cargo">Gerente de território</div>
+      </div>
+      <button class="btn-secondary" id="btn-logout" title="Sair" style="margin-left:auto; padding:4px 8px; font-size:0.72rem;">Sair</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ==================== DASHBOARD ==================== -->
+    <section id="dashboard" class="tab-panel active">
+      <div class="section-header">
+        <div><h2 style="margin-bottom:2px">Visão geral</h2><p class="hint" style="margin-top:0">Seu território de nutrição animal, resumido.</p></div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-editar-layout" class="btn-secondary">Editar layout</button>
+          <button id="btn-novo-lead-dashboard" class="btn-primary">+ Criar novo lead</button>
+        </div>
+      </div>
+
+      <div class="dash-canvas" id="dash-canvas"></div>
+    </section>
+
+    <!-- ==================== PIPELINE ==================== -->
+    <section id="pipeline" class="tab-panel">
+      <h2>Pipeline</h2>
+      <p class="hint">Arraste os cards entre as etapas.</p>
+      <div class="pipeline-filters">
+        <select id="filtro-municipio"><option value="">Município (todos)</option></select>
+        <select id="filtro-categoria"><option value="">Categoria animal (todas)</option></select>
+        <select id="filtro-produto"><option value="">Produto (todos)</option></select>
+        <select id="filtro-temperatura">
+          <option value="">Temperatura (todas)</option>
+          <option>Frio</option>
+          <option>Morno</option>
+          <option>Quente</option>
+        </select>
+      </div>
+      <div class="kanban" id="kanban-board"></div>
+    </section>
+
+    <!-- ==================== CLIENTES ==================== -->
+    <section id="clientes" class="tab-panel">
+      <div class="section-header">
+        <h2>Clientes</h2>
+      </div>
+      <p class="hint">Convertidos a partir do Fechamento do funil de Lead — não participam mais do funil de vendas. Para cadastrar um novo contato, use "+ Novo lead" na aba Leads.</p>
+      <input id="busca-cliente" type="text" placeholder="Buscar por nome, fazenda, cidade ou região..." class="search-input">
+      <div id="clientes-list" class="cards"></div>
+    </section>
+
+    <!-- ==================== LEADS ==================== -->
+    <section id="leads" class="tab-panel">
+      <div class="section-header">
+        <h2>Leads</h2>
+        <button id="btn-novo-lead" class="btn-primary">+ Novo lead</button>
+      </div>
+      <p class="hint">Prospecção até Fechamento — ainda não convertidos em Cliente Ativo.</p>
+      <input id="busca-lead" type="text" placeholder="Buscar por nome, fazenda, cidade ou região..." class="search-input">
+      <div id="leads-list" class="cards"></div>
+    </section>
+
+    <!-- ==================== AGENDA ==================== -->
+    <section id="agenda" class="tab-panel">
+      <div class="section-header">
+        <h2>Agenda</h2>
+        <button id="btn-novo-compromisso" class="btn-primary">+ Novo compromisso</button>
+      </div>
+
+      <div class="agenda-toolbar">
+        <div class="view-switch">
+          <button class="view-switch-btn active" data-view="mes">Mês</button>
+          <button class="view-switch-btn" data-view="semana">Semana</button>
+          <button class="view-switch-btn" data-view="dia">Dia</button>
+        </div>
+        <div class="agenda-filters" id="agenda-filters"></div>
+      </div>
+
+      <div class="agenda-grid">
+        <div class="dash-panel">
+          <div class="calendar-head">
+            <button class="calendar-nav-btn" id="cal-prev">‹</button>
+            <span class="cal-title" id="cal-title"></span>
+            <button class="calendar-nav-btn" id="cal-next">›</button>
+          </div>
+          <div id="calendar-body"></div>
+        </div>
+        <div class="agenda-side">
+          <h4>Hoje</h4>
+          <div id="agenda-hoje-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== INTELIGÊNCIA COMPETITIVA ==================== -->
+    <section id="competitiva" class="tab-panel">
+      <h2>Inteligência Competitiva</h2>
+      <p class="hint">Consolidado de todas as observações registradas nos clientes.</p>
+
+      <div class="competitiva-hero">
+        <div class="ch-num" id="competitiva-hero-num">–<span>%</span></div>
+        <div class="ch-text">
+          <div class="ch-title" id="competitiva-hero-title"></div>
+          <div class="ch-sub" id="competitiva-hero-sub"></div>
+        </div>
+        <div class="ch-chips" id="competitiva-hero-chips"></div>
+      </div>
+
+      <div class="competitiva-masonry" id="competitiva-masonry">
+        <div class="panel panel-carteira" style="grid-column: span 7;">
+          <h3><span class="panel-ico tone-sage">📋</span>Carteira completa por fornecedor</h3>
+          <p class="hint" id="hint-carteira-concorrencia">Todo cliente cujo fornecedor atual não é ADM é tratado como concorrência.</p>
+          <div style="overflow-x:auto">
+            <table class="mini" id="carteira-fornecedor-tabela">
+              <thead><tr><th>Nome</th><th>Tipo</th><th>Categoria</th><th>Município</th><th>Fornecedor</th><th>Classificação</th><th>Volume mensal (ton)</th></tr></thead>
+              <tbody id="carteira-fornecedor-tabela-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel panel-ranking" style="grid-column: span 5;">
+          <h3><span class="panel-ico tone-late">⚔️</span>Quem rouba mais mercado</h3>
+          <p class="hint">Ranking por volume mensal (ton) hoje com cada concorrente.</p>
+          <div id="ranking-concorrentes-list"></div>
+        </div>
+
+        <div class="panel panel-comparativo" style="grid-column: span 7;">
+          <h3><span class="panel-ico tone-gold">💬</span>Comparativo por concorrente</h3>
+          <div style="overflow-x:auto">
+            <table class="mini" id="competitiva-tabela">
+              <thead><tr><th>Concorrente</th><th>Produto</th><th>Preço observado</th><th>Canal</th><th>Prazo</th><th>Frete</th><th>Bonificações</th><th>Região (cliente)</th></tr></thead>
+              <tbody id="competitiva-tabela-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel panel-radar" style="grid-column: span 5;">
+          <h3><span class="panel-ico tone-blue">🎯</span><span id="titulo-radar-competitivo">Radar — Manejo vs. concorrência</span></h3>
+          <div class="radar-wrap"><div id="radar-chart"></div></div>
+        </div>
+
+        <div class="panel panel-heatmap" style="grid-column: span 4;">
+          <h3><span class="panel-ico tone-olive">📍</span>Presença de concorrentes por município</h3>
+          <div class="heatmap-grid" id="heatmap-grid"></div>
+        </div>
+
+        <div class="panel panel-fracos" style="grid-column: span 4;">
+          <h3><span class="panel-ico tone-late">🔻</span>Pontos fracos relatados</h3>
+          <div id="pontos-fracos-list" class="cards"></div>
+        </div>
+
+        <div class="panel panel-fortes" style="grid-column: span 4;">
+          <h3><span class="panel-ico tone-sage">🔺</span>Pontos fortes a superar</h3>
+          <div id="pontos-fortes-list" class="cards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== RELATÓRIOS ==================== -->
+    <section id="relatorios" class="tab-panel">
+      <h2 class="no-print">Relatórios</h2>
+      <div class="report-cards no-print">
+        <div class="report-card"><h4>Pipeline por etapa</h4><p>Distribuição e conversão do funil.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="pipeline">Ver</button></div>
+        <div class="report-card"><h4>Volume por cliente</h4><p>Ranking de volume comprado.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="volume">Ver</button></div>
+        <div class="report-card"><h4>Conversão entre etapas</h4><p>Taxa de avanço no funil.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="conversao">Ver</button></div>
+        <div class="report-card"><h4>Follow-ups: real vs. planejado</h4><p>Contatos realizados x agendados.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="followups">Ver</button></div>
+        <div class="report-card"><h4>Intel. competitiva por região</h4><p>Concorrência observada em campo.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="competitiva">Ver</button></div>
+      </div>
+
+      <div class="report-switch no-print">
+        <button class="report-switch-btn active" data-report="cliente">Relatório por cliente</button>
+        <button class="report-switch-btn" data-report="cliente-periodo">Relatório por cliente e período</button>
+        <button class="report-switch-btn" data-report="mensal">Atividades do mês</button>
+        <button class="report-switch-btn" data-report="visitas">Visitas Técnicas</button>
+        <button class="report-switch-btn" data-report="funil">Funil &amp; Carteira</button>
+      </div>
+
+      <div id="report-cliente" class="report-panel active">
+        <div class="report-controls no-print">
+          <select id="relatorio-cliente-select"></select>
+          <button id="btn-imprimir-relatorio-cliente" class="btn-secondary">Imprimir / Salvar PDF</button>
+        </div>
+        <div id="relatorio-cliente-conteudo"></div>
+      </div>
+
+      <div id="report-cliente-periodo" class="report-panel">
+        <div class="report-controls no-print">
+          <select id="relatorio-cliente-periodo-select"></select>
+          <input type="month" id="relatorio-cliente-periodo-mes">
+          <button id="btn-imprimir-relatorio-cliente-periodo" class="btn-secondary">Imprimir / Salvar PDF</button>
+        </div>
+        <div id="relatorio-cliente-periodo-conteudo"></div>
+      </div>
+
+      <div id="report-mensal" class="report-panel">
+        <div class="report-controls no-print">
+          <input type="month" id="relatorio-mes-select">
+          <button id="btn-imprimir-relatorio-mensal" class="btn-secondary">Imprimir / Salvar PDF</button>
+        </div>
+        <div id="relatorio-mensal-conteudo"></div>
+      </div>
+
+      <div id="report-visitas" class="report-panel">
+        <div class="report-controls no-print" style="flex-wrap:wrap;">
+          <input type="text" id="visitas-busca" placeholder="Buscar por cliente...">
+          <input type="date" id="visitas-filtro-data">
+          <select id="visitas-filtro-objetivo"><option value="">Objetivo (todos)</option></select>
+        </div>
+        <div class="no-print" style="overflow-x:auto; margin-bottom:20px;">
+          <table class="mini" id="visitas-tabela">
+            <thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Objetivo</th><th>Condição</th><th></th></tr></thead>
+            <tbody id="visitas-tabela-body"></tbody>
+          </table>
+        </div>
+
+        <div class="report-controls no-print">
+          <button id="btn-imprimir-visita" class="btn-secondary">Imprimir / Salvar PDF do relatório selecionado</button>
+        </div>
+        <div id="visita-documento-conteudo"></div>
+
+        <h3 class="no-print">Gerencial de visitas por período</h3>
+        <div class="report-controls no-print">
+          <input type="month" id="visitas-gerencial-mes">
+        </div>
+        <div class="kpi-row no-print" id="visitas-gerencial-kpis"></div>
+        <h4 class="no-print">Visitas por município</h4>
+        <div class="heatmap-grid no-print" id="visitas-heatmap"></div>
+      </div>
+
+      <div id="report-funil" class="report-panel">
+        <div class="report-controls no-print">
+          <button id="btn-imprimir-relatorio-funil" class="btn-secondary">Imprimir / Salvar PDF</button>
+        </div>
+        <div id="relatorio-funil-conteudo"></div>
+      </div>
+    </section>
+
+    <!-- ==================== CONFIGURAÇÕES ==================== -->
+    <section id="configuracoes" class="tab-panel">
+      <h2>Configurações</h2>
+
+      <h3>Cadastros auxiliares</h3>
+      <div class="section-header">
+        <h4>Consultores / Nutricionistas</h4>
+        <button id="btn-novo-consultor" class="btn-primary">+ Novo consultor/nutricionista</button>
+      </div>
+      <div id="consultores-list" class="cards" style="margin-bottom:26px"></div>
+
+      <div class="section-header">
+        <h4>Fornecedores</h4>
+        <button id="btn-novo-fornecedor" class="btn-primary">+ Cadastrar fornecedor</button>
+      </div>
+      <p class="hint" id="hint-fornecedores-casa">Fornecedores (ADM ou concorrentes) são cadastrados aqui — nunca como cliente.</p>
+      <div id="fornecedores-list" class="cards" style="margin-bottom:26px"></div>
+
+      <h3>Preferências</h3>
+      <div class="settings-grid">
+        <div class="settings-card settings-card-wide">
+          <div class="settings-card-title">Empresa e marca</div>
+          <div class="form">
+            <label>Nome do usuário responsável padrão
+              <input type="text" id="config-nome-usuario" placeholder="Ex: Bruno Sasso">
+            </label>
+            <label>Cargo do usuário
+              <input type="text" id="config-cargo-usuario" placeholder="Ex: Gerente de Território">
+            </label>
+            <label>Empresa do representante/vendedor
+              <input type="text" id="config-empresa-representante" placeholder="Ex: Bruno Sasso Nutrição Animal">
+            </label>
+            <label>Logo do representante
+              <input type="file" id="config-logo-representante-input" accept="image/*">
+            </label>
+            <div id="config-logo-representante-preview" class="logo-representante-preview"></div>
+            <label>Fornecedor (usado para identificar carteira/concorrência)
+              <input type="text" id="config-nome-empresa" placeholder="Ex: ADM, Cargill, Minha Empresa">
+            </label>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Metas</div>
+          <label class="settings-inline">
+            Meta de visitas técnicas por mês
+            <input type="number" id="input-meta-visitas" min="0" style="width:90px; margin-top:0;">
+          </label>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Financeiro</div>
+          <label class="settings-inline">
+            Preço médio (R$/ton)
+            <input type="number" id="config-preco-ton" min="0" step="0.01" placeholder="Ex: 3200" style="width:120px; margin-top:0;">
+          </label>
+          <p class="hint" style="margin-top:8px">Usado para estimar faturamento, ticket médio e valor em risco quando o pedido não tem valor lançado.</p>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Aparência</div>
+          <label class="settings-inline">
+            Modo escuro
+            <button class="btn-secondary" id="btn-toggle-dark-settings">Alternar</button>
+          </label>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Atalhos de teclado</div>
+          <div class="settings-shortcuts">
+            <div><span class="kbd">Ctrl+K</span> busca global</div>
+            <div><span class="kbd">N</span> novo registro</div>
+            <div><span class="kbd">Esc</span> fechar modal</div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Importar dados</div>
+          <p class="hint" style="margin-top:0">Selecione o JSON exportado (clientes ativos + leads) para mapear e importar automaticamente.</p>
+          <input type="file" id="import-json-file" accept="application/json">
+          <div id="import-json-status" class="hint" style="margin-top:8px"></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">Backup dos dados</div>
+          <p class="hint" style="margin-top:0">Exporte um backup completo para levar seus dados a outra máquina (ou guardar). Restaure quando precisar.</p>
+          <div class="actions-row" style="margin-top:10px">
+            <button type="button" class="btn-primary" id="btn-export-backup">Exportar backup (.json)</button>
+            <label class="btn-secondary" style="cursor:pointer; margin:0;">Restaurar backup
+              <input type="file" id="restore-backup-file" accept="application/json" style="display:none">
+            </label>
+          </div>
+          <div id="restore-backup-status" class="hint" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== FICHA DO CLIENTE/LEAD ==================== -->
+    <section id="ficha" class="tab-panel">
+      <div class="section-header" style="margin-bottom:16px;">
+        <button class="btn-secondary" id="btn-ficha-voltar">&larr; Voltar</button>
+      </div>
+      <div class="ficha-grid">
+        <div class="ficha-left" id="ficha-left"></div>
+        <div class="ficha-right">
+          <!-- Navegação da ficha de LEAD (inalterada) -->
+          <div class="detalhe-tabs" id="ficha-lead-nav">
+            <button class="detalhe-tab-btn active" data-dtab="produtivo">Perfil Produtivo</button>
+            <button class="detalhe-tab-btn" data-dtab="contatos">Follow-ups / Contatos</button>
+            <button class="detalhe-tab-btn" data-dtab="visitas">Visitas Técnicas</button>
+            <button class="detalhe-tab-btn" data-dtab="propostas">Funil de Vendas</button>
+            <button class="detalhe-tab-btn" data-dtab="concorrencia">Inteligência Competitiva</button>
+          </div>
+
+          <!-- Sub-navegação da ficha de CLIENTE ATIVO: preenchida conforme o botão (Histórico/Cadastro) selecionado no sidebar -->
+          <div class="detalhe-tabs hidden" id="ficha-sub-tabs"></div>
+
+          <div id="ficha-conteudo"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  </div>
+
+  <div class="toast-stack" id="toast-stack"></div>
+
+  <!-- MODAL: novo/editar LEAD -->
+  <div id="modal-cliente" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3 id="modal-cliente-titulo">Novo lead</h3>
+        <button class="btn-close" data-close-modal="modal-cliente">&times;</button>
+      </div>
+      <form id="form-cliente" class="form form-grid">
+        <input type="hidden" id="cliente-id">
+
+        <div class="detalhe-tabs">
+          <button type="button" class="detalhe-tab-btn cliente-tab-btn active" data-ctab="identificacao">Identificação</button>
+          <button type="button" class="detalhe-tab-btn cliente-tab-btn" data-ctab="contatos">Contatos</button>
+          <button type="button" class="detalhe-tab-btn cliente-tab-btn" data-ctab="produtivo">Perfil Produtivo</button>
+          <button type="button" class="detalhe-tab-btn cliente-tab-btn" data-ctab="bant">Qualificação BANT</button>
+          <button type="button" class="detalhe-tab-btn cliente-tab-btn" data-ctab="comercial">Funil e Próximo Passo</button>
+          <button type="button" class="detalhe-tab-btn cliente-tab-btn" data-ctab="geral">Geral</button>
+        </div>
+
+        <div class="cliente-ctab-panel active" data-ctab-panel="identificacao">
+        <fieldset>
+          <legend>Dados Cadastrais</legend>
+          <label>Nome completo do produtor / razão social
+            <input type="text" id="cliente-nome">
+          </label>
+          <label>Nome fantasia / apelido no campo
+            <input type="text" id="cliente-nome-fantasia">
+          </label>
+          <label>Nome da fazenda ou empresa
+            <input type="text" id="cliente-fazenda">
+          </label>
+          <label>CPF ou CNPJ
+            <input type="text" id="cliente-cpf-cnpj">
+          </label>
+          <label>Rua
+            <input type="text" id="cliente-endereco-rua">
+          </label>
+          <label>Número
+            <input type="text" id="cliente-endereco-numero">
+          </label>
+          <label>Complemento / ponto de referência
+            <input type="text" id="cliente-endereco-complemento" placeholder="Ex: porteira azul, 2ª entrada à direita">
+          </label>
+          <label>Bairro
+            <input type="text" id="cliente-endereco-bairro">
+          </label>
+          <label>Município
+            <input type="text" id="cliente-municipio">
+          </label>
+          <label>Estado
+            <input type="text" id="cliente-estado" maxlength="2" placeholder="Ex: MT">
+          </label>
+          <label>CEP
+            <input type="text" id="cliente-cep">
+          </label>
+          <label>Como chegou até mim
+            <select id="cliente-como-chegou">
+              <option>Indicação</option>
+              <option>Visita prospectiva</option>
+              <option>Evento</option>
+              <option>Originação interna</option>
+              <option>LinkedIn</option>
+              <option>WhatsApp</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Nome de quem indicou (se indicação)
+            <input type="text" id="cliente-indicado-por">
+          </label>
+          <div style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px;">
+            <button type="button" class="btn-secondary" id="btn-capturar-gps">Usar minha localização atual</button>
+            <span class="hint" id="cliente-localizacao-status"></span>
+            <input type="hidden" id="cliente-lat"><input type="hidden" id="cliente-lng">
+          </div>
+        </fieldset>
+        </div>
+
+        <div class="cliente-ctab-panel" data-ctab-panel="contatos">
+        <fieldset>
+          <legend>Contatos</legend>
+          <div style="grid-column: 1 / -1;">
+            <div id="cliente-contatos-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button type="button" class="btn-primary" id="btn-add-contato-pessoa" style="margin-top:8px;">+ Adicionar contato</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Consultor / Nutricionista externo</legend>
+          <label>Tem consultor/nutricionista externo?
+            <select id="cliente-tem-consultor">
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </label>
+          <label>Consultor/Nutricionista vinculado
+            <select id="cliente-consultor-id">
+              <option value="">— Nenhum —</option>
+            </select>
+          </label>
+          <p class="hint" style="grid-column:1/-1;">Cadastre ou edite os dados completos do consultor/nutricionista (empresa, WhatsApp, vínculo com concorrente) na seção Consultores / Nutricionistas, em Configurações.</p>
+        </fieldset>
+        </div>
+
+        <div class="cliente-ctab-panel" data-ctab-panel="produtivo">
+        <fieldset>
+          <legend>Perfil Produtivo</legend>
+          <div style="grid-column: 1 / -1;">
+            <label style="margin-bottom:6px;">Categoria animal (adicione quantas precisar)</label>
+            <div id="cliente-categorias-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button type="button" class="btn-primary" id="btn-add-categoria-animal" style="margin-top:8px; align-self:flex-start;">+ Adicionar categoria</button>
+            <div id="cliente-categorias-total" style="margin-top:8px;"></div>
+          </div>
+          <label>Área total da propriedade (hectares)
+            <input type="number" id="cliente-area-hectares" min="0" step="any">
+          </label>
+          <label>Nível tecnológico percebido
+            <select id="cliente-nivel-tecnologico">
+              <option>Baixo</option>
+              <option>Médio</option>
+              <option>Alto</option>
+            </select>
+          </label>
+        </fieldset>
+        </div>
+
+        <div class="cliente-ctab-panel" data-ctab-panel="bant">
+        <fieldset>
+          <legend>Qualificação BANT</legend>
+          <p class="hint" style="grid-column:1/-1;">Ajuda a decidir se vale investir tempo neste lead antes de avançar no funil.</p>
+          <label>Budget — disposição para investir
+            <select id="cliente-bant-budget">
+              <option value="">— Selecione —</option>
+              <option>Investe</option><option>Intermediário</option><option>Vê como custo</option><option>Desconhecido</option>
+            </select>
+          </label>
+          <label>Authority — com quem estou falando
+            <select id="cliente-bant-authority">
+              <option value="">— Selecione —</option>
+              <option>Decisor final</option><option>Influenciador</option><option>Técnico sem poder de decisão</option><option>Desconhecido</option>
+            </select>
+          </label>
+          <label>Need — existe problema reconhecido
+            <select id="cliente-bant-need">
+              <option value="">— Selecione —</option>
+              <option>Sim, com problema claro</option><option>Sim, com problema vago</option><option>Não identificado</option>
+            </select>
+          </label>
+          <label>Timing — momento certo para compra
+            <select id="cliente-bant-timing">
+              <option value="">— Selecione —</option>
+              <option>Urgente agora</option><option>Próximos 30 dias</option><option>Próximos 90 dias</option><option>Sem prazo definido</option>
+            </select>
+          </label>
+        </fieldset>
+        </div>
+
+        <div class="cliente-ctab-panel" data-ctab-panel="comercial">
+        <fieldset>
+          <legend>Funil de Vendas</legend>
+          <label>Etapa atual
+            <select id="cliente-etapa-funil">
+              <option>Prospecção</option>
+              <option>Qualificação</option>
+              <option>Diagnóstico</option>
+              <option>Proposta enviada</option>
+              <option>Negociação</option>
+              <option>Fechamento</option>
+            </select>
+          </label>
+          <label>Status do lead
+            <select id="cliente-status">
+              <option value="Ativo">Ativo</option>
+              <option value="Bloqueado">Bloqueado</option>
+              <option value="Inativo">Inativo</option>
+              <option value="Perdido">Perdido</option>
+            </select>
+          </label>
+          <label>Temperatura do lead
+            <select id="cliente-temperatura">
+              <option>Frio</option>
+              <option>Morno</option>
+              <option>Quente</option>
+            </select>
+          </label>
+          <label>Probabilidade de fechamento
+            <select id="cliente-probabilidade">
+              <option>Baixa</option>
+              <option>Média</option>
+              <option>Alta</option>
+            </select>
+          </label>
+          <label>Produto de interesse
+            <input type="text" id="cliente-produto-proposta">
+          </label>
+          <label>Potencial estimado (toneladas/mês)
+            <input type="number" id="cliente-potencial-volume" min="0" step="any">
+          </label>
+          <label>Valor potencial estimado (R$/mês)
+            <input type="number" id="cliente-potencial-valor" min="0" step="any">
+          </label>
+          <div style="grid-column: 1 / -1;">
+            <label style="margin-bottom:6px;">Objeções identificadas</label>
+            <div id="cliente-objecoes-count" class="itens-contador"></div>
+            <div id="cliente-objecoes-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+            <button type="button" class="btn-secondary btn-add-item" id="btn-add-objecao" style="margin-top:8px;">+ Adicionar objeção</button>
+          </div>
+          <label style="grid-column: 1 / -1;">Observações estratégicas internas
+            <textarea id="cliente-obs-comerciais" rows="2"></textarea>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Próximo passo</legend>
+          <p class="hint" style="grid-column:1/-1; margin:0 0 4px;">Todo lead precisa ter um próximo passo — o sistema bloqueia salvar sem isso.</p>
+          <label>Tipo de ação
+            <select id="cliente-proximo-passo-tipo">
+              <option value="">— Selecione —</option>
+              <option>Visita presencial</option><option>Ligação</option><option>Envio de proposta</option>
+              <option>Envio de material</option><option>Follow-up WhatsApp</option><option>Aguardar retorno do cliente</option><option>Outro</option>
+            </select>
+          </label>
+          <label>Data do próximo passo
+            <input type="date" id="cliente-data-proximo-passo">
+          </label>
+          <label>Responsável
+            <select id="cliente-proximo-passo-responsavel">
+              <option>Eu</option>
+              <option>Cliente</option>
+            </select>
+          </label>
+          <label>Status do próximo passo
+            <select id="cliente-status-proximo-passo">
+              <option>Pendente</option>
+              <option>Feito</option>
+            </select>
+          </label>
+          <label style="grid-column: 1 / -1;">Observações sobre o próximo passo
+            <textarea id="cliente-proximo-passo-obs" rows="2"></textarea>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Status especial (opcional)</legend>
+          <label>Status especial
+            <select id="cliente-status-especial">
+              <option value="">— Nenhum —</option>
+              <option>Aguardando formulação interna</option><option>Aguardando cadastro</option><option>Aguardando decisão do dono</option>
+              <option>Bloqueado por consultor</option><option>Em teste de produto</option><option>Outro</option>
+            </select>
+          </label>
+          <label style="grid-column: 1 / -1;">Motivo (obrigatório se status especial preenchido)
+            <textarea id="cliente-status-especial-obs" rows="2"></textarea>
+          </label>
+        </fieldset>
+        </div>
+
+        <div class="cliente-ctab-panel" data-ctab-panel="geral">
+        <fieldset>
+          <legend>Observações gerais</legend>
+          <label>Qualquer informação relevante
+            <textarea id="cliente-obs-gerais" rows="3"></textarea>
+          </label>
+        </fieldset>
+        </div>
+
+        <button type="submit" class="btn-primary">Salvar lead</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: editar Cliente Ativo (cadastro completo) -->
+  <div id="modal-cliente-ativo" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3>Editar Cliente Ativo</h3>
+        <button class="btn-close" data-close-modal="modal-cliente-ativo">&times;</button>
+      </div>
+      <form id="form-cliente-ativo" class="form form-grid">
+        <input type="hidden" id="ca-id">
+
+        <div class="detalhe-tabs">
+          <button type="button" class="detalhe-tab-btn ca-tab-btn active" data-catab="identificacao">Identificação</button>
+          <button type="button" class="detalhe-tab-btn ca-tab-btn" data-catab="contatos">Contatos</button>
+          <button type="button" class="detalhe-tab-btn ca-tab-btn" data-catab="produtivo">Perfil Produtivo</button>
+          <button type="button" class="detalhe-tab-btn ca-tab-btn" data-catab="cadastro">Cadastro</button>
+        </div>
+
+        <div class="ca-ctab-panel active" data-catab-panel="identificacao">
+        <fieldset>
+          <legend>Dados Cadastrais</legend>
+          <label>Nome completo do produtor / razão social
+            <input type="text" id="ca-nome">
+          </label>
+          <label>Nome fantasia / apelido no campo
+            <input type="text" id="ca-nome-fantasia">
+          </label>
+          <label>Nome da fazenda ou empresa
+            <input type="text" id="ca-fazenda">
+          </label>
+          <label>CPF ou CNPJ
+            <input type="text" id="ca-cpf-cnpj">
+          </label>
+          <label>Rua
+            <input type="text" id="ca-endereco-rua">
+          </label>
+          <label>Número
+            <input type="text" id="ca-endereco-numero">
+          </label>
+          <label>Complemento / ponto de referência
+            <input type="text" id="ca-endereco-complemento">
+          </label>
+          <label>Bairro
+            <input type="text" id="ca-endereco-bairro">
+          </label>
+          <label>Município
+            <input type="text" id="ca-municipio">
+          </label>
+          <label>Estado
+            <input type="text" id="ca-estado" maxlength="2" placeholder="Ex: MT">
+          </label>
+          <label>CEP
+            <input type="text" id="ca-cep">
+          </label>
+          <label>Como chegou até mim
+            <select id="ca-como-chegou">
+              <option>Indicação</option>
+              <option>Visita prospectiva</option>
+              <option>Evento</option>
+              <option>Originação interna</option>
+              <option>LinkedIn</option>
+              <option>WhatsApp</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Nome de quem indicou (se indicação)
+            <input type="text" id="ca-indicado-por">
+          </label>
+          <div style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px;">
+            <button type="button" class="btn-secondary" id="btn-capturar-gps-ca">Usar minha localização atual</button>
+            <span class="hint" id="ca-localizacao-status"></span>
+            <input type="hidden" id="ca-lat"><input type="hidden" id="ca-lng">
+          </div>
+        </fieldset>
+        </div>
+
+        <div class="ca-ctab-panel" data-catab-panel="contatos">
+        <fieldset>
+          <legend>Contatos</legend>
+          <div style="grid-column: 1 / -1;">
+            <div id="ca-contatos-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button type="button" class="btn-primary" id="btn-add-contato-pessoa-ca" style="margin-top:8px;">+ Adicionar contato</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Consultor / Nutricionista externo</legend>
+          <label>Tem consultor/nutricionista externo?
+            <select id="ca-tem-consultor">
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </label>
+          <label>Consultor/Nutricionista vinculado
+            <select id="ca-consultor-id">
+              <option value="">— Nenhum —</option>
+            </select>
+          </label>
+        </fieldset>
+        </div>
+
+        <div class="ca-ctab-panel" data-catab-panel="produtivo">
+        <fieldset>
+          <legend>Perfil Produtivo</legend>
+          <div style="grid-column: 1 / -1;">
+            <label style="margin-bottom:6px;">Categoria animal (adicione quantas precisar)</label>
+            <div id="ca-categorias-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button type="button" class="btn-primary" id="btn-add-categoria-animal-ca" style="margin-top:8px; align-self:flex-start;">+ Adicionar categoria</button>
+            <div id="ca-categorias-total" style="margin-top:8px;"></div>
+          </div>
+          <label>Área total da propriedade (hectares)
+            <input type="number" id="ca-area-hectares" min="0" step="any">
+          </label>
+          <label>Nível tecnológico percebido
+            <select id="ca-nivel-tecnologico">
+              <option>Baixo</option>
+              <option>Médio</option>
+              <option>Alto</option>
+            </select>
+          </label>
+        </fieldset>
+        </div>
+
+        <div class="ca-ctab-panel" data-catab-panel="cadastro">
+        <fieldset>
+          <legend id="legend-cadastro-empresa">Cadastro no ADM</legend>
+          <label>Status do cadastro
+            <select id="ca-status-cadastro">
+              <option>Ativo</option><option>Bloqueado</option><option>Em análise</option>
+            </select>
+          </label>
+          <label>Data de cadastro aprovado
+            <input type="date" id="ca-data-cadastro-aprovado">
+          </label>
+          <label>Cadastro aprovado?
+            <select id="ca-cadastro-aprovado">
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </label>
+          <label>Vendedor responsável
+            <input type="text" id="ca-vendedor-responsavel">
+          </label>
+          <label>Avisar recompra quantos dias antes
+            <input type="number" id="ca-alerta-recompra-dias" min="0" value="5">
+          </label>
+          <label style="grid-column:1/-1;">Observações sobre o ciclo (sazonalidade, seca, monta...)
+            <textarea id="ca-ciclo-obs" rows="2"></textarea>
+          </label>
+        </fieldset>
+        </div>
+
+        <button type="submit" class="btn-primary" style="grid-column:1/-1;">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: nova versão de proposta -->
+  <div id="modal-proposta" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3>Nova versão de proposta</h3>
+        <button class="btn-close" data-close-modal="modal-proposta">&times;</button>
+      </div>
+      <form id="form-proposta" class="form form-grid">
+        <input type="hidden" id="proposta-id">
+        <input type="hidden" id="proposta-lead-id">
+        <label>Data de envio
+          <input type="date" id="proposta-data-envio" required>
+        </label>
+        <label>Validade da proposta
+          <input type="date" id="proposta-validade">
+        </label>
+        <label>Volume total (toneladas)
+          <input type="number" id="proposta-volume-total" min="0" step="any">
+        </label>
+        <label>Valor total dos produtos (R$)
+          <input type="number" id="proposta-valor-total" readonly>
+        </label>
+        <label>Condição de pagamento
+          <input type="text" id="proposta-condicao-pagamento">
+        </label>
+        <label>Tipo de frete
+          <select id="proposta-tipo-frete"><option value="FOB">FOB</option><option value="CIF">CIF</option></select>
+        </label>
+        <label>Status
+          <select id="proposta-status">
+            <option>Aguardando retorno</option><option>Em negociação</option><option>Aceita</option><option>Recusada</option><option>Substituída por nova versão</option>
+          </select>
+        </label>
+        <div style="grid-column:1/-1;">
+          <label style="margin-bottom:6px;">Produtos incluídos na proposta</label>
+          <div id="proposta-produtos-count" class="itens-contador"></div>
+          <div id="proposta-produtos-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+          <button type="button" class="btn-primary btn-add-item" id="btn-add-produto-proposta" style="margin-top:8px;">+ Adicionar produto</button>
+        </div>
+        <label style="grid-column:1/-1;">Motivo da recusa (se recusada)
+          <textarea id="proposta-motivo-recusa" rows="2"></textarea>
+        </label>
+        <button type="submit" class="btn-primary">Salvar proposta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: encerrar lead -->
+  <div id="modal-encerrar-lead" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Encerrar lead</h3>
+        <button class="btn-close" data-close-modal="modal-encerrar-lead">&times;</button>
+      </div>
+      <form id="form-encerrar-lead" class="form">
+        <input type="hidden" id="encerrar-lead-id">
+        <label>Motivo do encerramento
+          <select id="encerrar-motivo">
+            <option>Perdido para concorrente</option>
+            <option>Bloqueado por vínculo do consultor</option>
+            <option>Sem potencial identificado</option>
+            <option>Cliente sem interesse no momento</option>
+            <option>Sem retorno após múltiplas tentativas</option>
+            <option>Outro</option>
+          </select>
+        </label>
+        <label id="encerrar-concorrente-label">Qual concorrente?
+          <input type="text" id="encerrar-concorrente">
+        </label>
+        <button type="submit" class="btn-primary" style="background:var(--late-text);">Encerrar lead</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: inativar cliente -->
+  <div id="modal-inativar-cliente" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Inativar cliente</h3>
+        <button class="btn-close" data-close-modal="modal-inativar-cliente">&times;</button>
+      </div>
+      <form id="form-inativar-cliente" class="form">
+        <input type="hidden" id="inativar-cliente-id">
+        <label>Motivo da inativação
+          <select id="inativar-motivo">
+            <option>Migrou para concorrente</option>
+            <option>Encerrou atividade</option>
+            <option>Inadimplência</option>
+            <option>Sem volume mínimo viável</option>
+            <option>Outro</option>
+          </select>
+        </label>
+        <label id="inativar-concorrente-label">Qual concorrente?
+          <input type="text" id="inativar-concorrente">
+        </label>
+        <button type="submit" class="btn-primary" style="background:var(--late-text);">Inativar cliente</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: novo/editar fornecedor -->
+  <div id="modal-fornecedor" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-fornecedor-titulo">Novo fornecedor</h3>
+        <button class="btn-close" data-close-modal="modal-fornecedor">&times;</button>
+      </div>
+      <form id="form-fornecedor" class="form">
+        <input type="hidden" id="fornecedor-id">
+        <label>Nome do fornecedor
+          <input type="text" id="fornecedor-nome" required placeholder="Ex: ADM, Cargill, Tecnobeef, Bellman">
+        </label>
+        <label>Tipo
+          <select id="fornecedor-tipo">
+            <option id="fornecedor-tipo-opt-casa" value="casa">Nós</option>
+            <option value="concorrente">Concorrente</option>
+          </select>
+        </label>
+        <label>Observações
+          <textarea id="fornecedor-obs" rows="2"></textarea>
+        </label>
+        <button type="submit" class="btn-primary">Salvar fornecedor</button>
+        <button type="button" class="btn-secondary hidden" id="btn-excluir-fornecedor" style="color:var(--late-text); border-color:var(--late-text);">Excluir fornecedor</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: novo/editar consultor -->
+  <div id="modal-consultor" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-consultor-titulo">Novo consultor/nutricionista</h3>
+        <button class="btn-close" data-close-modal="modal-consultor">&times;</button>
+      </div>
+      <form id="form-consultor" class="form">
+        <input type="hidden" id="consultor-id">
+        <label>Nome do consultor/nutricionista
+          <input type="text" id="consultor-nome" required>
+        </label>
+        <label>Empresa
+          <input type="text" id="consultor-empresa">
+        </label>
+        <label>WhatsApp
+          <input type="text" id="consultor-whatsapp">
+        </label>
+        <label>Região de atuação
+          <input type="text" id="consultor-regiao">
+        </label>
+        <label>Quantos clientes atende (estimativa)
+          <input type="number" id="consultor-estimativa-clientes" min="0">
+        </label>
+        <label>Tem parceria/exclusividade com concorrente?
+          <select id="consultor-parceria-concorrente">
+            <option value="desconhecido">Desconhecido</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </label>
+        <label>Nome do concorrente parceiro
+          <input type="text" id="consultor-nome-concorrente-parceiro">
+        </label>
+        <label>É um multiplicador de negócios?
+          <select id="consultor-multiplicador">
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
+        </label>
+        <label>Observações
+          <textarea id="consultor-obs" rows="2"></textarea>
+        </label>
+        <button type="submit" class="btn-primary">Salvar consultor/nutricionista</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: observação competitiva -->
+  <div id="modal-competitiva" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Nova observação competitiva</h3>
+        <button class="btn-close" data-close-modal="modal-competitiva">&times;</button>
+      </div>
+      <form id="form-competitiva" class="form">
+        <input type="hidden" id="competitiva-cliente-id">
+        <label>Data da observação
+          <input type="date" id="competitiva-data" required>
+        </label>
+        <label>Concorrente
+          <input type="text" id="competitiva-concorrente">
+        </label>
+        <label>Produto concorrente
+          <input type="text" id="competitiva-produto">
+        </label>
+        <label>Preço observado
+          <input type="text" id="competitiva-preco" placeholder="Ex: R$ 85/saco">
+        </label>
+        <label>Canal de venda do concorrente
+          <select id="competitiva-canal">
+            <option>Direto</option>
+            <option>Representante</option>
+            <option>Distribuidor</option>
+          </select>
+        </label>
+        <label>Prazo de pagamento praticado
+          <input type="text" id="competitiva-prazo">
+        </label>
+        <label>Frete
+          <select id="competitiva-frete">
+            <option>FOB</option>
+            <option>CIF</option>
+          </select>
+        </label>
+        <label>Bonificações/condições especiais
+          <input type="text" id="competitiva-bonificacoes">
+        </label>
+        <label>Ponto fraco relatado pelo produtor
+          <input type="text" id="competitiva-ponto-fraco">
+        </label>
+        <label>Ponto forte a superar
+          <input type="text" id="competitiva-ponto-forte">
+        </label>
+        <button type="submit" class="btn-primary">Salvar observação</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: registrar estoque (por categoria animal) -->
+  <div id="modal-estoque" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Registrar estoque</h3>
+        <button class="btn-close" data-close-modal="modal-estoque">&times;</button>
+      </div>
+      <form id="form-estoque" class="form">
+        <input type="hidden" id="estoque-cliente-id">
+        <label>Categoria animal
+          <select id="estoque-categoria" required></select>
+        </label>
+        <label>Data da leitura
+          <input type="date" id="estoque-data" required>
+        </label>
+        <label>Estoque atual (toneladas)
+          <input type="number" id="estoque-quantidade" min="0" step="any" required>
+        </label>
+        <label>Origem da informação
+          <select id="estoque-origem">
+            <option value="informado">Informado pelo cliente/funcionário</option>
+            <option value="visita">Observado em visita técnica</option>
+          </select>
+        </label>
+        <label>Observações
+          <textarea id="estoque-obs" rows="2"></textarea>
+        </label>
+        <p class="hint" style="margin-top:-6px">Usado para prever quando esse produto vai acabar, com base no volume mensal estimado da categoria.</p>
+        <button type="submit" class="btn-primary">Salvar leitura de estoque</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: abrir SAC -->
+  <div id="modal-sac" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3>Abrir SAC</h3>
+        <button class="btn-close" data-close-modal="modal-sac">&times;</button>
+      </div>
+      <form id="form-sac" class="form form-grid">
+        <input type="hidden" id="sac-id">
+        <input type="hidden" id="sac-cliente-id">
+        <fieldset>
+          <legend>Identificação</legend>
+          <label>Número do SAC
+            <input type="text" id="sac-numero" readonly>
+          </label>
+          <label>Data de abertura
+            <input type="date" id="sac-data" required>
+          </label>
+          <label>Pedido vinculado
+            <select id="sac-pedido"><option value="">— Nenhum —</option></select>
+          </label>
+          <label>Status
+            <select id="sac-status">
+              <option>Aberto</option>
+              <option id="sac-status-opt-analise">Em análise pelo time ADM</option>
+              <option>Aguardando cliente</option>
+              <option>Resolvido</option>
+              <option>Encerrado sem resolução</option>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Detalhes da ocorrência</legend>
+          <label>Tipo de ocorrência
+            <select id="sac-tipo">
+              <option>Avaria no produto</option><option>Erro fiscal</option><option>Atraso na entrega</option>
+              <option>Produto errado</option><option>Falta de produto</option><option>Reclamação técnica</option><option>Outro</option>
+            </select>
+          </label>
+          <label>Produto envolvido
+            <input type="text" id="sac-produto">
+          </label>
+          <label>Quantidade afetada
+            <input type="text" id="sac-quantidade">
+          </label>
+          <label>Responsável interno
+            <input type="text" id="sac-responsavel" value="Bruno">
+          </label>
+          <label style="grid-column:1/-1;">Descrição detalhada do problema
+            <textarea id="sac-descricao" rows="3"></textarea>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Resolução</legend>
+          <label>Data de resolução
+            <input type="date" id="sac-data-resolucao">
+          </label>
+          <label>Impacto no relacionamento
+            <select id="sac-impacto">
+              <option value="">— Selecione —</option>
+              <option>Neutro</option><option>Cliente compreendeu</option><option>Cliente insatisfeito</option>
+            </select>
+          </label>
+          <label style="grid-column:1/-1;">Como foi resolvido
+            <textarea id="sac-como-resolvido" rows="2"></textarea>
+          </label>
+        </fieldset>
+        <button type="submit" class="btn-primary">Salvar SAC</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: registrar pedido -->
+  <div id="modal-pedido" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3>Registrar pedido</h3>
+        <button class="btn-close" data-close-modal="modal-pedido">&times;</button>
+      </div>
+      <form id="form-pedido" class="form form-grid">
+        <input type="hidden" id="pedido-id">
+        <fieldset>
+          <legend>Identificação</legend>
+          <label>Cliente
+            <select id="pedido-cliente" required></select>
+          </label>
+          <label>Número do pedido <span id="label-pedido-numero-empresa">no ADM</span>
+            <input type="text" id="pedido-numero-adm">
+          </label>
+          <label>Data do pedido
+            <input type="date" id="pedido-data" required>
+          </label>
+          <label>Status do pedido
+            <select id="pedido-status">
+              <option>Em processamento</option>
+              <option>Carregado</option>
+              <option>Em trânsito</option>
+              <option>Entregue</option>
+              <option>Com ocorrência</option>
+              <option>Cancelado</option>
+            </select>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Produtos</legend>
+          <div style="grid-column: 1 / -1;">
+            <label style="margin-bottom:6px;">Produtos do pedido</label>
+            <div id="pedido-produtos-total-count" class="itens-contador"></div>
+            <div id="pedido-produtos-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <button type="button" class="btn-primary btn-add-item" id="btn-add-produto-pedido" style="margin-top:8px;">+ Adicionar produto</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Logística</legend>
+          <label>Data de carregamento prevista
+            <input type="date" id="pedido-carregamento-previsto">
+          </label>
+          <label>Data de carregamento realizada
+            <input type="date" id="pedido-carregamento-realizado">
+          </label>
+          <label>Data de entrega prevista
+            <input type="date" id="pedido-entrega-prevista">
+          </label>
+          <label>Data de entrega realizada
+            <input type="date" id="pedido-entrega-realizada">
+          </label>
+          <label>Satisfação com a entrega
+            <select id="pedido-satisfacao-entrega">
+              <option>— Não avaliado —</option>
+              <option>Ótima</option>
+              <option>Boa</option>
+              <option>Regular</option>
+              <option>Ruim</option>
+            </select>
+          </label>
+          <label>Tipo de frete
+            <select id="pedido-tipo-frete"><option value="FOB">FOB</option><option value="CIF">CIF</option></select>
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Financeiro</legend>
+          <label>Valor dos produtos (R$)
+            <input type="number" id="pedido-valor-produtos" readonly>
+          </label>
+          <label>Frete (R$)
+            <input type="number" id="pedido-frete" min="0" step="0.01" value="0">
+          </label>
+          <label>Valor total com frete (R$)
+            <input type="number" id="pedido-valor-com-frete" readonly>
+          </label>
+          <label>Condição de pagamento
+            <input type="text" id="pedido-condicao-pagamento" placeholder="Ex: 30/60/90 dias">
+          </label>
+        </fieldset>
+
+        <button type="submit" class="btn-primary">Salvar pedido</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: oportunidade de upsell -->
+  <div id="modal-upsell" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Oportunidade de upsell</h3>
+        <button class="btn-close" data-close-modal="modal-upsell">&times;</button>
+      </div>
+      <form id="form-upsell" class="form">
+        <input type="hidden" id="upsell-id">
+        <input type="hidden" id="upsell-cliente-id">
+        <label>Produto ou solução adicional
+          <input type="text" id="upsell-produto">
+        </label>
+        <label>Categoria animal alvo
+          <select id="upsell-categoria"><option value="">— Selecione —</option></select>
+        </label>
+        <label>Volume potencial adicional (toneladas)
+          <input type="number" id="upsell-volume" min="0" step="any">
+        </label>
+        <label>Justificativa técnica
+          <textarea id="upsell-justificativa" rows="2"></textarea>
+        </label>
+        <label>Status
+          <select id="upsell-status">
+            <option>Identificada</option><option>Em abordagem</option><option>Proposta enviada</option>
+            <option>Convertida</option><option>Descartada</option>
+          </select>
+        </label>
+        <label>Data de identificação
+          <input type="date" id="upsell-data">
+        </label>
+        <label>Próximo passo
+          <input type="text" id="upsell-proximo-passo">
+        </label>
+        <button type="submit" class="btn-primary">Salvar oportunidade</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: registrar contato -->
+  <div id="modal-contato" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3>Registrar contato</h3>
+        <button class="btn-close" data-close-modal="modal-contato">&times;</button>
+      </div>
+      <form id="form-contato" class="form form-grid">
+        <input type="hidden" id="contato-id">
+        <fieldset>
+          <legend>Contato</legend>
+          <label>Cliente
+            <select id="contato-cliente" required></select>
+          </label>
+          <label>Data do contato
+            <input type="date" id="contato-data" required>
+          </label>
+          <label>Tipo de contato
+            <select id="contato-tipo">
+              <option>Visita presencial</option>
+              <option>Ligação</option>
+              <option>WhatsApp</option>
+              <option>E-mail</option>
+              <option>Evento</option>
+              <option>Reunião online</option>
+            </select>
+          </label>
+          <label>Duração aproximada
+            <input type="text" id="contato-duracao" placeholder="Ex: 20 min">
+          </label>
+          <label>Com quem foi o contato
+            <select id="contato-com-quem">
+              <option>Decisor</option>
+              <option>Influenciador</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Produtos discutidos
+            <input type="text" id="contato-produtos">
+          </label>
+          <label>Objeções levantadas
+            <input type="text" id="contato-objecoes">
+          </label>
+          <label>O que ficou pendente
+            <input type="text" id="contato-pendente">
+          </label>
+          <label>Resultado do contato
+            <select id="contato-resultado">
+              <option value="">— Selecione —</option>
+              <option>Avançou</option><option>Manteve</option><option>Regrediu</option><option>Sem resposta</option>
+            </select>
+          </label>
+          <label>Próximo passo sugerido
+            <input type="text" id="contato-proximo-passo">
+          </label>
+          <label>Data do próximo contato
+            <input type="date" id="contato-proximo-data">
+          </label>
+          <label>Responsável pelo próximo passo
+            <select id="contato-responsavel">
+              <option value="Eu">Eu</option>
+              <option value="Cliente">Cliente</option>
+            </select>
+          </label>
+          <label>Resumo da conversa
+            <textarea id="contato-resumo" rows="2"></textarea>
+          </label>
+          <label>O que o lead/cliente disse de relevante
+            <textarea id="contato-cliente-disse" rows="2"></textarea>
+          </label>
+          <label>O que ficou combinado
+            <textarea id="contato-combinado" rows="2"></textarea>
+          </label>
+          <label>Observações livres
+            <textarea id="contato-obs" rows="2"></textarea>
+          </label>
+        </fieldset>
+        <button type="submit" class="btn-primary">Salvar contato</button>
+        <button type="button" class="btn-secondary hidden" id="btn-excluir-contato" style="color:var(--late-text); border-color:var(--late-text);">Excluir contato</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: novo compromisso (agenda) -->
+  <div id="modal-compromisso" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Novo compromisso</h3>
+        <button class="btn-close" data-close-modal="modal-compromisso">&times;</button>
+      </div>
+      <form id="form-compromisso" class="form">
+        <label>Cliente (opcional — deixe em branco para viagens/reuniões internas)
+          <select id="compromisso-cliente"></select>
+        </label>
+        <label>Tipo
+          <select id="compromisso-tipo">
+            <option value="visita">Visita</option>
+            <option value="ligacao">Ligação</option>
+            <option value="followup">Follow-up</option>
+            <option value="reuniao">Reunião</option>
+            <option value="viagem">Viagem</option>
+          </select>
+        </label>
+        <label>Data
+          <input type="date" id="compromisso-data" required>
+        </label>
+        <label>Hora
+          <input type="time" id="compromisso-hora">
+        </label>
+        <label>Descrição
+          <input type="text" id="compromisso-descricao">
+        </label>
+        <button type="submit" class="btn-primary">Salvar compromisso</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RELATÓRIO DE VISITA TÉCNICA -->
+  <div id="modal-visita" class="modal-overlay hidden">
+    <div class="modal modal-wide" style="max-width:720px;">
+      <div class="modal-header">
+        <h3 id="modal-visita-titulo">Relatório de Visita Técnica</h3>
+        <button class="btn-close" data-close-modal="modal-visita">&times;</button>
+      </div>
+      <form id="form-visita" class="form">
+        <input type="hidden" id="visita-id">
+
+        <details class="visita-section" open>
+          <summary>1 · Identificação</summary>
+          <div class="visita-section-body">
+            <label>Cliente / lead
+              <input type="text" id="visita-cliente-busca" placeholder="Buscar cliente...">
+              <select id="visita-cliente" required style="margin-top:6px;"></select>
+            </label>
+            <div id="visita-cliente-info" class="visita-info-box"></div>
+            <label>Data da visita
+              <input type="date" id="visita-data" required>
+            </label>
+            <label>Hora de início
+              <input type="time" id="visita-hora-inicio">
+            </label>
+            <label>Hora de fim
+              <input type="time" id="visita-hora-fim">
+            </label>
+            <label>Responsável pela visita
+              <input type="text" id="visita-responsavel">
+            </label>
+            <label>Outros participantes (opcional)
+              <input type="text" id="visita-participantes">
+            </label>
+          </div>
+        </details>
+
+        <details class="visita-section">
+          <summary>2 · Objetivo da Visita</summary>
+          <div class="visita-section-body">
+            <div id="visita-objetivos-container" class="visita-checkbox-grid"></div>
+            <label>Detalhar objetivo (se necessário)
+              <textarea id="visita-objetivo-detalhe" rows="2"></textarea>
+            </label>
+          </div>
+        </details>
+
+        <details class="visita-section" id="visita-section-situacao">
+          <summary>3 · Situação Encontrada</summary>
+          <div class="visita-section-body">
+            <label>Situação atual do sistema produtivo
+              <textarea id="visita-situacao-atual" rows="2"></textarea>
+            </label>
+            <label>Principais problemas identificados
+              <textarea id="visita-problemas" rows="2"></textarea>
+            </label>
+            <label>Produtos utilizados atualmente
+              <textarea id="visita-produtos-atuais" rows="2"></textarea>
+            </label>
+            <label style="margin-bottom:2px">Estoque e rebanho por categoria (obrigatório)</label>
+            <p class="hint" style="margin-top:-4px">Confirme a quantidade de animais e conte o estoque atual de todas as categorias — é o que alimenta a previsão de recompra.</p>
+            <div id="visita-estoque-categorias-list"></div>
+            <label>Condição geral do rebanho/instalação
+              <select id="visita-condicao-geral">
+                <option>Ótima</option>
+                <option>Boa</option>
+                <option>Regular</option>
+                <option>Crítica</option>
+              </select>
+            </label>
+            <label>Fotos (até 10 — câmera ou galeria)
+              <input type="file" id="visita-fotos-input" accept="image/*" capture="environment" multiple>
+            </label>
+            <div id="visita-fotos-preview" class="visita-fotos-grid"></div>
+          </div>
+        </details>
+
+        <details class="visita-section">
+          <summary>4 · Recomendações Técnicas</summary>
+          <div class="visita-section-body">
+            <label>Recomendações realizadas durante a visita
+              <textarea id="visita-recomendacoes" rows="2"></textarea>
+            </label>
+            <label style="margin-bottom:0">Produtos recomendados</label>
+            <div id="visita-produtos-recomendados-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <button type="button" class="btn-secondary" id="btn-add-produto-recomendado" style="align-self:flex-start;">+ Adicionar produto</button>
+            <label>Protocolo sugerido
+              <textarea id="visita-protocolo" rows="2"></textarea>
+            </label>
+            <label>Resultados esperados (com prazo estimado)
+              <textarea id="visita-resultados-esperados" rows="2"></textarea>
+            </label>
+            <label>Fotos das recomendações (produto, rótulo, ponto de aplicação... até 10)
+              <input type="file" id="visita-fotos-recomendacoes-input" accept="image/*" capture="environment" multiple>
+            </label>
+            <div id="visita-fotos-recomendacoes-preview" class="visita-fotos-grid-legenda"></div>
+          </div>
+        </details>
+
+        <details class="visita-section">
+          <summary>5 · Próximos Passos</summary>
+          <div class="visita-section-body">
+            <label>Compromissos assumidos na visita
+              <textarea id="visita-compromissos" rows="2"></textarea>
+            </label>
+            <label>Próxima ação
+              <select id="visita-proxima-acao">
+                <option>Enviar proposta</option>
+                <option>Retornar em data específica</option>
+                <option>Visita de acompanhamento</option>
+                <option>Aguardar retorno do cliente</option>
+                <option>Outro</option>
+              </select>
+            </label>
+            <label>Data do próximo contato
+              <input type="date" id="visita-data-proximo-contato">
+            </label>
+            <label>Observações finais
+              <textarea id="visita-obs-finais" rows="2"></textarea>
+            </label>
+          </div>
+        </details>
+
+        <details class="visita-section">
+          <summary>6 · Dados Internos <span class="hint" style="font-weight:400">(não aparecem no PDF do cliente)</span></summary>
+          <div class="visita-section-body">
+            <label>Percepção do vendedor (uso interno)
+              <textarea id="visita-percepcao-vendedor" rows="2"></textarea>
+            </label>
+            <label>Temperatura do lead
+              <select id="visita-temperatura-lead">
+                <option>Frio</option>
+                <option>Morno</option>
+                <option>Quente</option>
+                <option>Cliente confirmado</option>
+              </select>
+            </label>
+            <label>Satisfação do cliente com a visita
+              <select id="visita-satisfacao-cliente">
+                <option>— Não avaliado —</option>
+                <option>Ótima</option>
+                <option>Boa</option>
+                <option>Regular</option>
+                <option>Ruim</option>
+              </select>
+            </label>
+            <label>Objeções identificadas
+              <textarea id="visita-objecoes-internas" rows="2"></textarea>
+            </label>
+            <label>Atualizar etapa no funil
+              <select id="visita-atualizar-etapa">
+                <option value="">— Não alterar —</option>
+                <option>Prospecção</option>
+                <option>Diagnóstico</option>
+                <option>Proposta enviada</option>
+                <option>Negociação</option>
+                <option>Cliente ativo</option>
+                <option>Bloqueado</option>
+                <option>Inativo</option>
+                <option>Perdido</option>
+              </select>
+            </label>
+          </div>
+        </details>
+
+        <button type="submit" class="btn-primary">Salvar relatório</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOGIN: acesso ao Manejo CRM (fica visível até haver sessão ativa) -->
+  <div id="modal-login" class="modal-overlay hidden">
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <h3>Entrar no Manejo CRM</h3>
+      </div>
+      <form id="form-login" class="form">
+        <p class="hint" id="login-hint">Digite seu e-mail para receber um link de acesso.</p>
+        <label>E-mail
+          <input type="email" id="login-email" required placeholder="voce@empresa.com" autocomplete="email">
+        </label>
+        <button type="submit" class="btn-primary" id="btn-login-enviar">Enviar link de acesso</button>
+        <p class="hint" id="login-status" style="display:none;"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
