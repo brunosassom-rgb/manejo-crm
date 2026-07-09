@@ -860,16 +860,6 @@ function switchMainTab(tabName, preselectClientId) {
 }
 document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => switchMainTab(btn.dataset.tab)));
 
-// ---------- Relógio ----------
-function tickClock() {
-  const now = new Date();
-  const data = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
-  const hora = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  document.getElementById("appbar-clock").innerHTML = `${data}<br>${hora}`;
-}
-setInterval(tickClock, 30000);
-tickClock();
-
 // ---------- Tema escuro ----------
 function applyTheme() {
   const dark = localStorage.getItem("crm-theme") === "dark";

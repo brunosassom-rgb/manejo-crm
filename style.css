@@ -85,19 +85,6 @@ button, input, select, textarea { font-family: inherit; }
 .icon-svg { width: 15px; height: 15px; display: block; }
 
 /* ============ Shell ============ */
-.appbar {
-  height: 52px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 20px;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
 .appbar-search {
   position: relative;
 }
@@ -112,16 +99,6 @@ button, input, select, textarea { font-family: inherit; }
   text-align: left;
 }
 .appbar-search input::placeholder { color: var(--text-faint); }
-
-.appbar-spacer { flex: 1; }
-
-.appbar-clock {
-  font-size: 12px;
-  color: var(--text-faint);
-  text-align: right;
-  line-height: 1.25;
-  white-space: nowrap;
-}
 
 .appbar-bell {
   position: relative;
@@ -1194,27 +1171,22 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
    ============  UPGRADE VISUAL v3 — nav horizontal + repaginada  =======
    ===================================================================== */
 
-/* ---------- Topo unificado (barra utilitária + navegação) em oliva ---------- */
-.appbar {
-  background: var(--sidebar-bg); border-bottom: 1px solid var(--sidebar-sep);
-  color: #fff; z-index: 30; box-shadow: none;
-}
+/* ---------- Topo unificado (barra utilitária + navegação), uma faixa só ---------- */
 .appbar-search input {
-  background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); color: #fff; width: 300px;
+  background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); color: #fff; width: 220px;
 }
 .appbar-search input::placeholder { color: var(--sidebar-sub); }
-.appbar-clock { color: var(--sidebar-sub); }
-.appbar-bell { color: var(--sidebar-text); border-color: rgba(255,255,255,0.18); }
+.appbar-bell { color: var(--sidebar-text); border-color: rgba(255,255,255,0.18); flex-shrink: 0; }
 .appbar-bell:hover { background: var(--sidebar-hover-bg); }
-.theme-toggle { color: var(--sidebar-text); border-color: rgba(255,255,255,0.18); }
+.theme-toggle { color: var(--sidebar-text); border-color: rgba(255,255,255,0.18); flex-shrink: 0; }
 .theme-toggle:hover { background: var(--sidebar-hover-bg); }
 
-/* ---------- Barra vertical -> navegação horizontal ---------- */
+/* ---------- Barra vertical -> navegação horizontal (marca + abas + busca + usuário, tudo numa faixa só) ---------- */
 .app-shell { display: block; }
 .rail {
   flex-direction: row; align-items: center; width: 100%; height: 64px;
-  padding: 0 20px; gap: 6px; position: sticky; top: 52px; z-index: 25;
-  border-top: 1px solid var(--sidebar-sep); box-shadow: var(--shadow-sm);
+  padding: 0 20px; gap: 10px; position: sticky; top: 0; z-index: 30;
+  box-shadow: var(--shadow-sm);
 }
 .rail-brand { padding: 0; margin-right: 14px; flex-shrink: 0; }
 .rail-logo { width: 48px; height: 48px; border-radius: 11px; background: transparent; box-shadow: 0 1px 5px rgba(0,0,0,0.35); }
@@ -1246,14 +1218,20 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
   .rail-user .who, .rail-user .role { display: none; }
   .appbar-search input { width: 190px; }
 }
-@media (max-width: 820px) {
-  /* Só abaixo disso os 8 ícones + marca + usuário deixam de caber numa
-     linha só — aí sim quebra em duas linhas pra continuar tudo visível
-     de uma vez, sem esconder abas numa rolagem sem indicação. */
+@media (max-width: 1050px) {
+  /* Só abaixo disso os 8 ícones + marca + busca + usuário deixam de caber
+     numa linha só (medido: quebra de verdade entre 950-1000px) — aí sim
+     quebra em duas linhas (marca/busca/usuário em cima, ícones embaixo)
+     pra continuar tudo visível de uma vez, sem esconder abas numa rolagem
+     sem indicação. */
   .rail { height: auto; flex-wrap: wrap; row-gap: 6px; padding: 10px 20px; }
   .rail-brand { order: 1; }
-  .rail-user { order: 2; margin-left: auto; }
-  .rail-nav { order: 3; flex-basis: 100%; flex-wrap: wrap; overflow-x: visible; justify-content: flex-start; }
+  .appbar-search { order: 2; }
+  .appbar-search input { width: 120px; }
+  .appbar-bell { order: 3; }
+  .theme-toggle { order: 4; }
+  .rail-user { order: 5; margin-left: auto; }
+  .rail-nav { order: 6; flex-basis: 100%; flex-wrap: wrap; overflow-x: visible; justify-content: flex-start; }
 }
 
 /* ---------- Pipeline repaginado: colunas claras + chips ---------- */
@@ -1486,10 +1464,7 @@ body::after {
 @media (max-width: 480px) {
   html, body { overflow-x: hidden; }
 
-  /* Barra de busca/relógio do topo não cabia com o menu — relógio já é
-     redundante com o do próprio celular, então some; busca encolhe. */
-  .appbar-clock { display: none; }
-  .appbar-search input { width: 150px; }
+  .appbar-search input { width: 100px; }
 
   .detalhe-grid,
   .categoria-situacao-grid,
