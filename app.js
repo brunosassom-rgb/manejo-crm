@@ -5,8 +5,8 @@ const STORAGE_KEY = "brunosassoCrm_v5";
 // A anon key é segura para expor no cliente — a segurança real vem das políticas de
 // RLS definidas em schema.sql, não do sigilo desta chave. Enquanto ficarem vazias, o
 // CRM continua funcionando 100% local (como hoje), sem tentar sincronizar.
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://wtnxenlaybqzjthxiurd.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_zYUVB9AhL2MJUiFv9TwzVA_2S7EH9H2";
 const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
