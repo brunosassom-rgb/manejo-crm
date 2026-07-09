@@ -172,6 +172,8 @@ async function uploadPendingPhotos() {
 
 async function diffAndPush() {
   if (!sb) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return; // sem login (ex: "Continuar sem entrar"), não tenta sincronizar
   if (syncInFlight) { syncPending = true; return; }
   syncInFlight = true;
   try {
@@ -223,6 +225,12 @@ async function diffAndPush() {
 // sem depender de relógio de dispositivo ou janelas de "desde o último pull".
 async function pullAllTablesAndMerge() {
   if (!sb) return false;
+  // Sem sessão, as políticas de RLS bloqueiam a leitura e cada tabela volta vazia —
+  // isso pareceria "Supabase vazio" e acionaria a trava de segurança abaixo por engano
+  // (ex: usuário que clicou em "Continuar sem entrar" e o app tenta sincronizar em
+  // segundo plano mesmo assim). Sem sessão, nem tenta.
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return false;
   const next = { ...state };
   try {
     for (const [key, cfg] of Object.entries(SYNC_ENTITY_TABLES)) {
@@ -237,6 +245,20 @@ async function pullAllTablesAndMerge() {
         if (settingsRow.data[k] !== undefined) next[k] = settingsRow.data[k];
       }
     }
+
+    // Trava de segurança: se o Supabase ainda está totalmente vazio (ex: login
+    // feito antes de rodar a migração) mas este dispositivo já tem dados reais
+    // salvos localmente, NUNCA sobrescreve — isso apagaria tudo silenciosamente.
+    // Um pull legítimo não deveria zerar um dispositivo com dados; nesse caso é
+    // quase sempre "ainda não migrei", não "apaguei tudo de propósito".
+    const remoteIsEmpty = Object.keys(SYNC_ENTITY_TABLES).every(k => (next[k] || []).length === 0);
+    const localHasData = Object.keys(SYNC_ENTITY_TABLES).some(k => (state[k] || []).length > 0);
+    if (remoteIsEmpty && localHasData) {
+      console.warn("Pull ignorado: Supabase está vazio, mas há dados locais. Nada foi sobrescrito — rode a migração (migrate-to-supabase.mjs) para levar os dados locais para a nuvem.");
+      showToast("Supabase ainda vazio — mantendo seus dados locais até a migração ser feita.");
+      return false;
+    }
+
     state = next;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     lastSyncedSnapshot = structuredClone(state);
@@ -932,7 +954,10 @@ document.addEventListener("keydown", e => {
     openClienteModal();
   }
   if (e.key === "Escape") {
-    document.querySelectorAll(".modal-overlay:not(.hidden)").forEach(m => m.classList.add("hidden"));
+    // #modal-login fica de fora: só fecha por login concluído ou pelo botão
+    // "Continuar sem entrar" — senão o usuário pode achar que "entrou" ao
+    // simplesmente apertar Esc, e nunca perceber que a sincronização não está ativa.
+    document.querySelectorAll(".modal-overlay:not(.hidden):not(#modal-login)").forEach(m => m.classList.add("hidden"));
   }
 });
 
@@ -4702,7 +4727,8 @@ document.querySelectorAll(".btn-relatorio-rapido").forEach(btn => {
 
 // ---------- Fechar modais ----------
 document.querySelectorAll("[data-close-modal]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.dataset.closeModal)));
-document.querySelectorAll(".modal-overlay").forEach(overlay => overlay.addEventListener("click", e => { if (e.target === overlay) overlay.classList.add("hidden"); }));
+// #modal-login fica de fora do fechamento genérico por clique fora — mesmo motivo do Escape acima.
+document.querySelectorAll(".modal-overlay:not(#modal-login)").forEach(overlay => overlay.addEventListener("click", e => { if (e.target === overlay) overlay.classList.add("hidden"); }));
 function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
 
 // ============================================================
@@ -4932,6 +4958,12 @@ async function initAuthAndSync() {
       statusEl.style.display = "block";
       statusEl.textContent = error ? `Erro: ${error.message}` : "Link enviado — verifique seu e-mail.";
     }
+  });
+
+  const btnContinuarOffline = document.getElementById("btn-login-continuar-offline");
+  if (btnContinuarOffline) btnContinuarOffline.addEventListener("click", () => {
+    hideLoginModal();
+    showToast("Usando o CRM só neste aparelho — os dados não vão sincronizar até você entrar.");
   });
 
   const btnLogout = document.getElementById("btn-logout");
