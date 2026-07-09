@@ -1204,6 +1204,21 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
   flex-shrink: 0; margin: 0 0 0 8px; padding: 0 0 0 14px;
   border-top: none; border-left: 1px solid var(--sidebar-sep);
 }
+
+/* ---------- Menu "+ Novo" (ações rápidas) na barra ---------- */
+.quick-actions-menu { position: relative; flex-shrink: 0; }
+.quick-actions-dropdown {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; min-width: 230px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: var(--shadow-lg); padding: 4px; display: flex; flex-direction: column; gap: 2px;
+}
+.quick-actions-dropdown.hidden { display: none; }
+.quick-action-item {
+  background: transparent; border: none; text-align: left; padding: 9px 10px; border-radius: 6px;
+  font-size: 13px; color: var(--text); cursor: pointer; width: 100%; white-space: nowrap;
+}
+.quick-action-item:hover { background: var(--border-soft); }
+
 main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 
 @media (max-width: 1500px) {
@@ -1228,10 +1243,12 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
   .rail-brand { order: 1; }
   .appbar-search { order: 2; }
   .appbar-search input { width: 120px; }
-  .appbar-bell { order: 3; }
-  .theme-toggle { order: 4; }
-  .rail-user { order: 5; margin-left: auto; }
-  .rail-nav { order: 6; flex-basis: 100%; flex-wrap: wrap; overflow-x: visible; justify-content: flex-start; }
+  .quick-actions-menu { order: 3; }
+  .appbar-bell { order: 4; }
+  .theme-toggle { order: 5; }
+  .rail-user { order: 6; margin-left: auto; }
+  .quick-actions-dropdown { right: auto; left: 0; }
+  .rail-nav { order: 7; flex-basis: 100%; flex-wrap: wrap; overflow-x: visible; justify-content: flex-start; }
 }
 
 /* ---------- Pipeline repaginado: colunas claras + chips ---------- */

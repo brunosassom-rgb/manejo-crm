@@ -935,6 +935,21 @@ document.getElementById("global-search").addEventListener("input", e => {
     renderClientList();
   }
 });
+// ---------- Menu "+ Novo" (ações rápidas) ----------
+document.getElementById("btn-quick-actions").addEventListener("click", e => {
+  e.stopPropagation();
+  document.getElementById("quick-actions-dropdown").classList.toggle("hidden");
+});
+document.querySelectorAll("#quick-actions-dropdown .quick-action-item").forEach(btn => {
+  btn.addEventListener("click", () => document.getElementById("quick-actions-dropdown").classList.add("hidden"));
+});
+document.addEventListener("click", e => {
+  const dropdown = document.getElementById("quick-actions-dropdown");
+  if (!dropdown.classList.contains("hidden") && !e.target.closest(".quick-actions-menu")) {
+    dropdown.classList.add("hidden");
+  }
+});
+
 document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
@@ -1085,9 +1100,10 @@ function attachDashboardEditHandlers() {
   });
 }
 
-document.getElementById("btn-editar-layout").addEventListener("click", () => {
+document.getElementById("qa-editar-layout").addEventListener("click", () => {
+  switchMainTab("dashboard");
   dashboardEditMode = !dashboardEditMode;
-  document.getElementById("btn-editar-layout").textContent = dashboardEditMode ? "Concluir edição" : "Editar layout";
+  document.getElementById("qa-editar-layout").textContent = dashboardEditMode ? "Concluir edição do layout" : "Editar layout do dashboard";
   renderDashboardCanvas();
   renderDashboard();
 });
@@ -1470,8 +1486,7 @@ function refreshClientSelects() {
   });
 }
 
-document.getElementById("btn-novo-lead").addEventListener("click", () => openClienteModal());
-document.getElementById("btn-novo-lead-dashboard").addEventListener("click", () => openClienteModal());
+document.getElementById("qa-novo-lead").addEventListener("click", () => openClienteModal());
 
 // ============================================================
 // CONSULTORES
@@ -1500,7 +1515,7 @@ function refreshConsultorSelect() {
   });
 }
 
-document.getElementById("btn-novo-consultor").addEventListener("click", () => openConsultorModal());
+document.getElementById("qa-novo-consultor").addEventListener("click", () => openConsultorModal());
 
 const CONSULTOR_FIELD_MAP = [
   ["consultor-nome", "nome"], ["consultor-empresa", "empresa"], ["consultor-whatsapp", "whatsapp"],
@@ -2286,7 +2301,7 @@ function openCompromissoModal(clientId) {
   if (clientId) document.getElementById("compromisso-cliente").value = clientId;
   document.getElementById("modal-compromisso").classList.remove("hidden");
 }
-document.getElementById("btn-novo-compromisso").addEventListener("click", () => openCompromissoModal());
+document.getElementById("qa-novo-compromisso").addEventListener("click", () => openCompromissoModal());
 document.getElementById("form-compromisso").addEventListener("submit", e => {
   e.preventDefault();
   state.compromissos.push({
@@ -3661,7 +3676,7 @@ function openFornecedorModal(fornecedorId) {
   document.getElementById("btn-excluir-fornecedor").classList.toggle("hidden", !fornecedorId);
   document.getElementById("modal-fornecedor").classList.remove("hidden");
 }
-document.getElementById("btn-novo-fornecedor").addEventListener("click", () => openFornecedorModal());
+document.getElementById("qa-novo-fornecedor").addEventListener("click", () => openFornecedorModal());
 document.getElementById("btn-excluir-fornecedor").addEventListener("click", () => {
   const fornecedorId = document.getElementById("fornecedor-id").value;
   if (!fornecedorId) return;

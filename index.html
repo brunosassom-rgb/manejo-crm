@@ -39,6 +39,16 @@
     <div class="appbar-search">
       <input type="text" id="global-search" placeholder="Buscar cliente, fazenda, cidade...">
     </div>
+    <div class="quick-actions-menu">
+      <button class="btn-primary" id="btn-quick-actions" title="Ações rápidas">+ Novo</button>
+      <div class="quick-actions-dropdown hidden" id="quick-actions-dropdown">
+        <button type="button" class="quick-action-item" id="qa-novo-lead">Novo lead</button>
+        <button type="button" class="quick-action-item" id="qa-novo-compromisso">Novo compromisso</button>
+        <button type="button" class="quick-action-item" id="qa-novo-consultor">Novo consultor/nutricionista</button>
+        <button type="button" class="quick-action-item" id="qa-novo-fornecedor">Cadastrar fornecedor</button>
+        <button type="button" class="quick-action-item" id="qa-editar-layout">Editar layout do dashboard</button>
+      </div>
+    </div>
     <button class="appbar-bell" id="appbar-bell" title="Notificações">
       <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
       <span class="bell-badge" id="bell-badge" style="display:none">0</span>
@@ -59,10 +69,6 @@
     <section id="dashboard" class="tab-panel active">
       <div class="section-header">
         <div><h2 style="margin-bottom:2px">Visão geral</h2><p class="hint" style="margin-top:0">Seu território de nutrição animal, resumido.</p></div>
-        <div style="display:flex; gap:8px;">
-          <button id="btn-editar-layout" class="btn-secondary">Editar layout</button>
-          <button id="btn-novo-lead-dashboard" class="btn-primary">+ Criar novo lead</button>
-        </div>
       </div>
 
       <div class="dash-canvas" id="dash-canvas"></div>
@@ -100,7 +106,6 @@
     <section id="leads" class="tab-panel">
       <div class="section-header">
         <h2>Leads</h2>
-        <button id="btn-novo-lead" class="btn-primary">+ Novo lead</button>
       </div>
       <p class="hint">Prospecção até Fechamento — ainda não convertidos em Cliente Ativo.</p>
       <input id="busca-lead" type="text" placeholder="Buscar por nome, fazenda, cidade ou região..." class="search-input">
@@ -111,7 +116,6 @@
     <section id="agenda" class="tab-panel">
       <div class="section-header">
         <h2>Agenda</h2>
-        <button id="btn-novo-compromisso" class="btn-primary">+ Novo compromisso</button>
       </div>
 
       <div class="agenda-toolbar">
@@ -289,13 +293,11 @@
       <h3>Cadastros auxiliares</h3>
       <div class="section-header">
         <h4>Consultores / Nutricionistas</h4>
-        <button id="btn-novo-consultor" class="btn-primary">+ Novo consultor/nutricionista</button>
       </div>
       <div id="consultores-list" class="cards" style="margin-bottom:26px"></div>
 
       <div class="section-header">
         <h4>Fornecedores</h4>
-        <button id="btn-novo-fornecedor" class="btn-primary">+ Cadastrar fornecedor</button>
       </div>
       <p class="hint" id="hint-fornecedores-casa">Fornecedores (ADM ou concorrentes) são cadastrados aqui — nunca como cliente.</p>
       <div id="fornecedores-list" class="cards" style="margin-bottom:26px"></div>
