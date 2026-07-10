@@ -467,6 +467,14 @@ function aplicarConfigMarca() {
   if (railCargo) railCargo.textContent = cfg.cargoUsuario || "";
   const railAvatar = document.getElementById("rail-user-avatar");
   if (railAvatar) railAvatar.textContent = initials(cfg.nomeUsuario);
+  const perfilNome = document.getElementById("perfil-nome-usuario");
+  if (perfilNome) perfilNome.value = cfg.nomeUsuario || "";
+  const perfilCargo = document.getElementById("perfil-cargo-usuario");
+  if (perfilCargo) perfilCargo.value = cfg.cargoUsuario || "";
+  const perfilWhatsapp = document.getElementById("perfil-whatsapp-usuario");
+  if (perfilWhatsapp) perfilWhatsapp.value = cfg.whatsappUsuario || "";
+  const perfilEmail = document.getElementById("perfil-email-usuario");
+  if (perfilEmail) perfilEmail.value = cfg.emailUsuario || "";
 
   const nomeEmpresa = cfg.nomeEmpresa || "";
   const hintFornecedores = document.getElementById("hint-fornecedores-casa");
@@ -986,10 +994,6 @@ function switchMainTab(tabName, preselectClientId) {
     renderFornecedoresList();
     document.getElementById("input-meta-visitas").value = state.metaVisitasMes || 0;
     document.getElementById("config-nome-empresa").value = state.config.nomeEmpresa || "";
-    document.getElementById("config-nome-usuario").value = state.config.nomeUsuario || "";
-    document.getElementById("config-cargo-usuario").value = state.config.cargoUsuario || "";
-    document.getElementById("config-whatsapp-usuario").value = state.config.whatsappUsuario || "";
-    document.getElementById("config-email-usuario").value = state.config.emailUsuario || "";
     document.getElementById("config-empresa-representante").value = state.config.empresaRepresentante || "";
     renderLogoRepresentantePreview();
   }
@@ -1015,7 +1019,8 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
   saveState();
   if (document.getElementById("visitas-widget-body")) renderVisitasWidget();
 });
-[["config-nome-empresa", "nomeEmpresa"], ["config-nome-usuario", "nomeUsuario"], ["config-cargo-usuario", "cargoUsuario"], ["config-whatsapp-usuario", "whatsappUsuario"], ["config-email-usuario", "emailUsuario"], ["config-empresa-representante", "empresaRepresentante"]]
+[["config-nome-empresa", "nomeEmpresa"], ["config-empresa-representante", "empresaRepresentante"],
+ ["perfil-nome-usuario", "nomeUsuario"], ["perfil-cargo-usuario", "cargoUsuario"], ["perfil-whatsapp-usuario", "whatsappUsuario"], ["perfil-email-usuario", "emailUsuario"]]
   .forEach(([domId, key]) => {
     document.getElementById(domId).addEventListener("change", e => {
       state.config[key] = e.target.value.trim();
@@ -1023,6 +1028,18 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
       aplicarConfigMarca();
     });
   });
+
+// ---------- Dropdown de perfil do usuário (avatar no topo) ----------
+document.getElementById("btn-rail-user").addEventListener("click", e => {
+  e.stopPropagation();
+  document.getElementById("rail-user-dropdown").classList.toggle("hidden");
+});
+document.addEventListener("click", e => {
+  const dropdown = document.getElementById("rail-user-dropdown");
+  if (!dropdown.classList.contains("hidden") && !e.target.closest(".rail-user-menu")) {
+    dropdown.classList.add("hidden");
+  }
+});
 
 function renderLogoRepresentantePreview() {
   const container = document.getElementById("config-logo-representante-preview");

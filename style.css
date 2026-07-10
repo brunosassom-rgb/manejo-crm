@@ -175,14 +175,15 @@ button, input, select, textarea { font-family: inherit; }
   color: var(--sidebar-text-active);
 }
 
+.rail-user-menu { position: relative; }
 .rail-user {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 10px;
-  border-top: 1px solid var(--sidebar-sep);
-  margin-top: 8px;
+  background: transparent; border: none; cursor: pointer; text-align: left;
 }
+.rail-user:hover .who { text-decoration: underline; }
 .rail-user .avatar {
   width: 28px; height: 28px; border-radius: 6px;
   background: var(--sidebar-active-bg); color: #fff;
@@ -191,6 +192,16 @@ button, input, select, textarea { font-family: inherit; }
 }
 .rail-user .who { font-size: 12px; font-weight: 500; line-height: 1.2; color: var(--sidebar-text-active); }
 .rail-user .role { font-size: 11px; color: var(--sidebar-text); }
+.rail-user-dropdown {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; min-width: 240px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: var(--shadow-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px;
+}
+.rail-user-dropdown.hidden { display: none; }
+.rail-user-dropdown-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 2px; }
+.rail-user-dropdown label { display: flex; flex-direction: column; gap: 4px; font-size: 0.76rem; color: var(--text-muted); }
+.rail-user-dropdown input { margin-top: 0; }
+.rail-user-dropdown #btn-logout { margin-top: 4px; }
 
 main {
   padding: 32px;
@@ -1235,9 +1246,9 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
 .rail-nav::-webkit-scrollbar { display: none; }
 .tab-btn { white-space: nowrap; padding: 8px 13px; }
 .tab-btn.active { box-shadow: 0 1px 2px rgba(0,0,0,0.18); }
-.rail-user {
+.rail-user-menu {
   flex-shrink: 0; margin: 0 0 0 8px; padding: 0 0 0 14px;
-  border-top: none; border-left: 1px solid var(--sidebar-sep);
+  border-left: 1px solid var(--sidebar-sep);
 }
 
 /* ---------- Menu "+ Novo" (ações rápidas) na barra ---------- */
@@ -1265,7 +1276,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
      estreita (ver breakpoint de 820px abaixo), sem gastar altura extra. */
   .tab-btn .label-text { display: none; }
   .rail-nav .tab-btn { padding: 8px 10px; }
-  .rail-user .who, .rail-user .role { display: none; }
+  .rail-user-menu .who, .rail-user-menu .role { display: none; }
   .appbar-search input { width: 190px; }
 }
 @media (max-width: 1050px) {
@@ -1281,7 +1292,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
   .quick-actions-menu { order: 3; }
   .appbar-bell { order: 4; }
   .theme-toggle { order: 5; }
-  .rail-user { order: 6; margin-left: auto; }
+  .rail-user-menu { order: 6; margin-left: auto; }
   .quick-actions-dropdown { right: auto; left: 0; }
   .rail-nav { order: 7; flex-basis: 100%; flex-wrap: wrap; overflow-x: visible; justify-content: flex-start; }
 }
