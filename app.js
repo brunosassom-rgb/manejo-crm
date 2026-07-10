@@ -615,6 +615,45 @@ function consumoMensalPorProduto(client, produtoNome) {
     .filter(c => c.produto.toLowerCase() === alvo)
     .reduce((s, c) => s + c.consumoMensal, 0);
 }
+
+// ---------- Classificação A/B/C por potencial de volume ----------
+// Cadência de visita sugerida por faixa — não bloqueia nada, só alimenta o alerta "Visita em
+// atraso" no Roteiro do dia, pra cliente de baixo potencial não tomar o mesmo tempo que um de
+// alto potencial.
+const CLASSIFICACAO_CADENCIA_DIAS = { A: 15, B: 30, C: 60 };
+
+// "Tamanho" do cliente pra fins de priorização: volume médio mensal REAL de compra (histórico de
+// pedidos, quando existe) ou o consumo mensal já declarado no cadastro (Perfil Produtivo) pra
+// quem acabou de ser implantado e ainda não tem pedido — a classificação já nasce com o cliente.
+function volumePotencialMensalCliente(client) {
+  const pedidos = pedidosForClient(client.id);
+  if (pedidos.length) {
+    const meses = Math.max(1, Math.min(12, daysBetween(pedidos[0].dataPedido, todayStr()) / 30));
+    const volumeTotal = pedidos.reduce((s, p) => s + (Number(p.volume) || 0), 0);
+    return volumeTotal / meses;
+  }
+  return (client.categoriasAnimais || []).reduce((s, c) => s + (Number(c.volumeMensalEstimado) || 0), 0);
+}
+
+// Classifica todos os clientes ativos por percentil de volume (Pareto: top 20% = A, próximos
+// 30% = B, restante 50% = C) — se ajusta sozinho conforme a carteira cresce, sem limiar fixo de
+// toneladas que precisaria ser recalibrado por território/porte de operação.
+function classificacaoABCClientes() {
+  const ranking = state.clientesAtivos
+    .filter(c => c.status === "Ativo")
+    .map(c => ({ id: c.id, volume: volumePotencialMensalCliente(c) }))
+    .sort((a, b) => b.volume - a.volume);
+  const n = ranking.length;
+  const corteA = Math.ceil(n * 0.2);
+  const corteB = Math.ceil(n * 0.5);
+  const mapa = {};
+  ranking.forEach((r, i) => { mapa[r.id] = i < corteA ? "A" : i < corteB ? "B" : "C"; });
+  return mapa;
+}
+function classificacaoBadgeHtml(classe) {
+  if (!classe) return "";
+  return `<span class="badge-classe badge-classe-${classe.toLowerCase()}" title="Classificação por potencial de volume — A é o maior potencial">${classe}</span>`;
+}
 function classificarCicloStatus(daysSinceLast, cicloDias, favoriteProduct) {
   const ratio = daysSinceLast / cicloDias;
   let status, statusLabel, tip;
@@ -813,6 +852,7 @@ function computeAlerts() {
     }
   });
 
+  const classificacaoVisitas = classificacaoABCClientes();
   state.clientesAtivos.filter(c => c.status === "Ativo").forEach(c => {
     const insight = computeClientInsight(c);
     if (insight.avgInterval) {
@@ -858,6 +898,20 @@ function computeAlerts() {
       if (dias > 15) alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Upsell sem avanço", severidade: "warn",
         mensagem: `Oportunidade "${u.produto}" sem avanço há ${dias} dias.` });
     });
+
+    // Visita em atraso conforme a cadência da classificação A/B/C (potencial por volume) — cliente
+    // de maior potencial cobra visita mais cedo que um de potencial baixo.
+    const classeVisita = classificacaoVisitas[c.id];
+    if (classeVisita) {
+      const cadenciaDias = CLASSIFICACAO_CADENCIA_DIAS[classeVisita];
+      const visitas = visitasForClient(c.id);
+      const diasSemVisita = visitas.length ? daysBetween(visitas[0].dataVisita, today) : daysBetween(c.dataConversao || c.criadoEm || today, today);
+      if (diasSemVisita > cadenciaDias) {
+        alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Visita em atraso",
+          severidade: diasSemVisita > cadenciaDias * 1.5 ? "late" : "orange",
+          mensagem: `Classificação ${classeVisita} (visitar a cada ${cadenciaDias} dias) — ${diasSemVisita} dias sem visita.` });
+      }
+    }
 
     // Datas importantes — aniversário de contato. Severidade "today" no dia exato (não só
     // "info") é o que faz o item entrar no Roteiro do dia como ação de ligar — "info" sozinho
@@ -1344,7 +1398,7 @@ function renderDashboard() {
   if (document.getElementById("roteiro-list")) {
     const hoje = todayStr();
     const acionaveis = computeAlerts()
-      .filter(a => a.severidade === "late" || a.severidade === "today" || a.tipo === "Recompra próxima" || a.tipo === "Estoque baixo")
+      .filter(a => a.severidade === "late" || a.severidade === "today" || a.tipo === "Recompra próxima" || a.tipo === "Estoque baixo" || a.tipo === "Visita em atraso")
       .filter(a => !isRoteiroDispensadoHoje(a));
     const visitasHoje = (state.compromissos || []).filter(c => c.data === hoje && !c.feito).map(c => {
       const cli = c.clientId ? getEntidadeById(c.clientId) : null;
@@ -1507,11 +1561,12 @@ function renderPipeline() {
 function renderClientList() {
   const container = document.getElementById("clientes-list");
   const query = document.getElementById("busca-cliente").value.trim().toLowerCase();
+  const classificacao = classificacaoABCClientes();
   const filtered = state.clientesAtivos.filter(c => {
     if (!query) return true;
     return [c.nome, c.fazenda, c.municipio].some(v => (v || "").toLowerCase().includes(query));
   });
-  container.innerHTML = filtered.length ? filtered.map(c => clienteAtivoCardHtml(c, query)).join("")
+  container.innerHTML = filtered.length ? filtered.map(c => clienteAtivoCardHtml(c, query, classificacao[c.id])).join("")
     : `<div class="empty-state">Nenhum cliente ativo encontrado.</div>`;
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
 }
@@ -1561,11 +1616,12 @@ function leadCardHtml(lead, query) {
     </div>`;
 }
 
-function clienteAtivoCardHtml(cliente, query) {
+function clienteAtivoCardHtml(cliente, query, classe) {
   const insight = computeClientInsight(cliente);
   const badge = cliente.status === "Inativo"
     ? `<span class="badge badge-late">Inativo</span>`
     : `<span class="badge ${insight.status === "atrasado" ? "badge-late" : insight.status === "atencao" ? "badge-warn" : insight.status === "em-dia" ? "badge-ok" : "badge-neutral"}">${insight.statusLabel}</span>`;
+  const classeBadge = classificacaoBadgeHtml(classe);
   const prog = insight.progresso != null ? Math.max(0, Math.min(100, insight.progresso)) : null;
   const progCor = insight.status === "atrasado" ? "var(--late-text)" : insight.status === "atencao" ? "var(--warn-text)" : "var(--primary)";
   const spPeds = state.pedidos.filter(p => p.clientId === cliente.id && p.volume).sort((a, b) => (a.dataPedido || "").localeCompare(b.dataPedido || "")).slice(-6);
@@ -1576,7 +1632,7 @@ function clienteAtivoCardHtml(cliente, query) {
       <div class="card-top">
         <div><div class="card-name">${highlight(cliente.nome, query)}${cliente.fazenda ? " · " + escapeHtml(cliente.fazenda) : ""}</div>
         <div class="card-sub">${escapeHtml(describeCategorias(cliente))} ${cliente.municipio ? "· " + escapeHtml(cliente.municipio) : ""}</div></div>
-        <div class="card-right">${badge}${spark}</div>
+        <div class="card-right">${classeBadge}${badge}${spark}</div>
       </div>
       <div class="client-meta">
         <span class="cm"><span class="cm-l">Últ. pedido</span><span class="cm-v">${insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "—"}</span></span>
@@ -2524,6 +2580,7 @@ function renderFichaLeft() {
     : (entidade.status === "Inativo" ? `<span class="badge badge-late fbadge">Inativo</span>`
       : isClienteFidelizado(entidade) ? `<span class="badge badge-ok fbadge">Cliente Fidelizado</span>`
       : `<span class="badge badge-ok fbadge">Cliente Ativo</span>`);
+  const classeBadge = (!isLead && entidade.status === "Ativo") ? classificacaoBadgeHtml(classificacaoABCClientes()[entidade.id]) : "";
 
   const potencialBox = isLead
     ? `<div class="ficha-potencial"><div class="v">${entidade.potencialTon ? entidade.potencialTon + " t/mês" : "-"}</div><div class="l">Potencial estimado · ${escapeHtml(entidade.temperatura || "-")}</div></div>`
@@ -2543,7 +2600,7 @@ function renderFichaLeft() {
     <div class="ficha-avatar">${initials(entidade.nome)}</div>
     <div class="fnome">${escapeHtml(entidade.nome)}</div>
     <div class="card-sub">${escapeHtml(entidade.fazenda || "")}</div>
-    ${badge}
+    ${badge}${classeBadge}
     ${podeAvancarEtapa ? `<button class="btn-secondary" id="btn-ficha-avancar-etapa" style="width:100%; margin-top:8px;">Avançar para "${escapeHtml(proximaEtapaLead)}"</button>` : ""}
     <div class="ficha-contacts">
       ${wa ? `<a class="ficha-contact-btn" href="https://wa.me/55${wa}" target="_blank" rel="noopener">WhatsApp: ${escapeHtml(entidade.whatsappDecisor)}</a>` : ""}
