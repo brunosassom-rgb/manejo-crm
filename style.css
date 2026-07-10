@@ -727,9 +727,9 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 .metrica-card .v { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: break-word; word-break: break-word; }
 .metrica-card .l { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
-.sparkline-bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; margin-bottom: 16px; }
+.sparkline-bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; margin-bottom: 30px; }
 .sparkline-bars .bar { flex: 1; background: var(--primary); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
-.sparkline-bars .bar .bar-label { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: 0.62rem; color: var(--text-muted); }
+.sparkline-bars .bar .bar-label { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 0.62rem; color: var(--text-muted); }
 
 /* ============ Modal ============ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(26,26,26,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
@@ -842,17 +842,31 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
   .rs-card .panel-ico { box-shadow: none; }
   .report-sections { gap: 10px; }
 
-  /* Seções compactas (resumos curtos, tabelas estreitas) lado a lado em 2 colunas —
-     em vez de cada uma ocupar a largura inteira da página e sobrar espaço morto ao redor. */
-  .report-sections-compact { display: block; column-count: 2; column-gap: 8mm; }
-  .report-sections-compact .rs-card { break-inside: avoid; page-break-inside: avoid; display: inline-block; width: 100%; }
+  /* Seções compactas (resumos curtos, sem tabela larga) lado a lado em 2 colunas — em vez de
+     cada uma ocupar a largura inteira da página e sobrar espaço morto ao redor. Grid em vez de
+     column-count: colunas CSS (column-count) tratam a página como uma "revista" e forçam o bloco
+     inteiro pra uma página nova se não sobrar espaço pra ele inteiro — é isso que criava aquele
+     salto pra página seguinte com metade da página anterior em branco. Grid não tem essa regra;
+     cada cartão quebra de página normalmente, olhando só pro que ele mesmo precisa. */
+  .report-sections-compact { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; align-content: start; }
+  .report-sections-compact .rs-card { break-inside: avoid; page-break-inside: avoid; }
   /* Uma tabela HTML normal não encolhe pra caber numa coluna estreita — o cabeçalho força a
      largura mínima e o resto vaza pra fora, cortado na borda da página. table-layout:fixed
-     obriga a tabela a respeitar 100% da coluna e quebrar o texto em vez de vazar. */
+     obriga a tabela a respeitar 100% da coluna e quebrar o texto em vez de vazar. Mesmo assim,
+     tabelas com 4+ colunas continuam ilegíveis espremidas — essas viram cartões via
+     reportRecordCardsHtml() em vez de <table>, então esta regra é só uma rede de segurança. */
   .report-sections-compact table.mini { table-layout: fixed; width: 100%; font-size: 0.62rem; }
   .report-sections-compact table.mini th, .report-sections-compact table.mini td {
     overflow-wrap: break-word; word-break: break-word; padding: 4px 5px;
   }
+  .rs-records { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+  .rs-record {
+    background: #FAFAF5; border: 1px solid #ECEEE3; border-radius: 8px; padding: 8px 10px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 4px 12px;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .rs-record-field { font-size: 0.72rem; color: #232b1f; line-height: 1.3; }
+  .rs-record-field span { display: block; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.03em; color: #8B917F; margin-bottom: 1px; }
 
   .stat-tile { border: 1px solid #e4e7da; box-shadow: none; }
   .tab-panel { display: none !important; }

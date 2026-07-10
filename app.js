@@ -3114,7 +3114,7 @@ function renderContatosTimelineTab(client, { showContatosPessoas = true, showReg
       </div>
     </div>`).join("");
   return `
-    ${renderContatosPessoasSection(client)}
+    ${showContatosPessoas ? renderContatosPessoasSection(client) : ""}
     <div class="timeline">${items || `<div class="empty-state">Nenhum contato registrado.</div>`}</div>
     ${showRegistrarButton ? `<div class="actions-row"><button class="btn-secondary" id="btn-novo-contato-cliente">+ Registrar contato</button></div>` : ""}
   `;
@@ -4192,7 +4192,7 @@ function renderVisitaDocumento(visita) {
   const compromissosLi = (visita.compromissos || "").split("\n").filter(Boolean).map(l => `<li>${escapeHtml(l)}</li>`).join("");
   const fotosHtml = visita.fotos && visita.fotos.length
     ? `<div class="visita-doc-fotos">${visita.fotos.map((f, i) => `<div class="visita-doc-foto"><img src="${f.dataUrl}"><div class="cap">Foto ${i + 1}</div></div>`).join("")}</div>`
-    : "";
+    : `<p class="hint">Nenhuma foto registrada.</p>`;
   const fotosRecomendacoesHtml = visita.fotosRecomendacoes && visita.fotosRecomendacoes.length
     ? `<div class="visita-doc-fotos">${visita.fotosRecomendacoes.map((f, i) => `<div class="visita-doc-foto"><img src="${f.dataUrl}"><div class="cap">${escapeHtml(f.legenda) || "Foto " + (i + 1)}</div></div>`).join("")}</div>`
     : "";
@@ -4203,89 +4203,59 @@ function renderVisitaDocumento(visita) {
           <div class="meta-line">${escapeHtml(p.categoria || "-")} ${p.dose ? "· Dose: " + escapeHtml(p.dose) : ""}</div>
           ${p.justificativa ? `<div class="justificativa">${escapeHtml(p.justificativa)}</div>` : ""}
         </div>`).join("")
-    : `<p>Nenhum produto específico recomendado nesta visita.</p>`;
-  const isUltimaVisita = true; // rodapé de encerramento sempre presente (documento de página única no fluxo atual)
-  const empresaRep = (state.config && state.config.empresaRepresentante) || "Manejo";
-  const logoRepUrl = state.config && state.config.logoRepresentanteDataUrl;
-  const logoRepHtml = logoRepUrl
-    ? `<img src="${logoRepUrl}" alt="${escapeHtml(empresaRep)}">`
-    : escapeHtml(initials(empresaRep));
+    : `<p class="hint">Nenhum produto específico recomendado nesta visita.</p>`;
 
-  return `
-  <div class="visita-doc">
-    <div class="visita-doc-watermark">${escapeHtml((state.config && state.config.nomeCrm) || "CRM")} CRM</div>
-
-    <div class="visita-doc-header">
-      <div class="logo-rep">${logoRepHtml}</div>
-      <div class="empresa-rep">${escapeHtml(empresaRep)}</div>
-      <div class="empresa-rep-sub">${escapeHtml((state.config && state.config.cargoUsuario) || "Representante técnico comercial")}</div>
-      <h1 class="titulo">Relatório de Visita Técnica</h1>
-      <hr class="linha-gold">
-      <div class="meta">${escapeHtml(visita.numero)} · ${formatDate(visita.dataVisita)}${client.municipio ? " · " + escapeHtml(client.municipio) : ""}</div>
-    </div>
-
-    <div class="visita-doc-idblock">
-      <div>
-        ${field("Cliente", client.nome)}
-        ${field("Fazenda", client.fazenda)}
-        ${field("Município", client.municipio)}
-        ${field("Decisor visitado", client.nomeDecisor)}
-      </div>
-      <div>
-        ${field("Data", formatDate(visita.dataVisita))}
-        ${field("Horário", [visita.horaInicio, visita.horaFim].filter(Boolean).join(" às "))}
-        ${field("Responsável técnico", visita.responsavelVisita)}
-        ${field("Participantes", visita.participantes)}
-      </div>
-    </div>
-
-    <div class="visita-doc-section">
-      <h2>Objetivo da Visita</h2>
-      <p>${escapeHtml((visita.objetivos || []).join(", ") || "-")}</p>
-      ${visita.objetivoDetalhe ? `<p>${escapeHtml(visita.objetivoDetalhe)}</p>` : ""}
-    </div>
-
-    <div class="visita-doc-section">
-      <span class="visita-doc-badge ${CONDICAO_BADGE_CLASS[visita.condicaoGeral] || "badge-boa"}">${escapeHtml(visita.condicaoGeral || "-")}</span>
-      <h2>Situação Encontrada</h2>
-      <h4>Situação atual</h4>
-      <p>${escapeHtml(visita.situacaoAtual) || "-"}</p>
-      <h4>Problemas identificados</h4>
-      ${problemasLi ? `<ul>${problemasLi}</ul>` : `<p>-</p>`}
-      <h4>Produtos em uso</h4>
-      <p>${escapeHtml(visita.produtosAtuaisTexto) || "-"}</p>
-    </div>
-
-    ${fotosHtml}
-
-    <div class="visita-doc-section">
-      <h2>Recomendações Técnicas</h2>
-      <p>${escapeHtml(visita.recomendacoes) || "-"}</p>
-      ${produtosHtml}
-      ${visita.protocoloSugerido ? `<div class="visita-doc-dashed"><strong>Protocolo sugerido:</strong> ${escapeHtml(visita.protocoloSugerido)}</div>` : ""}
-      ${visita.resultadosEsperados ? `<h4>Resultados esperados</h4><p>${escapeHtml(visita.resultadosEsperados)}</p>` : ""}
-    </div>
-
-    ${fotosRecomendacoesHtml}
-
-    <div class="visita-doc-section">
-      <h2>Próximos Passos</h2>
-      ${compromissosLi ? `<ol>${compromissosLi}</ol>` : `<p>-</p>`}
-      <div class="visita-doc-proxima-acao">
-        <strong>${escapeHtml(visita.proximaAcao || "-")}</strong>${visita.dataProximoContato ? " — " + formatDate(visita.dataProximoContato) : ""}
-      </div>
-      ${visita.obsFinais ? `<p style="margin-top:10px;">${escapeHtml(visita.obsFinais)}</p>` : ""}
-    </div>
-
-    <div class="visita-doc-footer">
-      <div>
-        <strong>${escapeHtml(visita.responsavelVisita || nomeUsuarioPadrao())}</strong> — ${escapeHtml((state.config && state.config.cargoUsuario) || "")}<br>
-        ${escapeHtml((state.config && state.config.nomeEmpresa) || "Empresa")} Nutrição Animal
-        ${isUltimaVisita ? `<span class="encerramento">Este relatório foi elaborado com base nas observações realizadas durante visita técnica e representa as recomendações do profissional responsável.</span>` : ""}
-      </div>
-      <div>Página 1</div>
-    </div>
+  const identificacaoHtml = `<div class="detalhe-grid">
+    ${field("Cliente", client.nome)}${field("Fazenda", client.fazenda)}${field("Município", client.municipio)}${field("Decisor visitado", client.nomeDecisor)}
+    ${field("Horário", [visita.horaInicio, visita.horaFim].filter(Boolean).join(" às "))}${field("Responsável técnico", visita.responsavelVisita)}${field("Participantes", visita.participantes)}
   </div>`;
+
+  const objetivoHtml = `
+    <p>${escapeHtml((visita.objetivos || []).join(", ") || "-")}</p>
+    ${visita.objetivoDetalhe ? `<p>${escapeHtml(visita.objetivoDetalhe)}</p>` : ""}`;
+
+  const situacaoHtml = `
+    <span class="visita-doc-badge ${CONDICAO_BADGE_CLASS[visita.condicaoGeral] || "badge-boa"}">${escapeHtml(visita.condicaoGeral || "-")}</span>
+    <h4>Situação atual</h4>
+    <p>${escapeHtml(visita.situacaoAtual) || "-"}</p>
+    <h4>Problemas identificados</h4>
+    ${problemasLi ? `<ul>${problemasLi}</ul>` : `<p>-</p>`}
+    <h4>Produtos em uso</h4>
+    <p>${escapeHtml(visita.produtosAtuaisTexto) || "-"}</p>
+    ${fotosHtml}`;
+
+  const recomendacoesHtml = `
+    <p>${escapeHtml(visita.recomendacoes) || "-"}</p>
+    ${produtosHtml}
+    ${visita.protocoloSugerido ? `<div class="visita-doc-dashed"><strong>Protocolo sugerido:</strong> ${escapeHtml(visita.protocoloSugerido)}</div>` : ""}
+    ${visita.resultadosEsperados ? `<h4>Resultados esperados</h4><p>${escapeHtml(visita.resultadosEsperados)}</p>` : ""}
+    ${fotosRecomendacoesHtml}`;
+
+  const proximosPassosHtml = `
+    ${compromissosLi ? `<ol>${compromissosLi}</ol>` : `<p>-</p>`}
+    <div class="visita-doc-proxima-acao">
+      <strong>${escapeHtml(visita.proximaAcao || "-")}</strong>${visita.dataProximoContato ? " — " + formatDate(visita.dataProximoContato) : ""}
+    </div>
+    ${visita.obsFinais ? `<p style="margin-top:10px;">${escapeHtml(visita.obsFinais)}</p>` : ""}`;
+
+  const metaLinha = `${escapeHtml(visita.numero)} · ${formatDate(visita.dataVisita)}`;
+  return `
+    ${reportCapaHtml({ eyebrow: "Relatório de Visita Técnica", titulo: client.nome, subtitulo: reportLocalLinha(client), metaLinha, topicos: ["Objetivo", "Situação encontrada", "Recomendações", "Próximos passos"] })}
+    <div class="report-content-scope">
+      ${reportRunningHeadHtml(`${client.nome}${client.fazenda ? " · " + client.fazenda : ""}`, metaLinha)}
+      <div class="report-doc">
+        ${reportDocHead(`${escapeHtml(client.nome)}${client.fazenda ? " · " + escapeHtml(client.fazenda) : ""}`, metaLinha)}
+        <div class="report-sections">
+          ${reportSectionHtml(ICONS.folder, "Identificação", identificacaoHtml, 0)}
+          ${reportSectionHtml(ICONS.target, "Objetivo da visita", objetivoHtml, 1)}
+          ${reportSectionHtml(ICONS.alertTriangle, "Situação encontrada", situacaoHtml, 2)}
+          ${reportSectionHtml(ICONS.leaf, "Recomendações técnicas", recomendacoesHtml, 3)}
+          ${reportSectionHtml(ICONS.clipboard, "Próximos passos", proximosPassosHtml, 4)}
+        </div>
+      </div>
+      ${reportRunningFootHtml()}
+    </div>
+    ${reportEncerramentoHtml(reportGreetingName(client))}`;
 }
 
 // ---------- Lista / busca (tela Relatórios) ----------
@@ -4475,6 +4445,9 @@ document.getElementById("relatorio-cliente-periodo-mes").addEventListener("chang
 document.getElementById("btn-imprimir-relatorio-cliente-periodo").addEventListener("click", () => window.print());
 
 // ---------- Sistema visual dos relatórios (cabeçalho, KPIs com ícone, seção em cartão) ----------
+// Usado por TODOS os tipos de relatório (cliente, período, mensal, funil, visita) — é isso que
+// garante que todos pareçam parte da mesma família visual, com capa, cabeçalho/rodapé fixo e
+// encerramento, em vez de só os relatórios de cliente terem esse tratamento.
 const REPORT_TONE_CYCLE = ["sage", "blue", "gold", "late", "purple", "olive"];
 function reportDocHead(tituloHtml, subtitulo) {
   return `<div class="report-doc-head"><div><h2 class="rdh-title">${tituloHtml}</h2><div class="rdh-sub">${escapeHtml(subtitulo)}</div></div></div>`;
@@ -4489,15 +4462,44 @@ function reportSectionHtml(icon, titulo, innerHtml, idx) {
   const tone = REPORT_TONE_CYCLE[idx % REPORT_TONE_CYCLE.length];
   return `<div class="rs-card" data-tone="${tone}"><h3><span class="panel-ico tone-${tone}">${icon}</span>${escapeHtml(titulo)}</h3>${innerHtml}</div>`;
 }
+// Tabela densa (4+ colunas) vira lista de cartões empilhados em vez de <table> — dentro da coluna
+// estreita de .report-sections-compact uma table.mini de 4-5 colunas quebra cada palavra do
+// cabeçalho numa linha ("Statu/s"); como cartão, cada linha vira um bloco legível.
+function reportRecordCardsHtml(colunas, linhas) {
+  if (!linhas.length) return `<p class="hint" style="margin:4px 0 0;">Nenhum registro no período.</p>`;
+  return `<div class="rs-records">${linhas.map(linha => `
+    <div class="rs-record">${colunas.map((col, i) => linha[i] ? `<div class="rs-record-field"><span>${escapeHtml(col)}</span>${linha[i]}</div>` : "").join("")}</div>
+  `).join("")}</div>`;
+}
+// Nome curto e pessoal pra saudação de encerramento — evita usar a razão social inteira
+// ("Obrigado pela confiança, Agropecuária" quando o cliente é "Agropecuária Montanha...").
+function reportGreetingName(entidade) {
+  if (!entidade) return "";
+  const contatos = entidade.contatosPessoas || [];
+  const principal = contatos.find(p => p.principal) || contatos[0];
+  const fonte = (principal && principal.nome) || entidade.nomeFantasia || entidade.nome || "";
+  return fonte.trim().split(" ")[0] || "";
+}
+// Reaproveita a estética do .sparkline-bars (mesmo componente do Histórico de vendas) pra
+// qualquer série mensal do relatório — comunica tendência melhor que uma coluna de números crua.
+function reportBarsHtml(items) {
+  const maxVal = Math.max(1, ...items.map(i => i.value));
+  return `<div class="sparkline-bars">${items.map(i => {
+    const h = Math.round((i.value / maxVal) * 100);
+    return `<div class="bar" style="height:${i.value ? Math.max(h, 3) : 2}%;" title="${escapeHtml(i.label)}: ${escapeHtml(String(i.display ?? i.value))}"><span class="bar-label">${escapeHtml(i.label)}</span></div>`;
+  }).join("")}</div>`;
+}
+function reportLocalLinha(client) {
+  return [client.fazenda, client.municipio ? client.municipio + (client.estado ? ", " + client.estado : "") : ""].filter(Boolean).join(" — ");
+}
 
-// ---------- Capa e encerramento (só aparecem na impressão/PDF) dos relatórios por cliente ----------
-function reportCapaHtml(client, tituloRelatorio, metaLinha, topicos) {
+// ---------- Capa, encerramento e cabeçalho/rodapé fixo — comuns a todos os relatórios ----------
+function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
   const cfg = state.config || {};
   const empresaRep = cfg.empresaRepresentante || "Manejo";
   const logoHtml = cfg.logoRepresentanteDataUrl
     ? `<img src="${cfg.logoRepresentanteDataUrl}" alt="${escapeHtml(empresaRep)}">`
     : `<img src="assets/brand-mark.png" alt="Manejo CRM">`;
-  const localLinha = [client.fazenda, client.municipio ? client.municipio + (client.estado ? ", " + client.estado : "") : ""].filter(Boolean).join(" — ");
   const chipsHtml = (topicos || []).map(t => `<span class="report-capa-chip">${escapeHtml(t)}</span>`).join("");
   return `
     <div class="report-capa">
@@ -4507,9 +4509,9 @@ function reportCapaHtml(client, tituloRelatorio, metaLinha, topicos) {
         <div><div class="rcb-main">Manejo CRM</div><div class="rcb-sub">Nutrição Animal</div></div>
       </div>
       <div class="report-capa-mid">
-        <div class="report-capa-eyebrow">${escapeHtml(tituloRelatorio)}</div>
-        <h2 class="report-capa-nome">${escapeHtml(client.nome)}</h2>
-        ${localLinha ? `<div class="report-capa-fazenda">${escapeHtml(localLinha)}</div>` : ""}
+        <div class="report-capa-eyebrow">${escapeHtml(eyebrow)}</div>
+        <h2 class="report-capa-nome">${escapeHtml(titulo)}</h2>
+        ${subtitulo ? `<div class="report-capa-fazenda">${escapeHtml(subtitulo)}</div>` : ""}
         <div class="report-capa-linha"></div>
         <div class="report-capa-meta">${escapeHtml(metaLinha)}</div>
         ${chipsHtml ? `<div class="report-capa-chips">${chipsHtml}</div>` : ""}
@@ -4520,12 +4522,18 @@ function reportCapaHtml(client, tituloRelatorio, metaLinha, topicos) {
       </div>
     </div>`;
 }
-function reportEncerramentoHtml(client) {
+// nomeSaudacao presente = documento client-facing ("Obrigado pela confiança, Roberto");
+// ausente = relatório interno (Mensal/Funil), fecha de forma neutra, sem fingir se dirigir a um cliente.
+function reportEncerramentoHtml(nomeSaudacao) {
   const cfg = state.config || {};
   const empresaRep = cfg.empresaRepresentante || "Manejo";
   const logoHtml = cfg.logoRepresentanteDataUrl
     ? `<img src="${cfg.logoRepresentanteDataUrl}" alt="${escapeHtml(empresaRep)}">`
     : `<img src="assets/brand-mark.png" alt="Manejo CRM">`;
+  const titulo = nomeSaudacao ? `Obrigado pela confiança, ${escapeHtml(nomeSaudacao)}` : "Relatório concluído";
+  const texto = nomeSaudacao
+    ? "Este documento reúne o histórico completo até a data de geração. Qualquer dúvida sobre os dados ou próximos passos, fale direto com seu consultor técnico."
+    : "Relatório gerado automaticamente a partir dos dados registrados no CRM até a data abaixo — uso interno da equipe comercial.";
   return `
     <div class="report-encerramento">
       <img class="report-enc-wm" src="assets/touro-corpo.png" alt="">
@@ -4535,8 +4543,8 @@ function reportEncerramentoHtml(client) {
       </div>
       <div class="report-enc-mid">
         <div class="report-enc-eyebrow">Relatório concluído</div>
-        <h2 class="report-enc-title">Obrigado pela confiança${client && client.nome ? ", " + escapeHtml(client.nome.split(" ")[0]) : ""}</h2>
-        <p class="report-enc-texto">Este documento reúne o histórico completo até a data de geração. Qualquer dúvida sobre os dados ou próximos passos, fale direto com seu consultor técnico.</p>
+        <h2 class="report-enc-title">${titulo}</h2>
+        <p class="report-enc-texto">${texto}</p>
         <div class="report-enc-card">
           <div class="nome">${escapeHtml(cfg.nomeUsuario || "-")}</div>
           <div class="cargo">${escapeHtml(cfg.cargoUsuario || "Consultor Técnico")}</div>
@@ -4549,8 +4557,8 @@ function reportEncerramentoHtml(client) {
       </div>
     </div>`;
 }
-function reportRunningHeadHtml(client, subtitulo) {
-  return `<div class="report-running-head"><b>${escapeHtml(client.nome)}</b>${client.fazenda ? " · " + escapeHtml(client.fazenda) : ""}<span>${escapeHtml(subtitulo)}</span></div>`;
+function reportRunningHeadHtml(tituloEsquerda, subtitulo) {
+  return `<div class="report-running-head"><b>${escapeHtml(tituloEsquerda)}</b><span>${escapeHtml(subtitulo)}</span></div>`;
 }
 function reportRunningFootHtml() {
   const cfg = state.config || {};
@@ -4558,30 +4566,59 @@ function reportRunningFootHtml() {
   return `<div class="report-running-foot"><span class="rf-mark"><img src="assets/brand-mark.png" alt="">Manejo CRM — ${escapeHtml(empresaRep)}</span></div>`;
 }
 
+// Cartões de contato-chave (em vez da table.mini de 5 colunas) — legível também espremido
+// nas 2 colunas compactas do relatório.
+function reportContatosPessoasCardsHtml(client) {
+  const contatos = client.contatosPessoas || [];
+  if (!contatos.length) return `<p class="hint" style="margin:4px 0 0;">Nenhum contato cadastrado.</p>`;
+  const linhas = contatos.map(p => [
+    escapeHtml(p.nome || "-") + (p.principal ? " <em>(Principal)</em>" : ""),
+    escapeHtml(p.cargo || "-"),
+    onlyDigits(p.whatsapp) ? `<a href="https://wa.me/55${onlyDigits(p.whatsapp)}" target="_blank" rel="noopener">${escapeHtml(p.whatsapp)}</a>` : "-"
+  ]);
+  return reportRecordCardsHtml(["Nome", "Cargo", "WhatsApp"], linhas);
+}
+function reportUpsellCardsHtml(client) {
+  const linhas = upsellsForClient(client.id).map(u => [
+    escapeHtml(u.produto || "-"), escapeHtml(u.categoria || "-"),
+    u.volumePotencial ? Number(u.volumePotencial).toFixed(1) + " t potenciais" : "-",
+    `<span class="badge ${badgeClassForUpsellStatus(u.status)}">${escapeHtml(u.status)}</span> · identificado em ${formatDate(u.dataIdentificacao)}`
+  ]);
+  return reportRecordCardsHtml(["Produto", "Categoria", "Volume", "Status"], linhas);
+}
+function reportSacCardsHtml(client) {
+  const linhas = sacsForClient(client.id).map(s => [
+    escapeHtml(s.numero) + " · " + escapeHtml(s.tipo), escapeHtml(s.produto || "-"),
+    `<span class="badge ${badgeClassForSacStatus(s.status)}">${escapeHtml(s.status)}</span> · aberto em ${formatDate(s.data)}`
+  ]);
+  return reportRecordCardsHtml(["Ocorrência", "Produto", "Status"], linhas);
+}
+
 function renderRelatorioCliente(clientId) {
   const container = document.getElementById("relatorio-cliente-conteudo");
   const client = state.clientesAtivos.find(c => c.id === clientId);
   if (!client) { container.innerHTML = `<div class="empty-state">Cadastre um cliente ativo para gerar o relatório.</div>`; return; }
-  // Só as seções com tabela larga/muito conteúdo por linha (Perfil produtivo, Histórico de
-  // vendas) ficam em coluna única. As demais entram no grid de 2 colunas — o CSS impõe
-  // table-layout:fixed nas tabelas de lá, então o texto quebra em vez de vazar/cortar.
+  // Só Perfil produtivo e Histórico de vendas têm tabela larga o bastante (6-7 colunas) pra
+  // precisar da página inteira. As demais viram cartões (reportXCardsHtml) em vez de <table> —
+  // por isso cabem de verdade lado a lado nas 2 colunas compactas, sem quebrar palavra por linha.
   const secoesLargas = [
     [ICONS.leaf, "Perfil produtivo", renderProdutivoTab(client)],
     [ICONS.box, "Histórico de vendas", stripActionsRow(renderVendasTab(client))]
   ];
   const secoesCompactas = [
     [ICONS.refreshCw, "Ciclo de recompra", stripActionsRow(renderRecompraTab(client))],
-    [ICONS.trendingUp, "Oportunidades de upsell", stripActionsRow(renderUpsellTab(client))],
-    [ICONS.messageCircle, "Histórico de contatos", stripActionsRow(renderContatosTimelineTab(client))],
-    [ICONS.ticket, "SAC", stripActionsRow(renderSacTab(client))],
-    [ICONS.folder, "Cadastro", stripActionsRow(renderCadastroIdentificacaoTab(client))]
+    [ICONS.folder, "Cadastro", stripActionsRow(renderCadastroIdentificacaoTab(client))],
+    [ICONS.users, "Contatos-chave", reportContatosPessoasCardsHtml(client)],
+    [ICONS.trendingUp, "Oportunidades de upsell", reportUpsellCardsHtml(client)],
+    [ICONS.messageCircle, "Histórico de contatos", stripActionsRow(renderContatosTimelineTab(client, { showContatosPessoas: false }))],
+    [ICONS.ticket, "SAC", reportSacCardsHtml(client)]
   ];
   const todosTopicos = [...secoesLargas, ...secoesCompactas].map(s => s[1]);
   const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
   container.innerHTML = `
-    ${reportCapaHtml(client, "Relatório do Cliente", metaLinha, todosTopicos)}
+    ${reportCapaHtml({ eyebrow: "Relatório do Cliente", titulo: client.nome, subtitulo: reportLocalLinha(client), metaLinha, topicos: todosTopicos })}
     <div class="report-content-scope">
-      ${reportRunningHeadHtml(client, metaLinha)}
+      ${reportRunningHeadHtml(`${client.nome}${client.fazenda ? " · " + client.fazenda : ""}`, metaLinha)}
       <div class="report-doc">
         ${reportDocHead(`${escapeHtml(client.nome)}${client.fazenda ? " · " + escapeHtml(client.fazenda) : ""}`, metaLinha)}
         <div class="report-sections">${secoesLargas.map(([icon, titulo, html], i) => reportSectionHtml(icon, titulo, html, i)).join("")}</div>
@@ -4589,7 +4626,7 @@ function renderRelatorioCliente(clientId) {
       </div>
       ${reportRunningFootHtml()}
     </div>
-    ${reportEncerramentoHtml(client)}`;
+    ${reportEncerramentoHtml(reportGreetingName(client))}`;
 }
 
 function renderRelatorioClientePeriodo(clientId, yyyyMM) {
@@ -4614,31 +4651,35 @@ function renderRelatorioClientePeriodo(clientId, yyyyMM) {
     { icon: ICONS.truck, label: "Visitas técnicas", value: visitasMes.length },
     { icon: ICONS.ticket, label: "SAC aberto no período", value: sacsMes.length }
   ];
-  const pedidosRows = pedidosMes.map(p => `<tr><td>${formatDate(p.dataPedido)}</td><td>${escapeHtml(p.produto)}</td><td>${p.volume || "-"}</td><td>${p.valor ? formatMoney(p.valor) : "-"}</td></tr>`).join("") || `<tr><td colspan="4">Nenhum pedido no período.</td></tr>`;
-  const contatosRows = contatosMes.map(c => `<tr><td>${formatDate(c.data)}</td><td>${escapeHtml(c.tipo)}</td><td>${escapeHtml(c.resumo || "-")}</td></tr>`).join("") || `<tr><td colspan="3">Nenhum contato no período.</td></tr>`;
-  const visitasRows = visitasMes.map(v => `<tr><td>${formatDate(v.dataVisita)}</td><td>${escapeHtml((v.objetivos || []).join(", ") || "-")}</td></tr>`).join("") || `<tr><td colspan="2">Nenhuma visita no período.</td></tr>`;
-  const sacsRows = sacsMes.map(s => `<tr><td>${escapeHtml(s.numero)}</td><td>${formatDate(s.data)}</td><td>${escapeHtml(s.tipo)}</td><td>${escapeHtml(s.status)}</td></tr>`).join("") || `<tr><td colspan="4">Nenhum SAC no período.</td></tr>`;
+  const pedidosCards = reportRecordCardsHtml(["Data", "Produto", "Volume", "Valor"],
+    pedidosMes.map(p => [formatDate(p.dataPedido), escapeHtml(p.produto), p.volume ? p.volume + " t" : "-", p.valor ? formatMoney(p.valor) : "-"]));
+  const contatosCards = reportRecordCardsHtml(["Data", "Tipo", "Resumo"],
+    contatosMes.map(c => [formatDate(c.data), escapeHtml(c.tipo), escapeHtml(c.resumo || "-")]));
+  const visitasCards = reportRecordCardsHtml(["Data", "Objetivos"],
+    visitasMes.map(v => [formatDate(v.dataVisita), escapeHtml((v.objetivos || []).join(", ") || "-")]));
+  const sacsCards = reportRecordCardsHtml(["Número", "Data", "Tipo", "Status"],
+    sacsMes.map(s => [escapeHtml(s.numero), formatDate(s.data), escapeHtml(s.tipo), escapeHtml(s.status)]));
   const metaLinha = `Atividades de ${mesLabel}`;
   const topicos = ["Pedidos", "Contatos", "Visitas técnicas", "SAC"];
   container.innerHTML = `
-    ${reportCapaHtml(client, "Relatório do Cliente — Período", metaLinha, topicos)}
+    ${reportCapaHtml({ eyebrow: "Relatório do Cliente · Período", titulo: client.nome, subtitulo: reportLocalLinha(client), metaLinha, topicos })}
     <div class="report-content-scope">
-      ${reportRunningHeadHtml(client, metaLinha)}
+      ${reportRunningHeadHtml(`${client.nome}${client.fazenda ? " · " + client.fazenda : ""}`, metaLinha)}
       <div class="report-doc">
         ${reportDocHead(`${escapeHtml(client.nome)}${client.fazenda ? " · " + escapeHtml(client.fazenda) : ""}`, metaLinha)}
         ${reportStatTilesHtml(tiles)}
         <div class="report-sections">
-          ${reportSectionHtml(ICONS.box, "Pedidos do período", `<table class="mini"><thead><tr><th>Data</th><th>Produto</th><th>Volume</th><th>Valor</th></tr></thead><tbody>${pedidosRows}</tbody></table>`, 0)}
+          ${reportSectionHtml(ICONS.box, "Pedidos do período", pedidosCards, 0)}
         </div>
         <div class="report-sections-compact">
-          ${reportSectionHtml(ICONS.messageCircle, "Contatos do período", `<table class="mini"><thead><tr><th>Data</th><th>Tipo</th><th>Resumo</th></tr></thead><tbody>${contatosRows}</tbody></table>`, 1)}
-          ${reportSectionHtml(ICONS.truck, "Visitas técnicas do período", `<table class="mini"><thead><tr><th>Data</th><th>Objetivos</th></tr></thead><tbody>${visitasRows}</tbody></table>`, 2)}
-          ${reportSectionHtml(ICONS.ticket, "SAC do período", `<table class="mini"><thead><tr><th>Número</th><th>Data</th><th>Tipo</th><th>Status</th></tr></thead><tbody>${sacsRows}</tbody></table>`, 3)}
+          ${reportSectionHtml(ICONS.messageCircle, "Contatos do período", contatosCards, 1)}
+          ${reportSectionHtml(ICONS.truck, "Visitas técnicas do período", visitasCards, 2)}
+          ${reportSectionHtml(ICONS.ticket, "SAC do período", sacsCards, 3)}
         </div>
       </div>
       ${reportRunningFootHtml()}
     </div>
-    ${reportEncerramentoHtml(client)}`;
+    ${reportEncerramentoHtml(reportGreetingName(client))}`;
 }
 
 function renderRelatorioMensal(yyyyMM) {
@@ -4662,19 +4703,30 @@ function renderRelatorioMensal(yyyyMM) {
   ];
   const [y, m] = yyyyMM.split("-");
   const mesLabel = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-  const novosRows = novosClientes.map(({ c, tipo }) => `<tr><td>${escapeHtml(c.nome)}</td><td>${escapeHtml(c.fazenda || "-")}</td><td>${escapeHtml(tipo)}</td></tr>`).join("") || `<tr><td colspan="3">Nenhum cliente novo no período.</td></tr>`;
-  const pedidosRows = pedidosMes.map(p => { const c = state.clientesAtivos.find(x => x.id === p.clientId); return `<tr><td>${formatDate(p.dataPedido)}</td><td>${escapeHtml(c ? c.nome : "-")}</td><td>${escapeHtml(p.produto)}</td><td>${p.volume || "-"}</td><td>${p.valor ? formatMoney(p.valor) : "-"}</td></tr>`; }).join("") || `<tr><td colspan="5">Nenhum pedido no período.</td></tr>`;
+  const novosCards = reportRecordCardsHtml(["Nome", "Fazenda", "Tipo"],
+    novosClientes.map(({ c, tipo }) => [escapeHtml(c.nome), escapeHtml(c.fazenda || "-"), escapeHtml(tipo)]));
+  const pedidosCards = reportRecordCardsHtml(["Data", "Cliente", "Produto", "Volume", "Valor"],
+    pedidosMes.map(p => { const c = state.clientesAtivos.find(x => x.id === p.clientId); return [formatDate(p.dataPedido), escapeHtml(c ? c.nome : "-"), escapeHtml(p.produto), p.volume ? p.volume + " t" : "-", p.valor ? formatMoney(p.valor) : "-"]; }));
   const contatosTipoGrid = Object.entries(contatosPorTipo).map(([tipo, count]) => field(tipo, String(count))).join("") || `<p class="hint">Nenhum contato no período.</p>`;
+  const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
   container.innerHTML = `
-    <div class="report-doc">
-      ${reportDocHead("Atividades do mês", mesLabel)}
-      ${reportStatTilesHtml(tiles)}
-      <div class="report-sections">
-        ${reportSectionHtml(ICONS.messageCircle, "Contatos por tipo", `<div class="detalhe-grid">${contatosTipoGrid}</div>`, 0)}
-        ${reportSectionHtml(ICONS.users, "Novos clientes cadastrados", `<table class="mini"><thead><tr><th>Nome</th><th>Fazenda</th><th>Tipo</th></tr></thead><tbody>${novosRows}</tbody></table>`, 1)}
-        ${reportSectionHtml(ICONS.box, "Pedidos do mês", `<table class="mini"><thead><tr><th>Data</th><th>Cliente</th><th>Produto</th><th>Volume</th><th>Valor</th></tr></thead><tbody>${pedidosRows}</tbody></table>`, 2)}
+    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Atividades do mês", subtitulo: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1), metaLinha, topicos: ["Contatos", "Novos clientes", "Pedidos"] })}
+    <div class="report-content-scope">
+      ${reportRunningHeadHtml("Atividades do mês", mesLabel)}
+      <div class="report-doc">
+        ${reportDocHead("Atividades do mês", mesLabel)}
+        ${reportStatTilesHtml(tiles)}
+        <div class="report-sections">
+          ${reportSectionHtml(ICONS.box, "Pedidos do mês", pedidosCards, 0)}
+        </div>
+        <div class="report-sections-compact">
+          ${reportSectionHtml(ICONS.messageCircle, "Contatos por tipo", `<div class="detalhe-grid">${contatosTipoGrid}</div>`, 1)}
+          ${reportSectionHtml(ICONS.users, "Novos clientes cadastrados", novosCards, 2)}
+        </div>
       </div>
-    </div>`;
+      ${reportRunningFootHtml()}
+    </div>
+    ${reportEncerramentoHtml(null)}`;
 }
 
 function renderRelatorioFunil() {
@@ -4683,15 +4735,19 @@ function renderRelatorioFunil() {
 
   const meses = [];
   for (let i = 5; i >= 0; i--) meses.push(`${new Date(hoje.getFullYear(), hoje.getMonth() - i, 1).getFullYear()}-${String(new Date(hoje.getFullYear(), hoje.getMonth() - i, 1).getMonth() + 1).padStart(2, "0")}`);
-  const conversaoRows = meses.map(mes => {
+  const conversaoPorMes = meses.map(mes => {
     // Taxa por coorte: dos leads CRIADOS neste mês, quantos já converteram até hoje (não confunde com
     // conversões de coortes antigas que aconteceram de coincidência neste mesmo mês).
     const novosDoMes = state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes);
     const convertidosDessaCoorte = novosDoMes.filter(l => l.dataConversao).length;
     const [y, m] = mes.split("-");
-    const label = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
-    return `<tr><td>${label}</td><td>${novosDoMes.length}</td><td>${convertidosDessaCoorte}</td><td>${novosDoMes.length ? Math.round((convertidosDessaCoorte / novosDoMes.length) * 100) + "%" : "-"}</td></tr>`;
-  }).join("");
+    const labelCurto = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
+    const labelLongo = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+    const taxa = novosDoMes.length ? Math.round((convertidosDessaCoorte / novosDoMes.length) * 100) : 0;
+    return { labelCurto, labelLongo, novos: novosDoMes.length, convertidos: convertidosDessaCoorte, taxa };
+  });
+  const conversaoBarsHtml = reportBarsHtml(conversaoPorMes.map(c => ({ label: c.labelCurto, value: c.taxa, display: c.novos ? c.taxa + "%" : "sem leads novos" })));
+  const conversaoRows = conversaoPorMes.map(c => `<tr><td>${c.labelLongo}</td><td>${c.novos}</td><td>${c.convertidos}</td><td>${c.novos ? c.taxa + "%" : "-"}</td></tr>`).join("");
 
   const somaPorEtapa = {}, contPorEtapa = {};
   state.leads.forEach(l => {
@@ -4715,27 +4771,47 @@ function renderRelatorioFunil() {
   }).join("");
 
   const semPedido = state.clientesAtivos.map(c => ({ c, insight: computeClientInsight(c) })).filter(({ insight }) => insight.status === "atrasado");
-  const semPedidoRows = semPedido.map(({ c, insight }) => `<tr><td>${escapeHtml(c.nome)}</td><td>${insight.avgInterval} dias</td><td>${insight.daysSinceLast} dias</td></tr>`).join("")
-    || `<tr><td colspan="3">Nenhum cliente atrasado.</td></tr>`;
+  const semPedidoCards = reportRecordCardsHtml(["Cliente", "Ciclo médio", "Dias sem comprar"],
+    semPedido.map(({ c, insight }) => [escapeHtml(c.nome), insight.avgInterval + " dias", insight.daysSinceLast + " dias"]));
 
   const semContato = state.leads.filter(l => l.status === "Ativo").map(l => {
     const contatos = contatosForClient(l.id);
     const dias = contatos.length ? daysBetween(contatos[0].data, todayStr()) : null;
     return { l, dias };
   }).filter(({ dias }) => dias === null || dias > 7);
-  const semContatoRows = semContato.map(({ l, dias }) => `<tr><td>${escapeHtml(l.nome)}</td><td>${escapeHtml(l.etapaFunil)}</td><td>${dias === null ? "nunca contatado" : dias + " dias"}</td></tr>`).join("")
-    || `<tr><td colspan="3">Nenhum lead com contato em atraso.</td></tr>`;
+  const semContatoCards = reportRecordCardsHtml(["Lead", "Etapa", "Sem contato"],
+    semContato.map(({ l, dias }) => [escapeHtml(l.nome), escapeHtml(l.etapaFunil), dias === null ? "nunca contatado" : dias + " dias"]));
+
+  const totalNovos = meses.reduce((s, mes) => s + state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes).length, 0);
+  const totalConvertidos = meses.reduce((s, mes) => s + state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes && l.dataConversao).length, 0);
+  const etapaMaisLenta = LEAD_FUNIL_STAGES.filter(e => contPorEtapa[e]).sort((a, b) => (somaPorEtapa[b] / contPorEtapa[b]) - (somaPorEtapa[a] / contPorEtapa[a]))[0];
+  const tiles = [
+    { icon: ICONS.trendingUp, label: "Taxa de conversão (6 meses)", value: totalNovos ? Math.round((totalConvertidos / totalNovos) * 100) + "%" : "-" },
+    { icon: ICONS.clock, label: "Etapa mais lenta", value: etapaMaisLenta || "-" },
+    { icon: ICONS.alertTriangle, label: "Clientes atrasados", value: semPedido.length },
+    { icon: ICONS.phoneOff, label: "Leads sem contato", value: semContato.length }
+  ];
+  const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
 
   container.innerHTML = `
-    <div class="report-doc">
-      ${reportDocHead("Funil &amp; carteira", `Relatório gerado em ${formatDate(todayStr())}`)}
-      <div class="report-sections">
-        ${reportSectionHtml(ICONS.refreshCw, "Taxa de conversão lead → cliente (últimos 6 meses)", `<table class="mini"><thead><tr><th>Mês</th><th>Novos leads</th><th>Convertidos</th><th>Taxa</th></tr></thead><tbody>${conversaoRows}</tbody></table>`, 0)}
-        ${reportSectionHtml(ICONS.clock, "Tempo médio de cada etapa do funil", `<table class="mini"><thead><tr><th>Etapa</th><th>Tempo médio</th><th>Passagens registradas</th></tr></thead><tbody>${etapaRows}</tbody></table>`, 1)}
-        ${reportSectionHtml(ICONS.alertTriangle, "Clientes sem pedido há mais de um ciclo", `<table class="mini"><thead><tr><th>Cliente</th><th>Ciclo médio</th><th>Dias sem comprar</th></tr></thead><tbody>${semPedidoRows}</tbody></table>`, 2)}
-        ${reportSectionHtml(ICONS.phoneOff, "Leads sem contato há mais de 7 dias", `<table class="mini"><thead><tr><th>Lead</th><th>Etapa</th><th>Sem contato</th></tr></thead><tbody>${semContatoRows}</tbody></table>`, 3)}
+    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Funil & Carteira", subtitulo: "Conversão, ritmo de etapas e alertas de carteira", metaLinha, topicos: ["Conversão", "Tempo por etapa", "Atrasados", "Sem contato"] })}
+    <div class="report-content-scope">
+      ${reportRunningHeadHtml("Funil & Carteira", metaLinha)}
+      <div class="report-doc">
+        ${reportDocHead("Funil &amp; carteira", metaLinha)}
+        ${reportStatTilesHtml(tiles)}
+        <div class="report-sections">
+          ${reportSectionHtml(ICONS.refreshCw, "Taxa de conversão lead → cliente (últimos 6 meses)", `${conversaoBarsHtml}<table class="mini"><thead><tr><th>Mês</th><th>Novos leads</th><th>Convertidos</th><th>Taxa</th></tr></thead><tbody>${conversaoRows}</tbody></table>`, 0)}
+          ${reportSectionHtml(ICONS.clock, "Tempo médio de cada etapa do funil", `<table class="mini"><thead><tr><th>Etapa</th><th>Tempo médio</th><th>Passagens registradas</th></tr></thead><tbody>${etapaRows}</tbody></table>`, 1)}
+        </div>
+        <div class="report-sections-compact">
+          ${reportSectionHtml(ICONS.alertTriangle, "Clientes sem pedido há mais de um ciclo", semPedidoCards, 2)}
+          ${reportSectionHtml(ICONS.phoneOff, "Leads sem contato há mais de 7 dias", semContatoCards, 3)}
+        </div>
       </div>
-    </div>`;
+      ${reportRunningFootHtml()}
+    </div>
+    ${reportEncerramentoHtml(null)}`;
 }
 
 // ---------- Relatórios rápidos (cards) ----------
