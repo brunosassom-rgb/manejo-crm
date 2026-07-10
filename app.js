@@ -821,10 +821,15 @@ function computeAlerts() {
         mensagem: `Oportunidade "${u.produto}" sem avanço há ${dias} dias.` });
     });
 
-    // Datas importantes — aniversário de contato
+    // Datas importantes — aniversário de contato. Severidade "today" no dia exato (não só
+    // "info") é o que faz o item entrar no Roteiro do dia como ação de ligar — "info" sozinho
+    // só aparece no painel de Alertas, sem virar tarefa acionável.
     (c.contatosPessoas || []).forEach(pessoa => {
       const info = aniversarioInfo(pessoa.dataNascimento);
-      if (info && info.dias <= 7) {
+      if (info && info.dias === 0) {
+        alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Aniversário hoje", severidade: "today",
+          mensagem: `Ligar para parabenizar ${pessoa.nome || "o contato"} — aniversário hoje.` });
+      } else if (info && info.dias <= 7) {
         alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Aniversário próximo", severidade: "info",
           mensagem: `Aniversário de ${pessoa.nome || "contato"} em ${info.label}.` });
       }
