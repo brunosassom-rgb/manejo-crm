@@ -572,23 +572,70 @@ function showToast(message) {
 }
 
 // ---------- Módulo 4 · Ciclo de recompra ----------
+// Soma o consumo mensal declarado (campo "Volume mensal estimado" de cada categoria animal,
+// aba Perfil Produtivo) — é o "consumo" que alimenta a estimativa de recompra quando ainda não
+// há histórico de pedidos suficiente pra calcular uma média.
+function consumoMensalTotalCliente(client) {
+  return (client.categoriasAnimais || []).reduce((s, c) => s + (Number(c.volumeMensalEstimado) || 0), 0);
+}
+function classificarCicloStatus(daysSinceLast, cicloDias, favoriteProduct) {
+  const ratio = daysSinceLast / cicloDias;
+  let status, statusLabel, tip;
+  if (ratio <= 0.8) {
+    status = "em-dia"; statusLabel = "Em dia";
+    tip = `Cliente dentro do ciclo normal (a cada ${cicloDias} dias em média, já se passaram ${daysSinceLast}).`;
+  } else if (ratio <= 1.2) {
+    status = "atencao"; statusLabel = "Hora de contatar";
+    tip = `Próximo do intervalo médio de compra (${cicloDias} dias — já se passaram ${daysSinceLast}). Bom momento para contato${favoriteProduct ? `, oferecendo ${favoriteProduct}` : ""}.`;
+  } else {
+    status = "atrasado"; statusLabel = "Atrasado";
+    tip = `${daysSinceLast} dias sem comprar, acima do intervalo médio (${cicloDias} dias). Priorize o contato${favoriteProduct ? ` — considere reforçar ${favoriteProduct}` : ""}.`;
+  }
+  return { status, statusLabel, tip };
+}
 function computeClientInsight(client) {
   const pedidos = pedidosForClient(client.id);
   const contatos = contatosForClient(client.id);
   const ltv = pedidos.reduce((sum, p) => sum + valorPedido(p), 0);
   const favoriteProduct = mostBoughtProduct(pedidos);
   const lastContactDate = contatos.length ? contatos[0].data : null;
+  const consumoMensalTotal = consumoMensalTotalCliente(client);
 
   if (pedidos.length < 2) {
     const last = pedidos[pedidos.length - 1];
+    const daysSinceLast = last ? daysBetween(last.dataPedido, todayStr()) : null;
+
+    // Sem 2 pedidos não dá pra tirar uma média de intervalo — mas se o consumo mensal foi
+    // informado e existe pelo menos um pedido (âncora de data e volume), dá pra estimar quantos
+    // dias aquele volume deve durar no ritmo de consumo declarado, e prever a próxima compra
+    // a partir disso em vez de deixar "sem histórico suficiente".
+    if (last && consumoMensalTotal > 0) {
+      const volumeUltimo = Number(last.volume) || 0;
+      const consumoDiario = consumoMensalTotal / 30;
+      const cicloDias = volumeUltimo > 0 ? Math.max(1, Math.round(volumeUltimo / consumoDiario)) : null;
+      if (cicloDias) {
+        const nextExpectedDate = addDays(last.dataPedido, cicloDias);
+        const diasRestantes = cicloDias - daysSinceLast;
+        const progresso = Math.max(0, Math.min(100, Math.round((daysSinceLast / cicloDias) * 100)));
+        const { status, statusLabel, tip } = classificarCicloStatus(daysSinceLast, cicloDias, favoriteProduct);
+        return {
+          status, statusLabel, avgInterval: cicloDias, avgVolume: volumeUltimo, daysSinceLast,
+          lastPedidoDate: last.dataPedido, nextExpectedDate, diasRestantes, progresso,
+          ltv, favoriteProduct, lastContactDate, consumoMensalTotal, cicloOrigem: "consumo",
+          tip: `${tip} Estimativa baseada no consumo mensal declarado (${consumoMensalTotal.toFixed(1)} t/mês), não em histórico de pedidos.`
+        };
+      }
+    }
+
     return {
       status: "sem-historico", statusLabel: "Sem histórico suficiente", avgInterval: null,
-      daysSinceLast: last ? daysBetween(last.dataPedido, todayStr()) : null,
-      lastPedidoDate: last ? last.dataPedido : null, nextExpectedDate: null,
-      ltv, favoriteProduct, lastContactDate,
+      daysSinceLast, lastPedidoDate: last ? last.dataPedido : null, nextExpectedDate: null,
+      ltv, favoriteProduct, lastContactDate, consumoMensalTotal, cicloOrigem: null,
       tip: pedidos.length === 0
-        ? "Cliente ainda sem nenhum pedido registrado. Registre o primeiro pedido para começar a acompanhar o ciclo de compra."
-        : "Só há um pedido registrado — ainda não dá para calcular o intervalo médio de recompra."
+        ? (consumoMensalTotal > 0
+          ? `Consumo mensal declarado de ${consumoMensalTotal.toFixed(1)} t, mas ainda sem nenhum pedido registrado — registre o primeiro pedido para a previsão de recompra começar a valer.`
+          : "Cliente ainda sem nenhum pedido registrado. Registre o primeiro pedido para começar a acompanhar o ciclo de compra.")
+        : "Só há um pedido registrado, sem volume ou sem consumo mensal declarado — ainda não dá para estimar a recompra."
     };
   }
 
@@ -602,24 +649,14 @@ function computeClientInsight(client) {
   const nextExpectedDate = addDays(lastPedidoDate, avgInterval);
   const diasRestantes = avgInterval - daysSinceLast;
   const progresso = Math.max(0, Math.min(100, Math.round((daysSinceLast / avgInterval) * 100)));
-  const ratio = daysSinceLast / avgInterval;
 
-  let status, statusLabel, tip;
-  if (ratio <= 0.8) {
-    status = "em-dia"; statusLabel = "Em dia";
-    tip = `Cliente dentro do ciclo normal (compra a cada ${avgInterval} dias em média, já se passaram ${daysSinceLast}).`;
-  } else if (ratio <= 1.2) {
-    status = "atencao"; statusLabel = "Hora de contatar";
-    tip = `Próximo do intervalo médio de compra (${avgInterval} dias — já se passaram ${daysSinceLast}). Bom momento para contato${favoriteProduct ? `, oferecendo ${favoriteProduct}` : ""}.`;
-  } else {
-    status = "atrasado"; statusLabel = "Atrasado";
-    tip = `${daysSinceLast} dias sem comprar, acima do intervalo médio (${avgInterval} dias). Priorize o contato${favoriteProduct ? ` — considere reforçar ${favoriteProduct}` : ""}.`;
-  }
+  const { status, statusLabel, tip: tipBase } = classificarCicloStatus(daysSinceLast, avgInterval, favoriteProduct);
+  let tip = tipBase;
   if (lastContactDate) {
     const daysSinceContact = daysBetween(lastContactDate, todayStr());
     if (daysSinceContact > avgInterval) tip += ` Último contato foi há ${daysSinceContact} dias — vale retomar.`;
   }
-  return { status, statusLabel, avgInterval, avgVolume, daysSinceLast, lastPedidoDate, nextExpectedDate, diasRestantes, progresso, ltv, favoriteProduct, lastContactDate, tip };
+  return { status, statusLabel, avgInterval, avgVolume, daysSinceLast, lastPedidoDate, nextExpectedDate, diasRestantes, progresso, ltv, favoriteProduct, lastContactDate, consumoMensalTotal, cicloOrigem: "historico", tip };
 }
 
 // ---------- Estoque do cliente (por categoria animal) — base do forecast de recompra ----------
@@ -671,14 +708,19 @@ function estoqueAlertaSuprimido(clientId, categoriaId, forecast) {
 // Próxima ocorrência de um aniversário (mês/dia), ignorando o ano
 function aniversarioInfo(dateStr) {
   if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d)) return null;
-  const now = new Date(todayStr());
+  // Parse manual da string (não "new Date(dateStr)"): "YYYY-MM-DD" é interpretado como UTC
+  // meia-noite, e .getMonth()/.getDate() locais num fuso atrás de UTC (Brasil) devolviam o dia
+  // anterior ao que foi digitado.
+  const [ys, ms, ds] = dateStr.split("-").map(Number);
+  if (!ys || !ms || !ds) return null;
+  // "new Date()" sem argumento reflete o relógio local de verdade — mesmo raciocínio acima:
+  // NÃO usar "new Date(todayStr())" aqui, pois teria o mesmo problema de parse em UTC.
+  const now = new Date();
   const h0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let year = h0.getFullYear();
-  let alvo = new Date(year, d.getMonth(), d.getDate());
-  if (alvo < h0) { year++; alvo = new Date(year, d.getMonth(), d.getDate()); }
-  return { dias: Math.round((alvo - h0) / 86400000), anos: year - d.getFullYear(), label: alvo.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
+  let alvo = new Date(year, ms - 1, ds);
+  if (alvo < h0) { year++; alvo = new Date(year, ms - 1, ds); }
+  return { dias: Math.round((alvo - h0) / 86400000), anos: year - ys, label: alvo.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
 }
 
 function computeAlerts() {
@@ -3273,18 +3315,21 @@ function renderRecompraTab(client) {
   const barra = insight.avgInterval ? `
     <div class="ciclo-progresso"><div class="ciclo-progresso-fill" style="width:${Math.min(100, insight.progresso)}%; background:${cor};"></div></div>
     <p class="hint">${insight.diasRestantes >= 0 ? `Faltam ~${insight.diasRestantes} dias para o próximo pedido previsto.` : `${Math.abs(insight.diasRestantes)} dias além do previsto.`}</p>` : "";
+  const origemLabel = insight.cicloOrigem === "consumo" ? "estimado pelo consumo declarado" : insight.cicloOrigem === "historico" ? "calculado pelo histórico de pedidos" : "";
   return `
     <div class="tip-box"><strong>${insight.statusLabel}.</strong> ${escapeHtml(insight.tip)}</div>
     ${barra}
     <div class="detalhe-grid">
-      ${field("Ciclo médio (últimos 3 pedidos)", insight.avgInterval ? insight.avgInterval + " dias" : "")}
+      ${field(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
       ${field("Volume médio por pedido", insight.avgVolume ? insight.avgVolume.toFixed(1) + " t" : "")}
+      ${field("Consumo mensal declarado", insight.consumoMensalTotal ? insight.consumoMensalTotal.toFixed(1) + " t/mês" : "")}
       ${field("Data do último pedido", insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "")}
       ${field("Dias desde o último pedido", insight.daysSinceLast !== null ? insight.daysSinceLast : "")}
       ${field("Próximo pedido previsto", insight.nextExpectedDate ? formatDate(insight.nextExpectedDate) : "")}
       ${field("Produto favorito", insight.favoriteProduct)}
       ${field("Avisar (dias antes do previsto)", client.alertaRecompraDias)}
     </div>
+    ${!insight.consumoMensalTotal ? `<p class="hint" style="margin-top:8px;">Sem consumo mensal declarado — informe o "Volume mensal estimado" de cada categoria animal na aba Perfil Produtivo para o sistema estimar a recompra mesmo sem histórico de pedidos.</p>` : ""}
     ${client.cicloObs ? `<div class="detalhe-section"><h4>Observações sobre o ciclo</h4><p>${escapeHtml(client.cicloObs)}</p></div>` : ""}`;
 }
 
@@ -3444,7 +3489,8 @@ const EVENT_TYPES = {
   viagem: { label: "Viagem", colorVar: "--ok-text" },
   pedido: { label: "Pedido", colorVar: "--primary-hover" },
   vencido: { label: "Recompra vencida", colorVar: "--late-text" },
-  estoque: { label: "Estoque acabando", colorVar: "--warn-text" }
+  estoque: { label: "Estoque acabando", colorVar: "--warn-text" },
+  aniversario: { label: "Aniversário", colorVar: "--chart-1" }
 };
 
 let calendarView = "mes";
@@ -3475,6 +3521,10 @@ function getAllAgendaEvents() {
       if (estoqueAlertaSuprimido(c.id, categoria.id, forecast)) return;
       const dataAlerta = addDays(forecast.dataPrevistaEsgotamento, -20);
       events.push({ data: dataAlerta, hora: "", classe: "estoque", label: `Estoque de ${categoriaRowLabel(categoria)} acabando: ${c.nome}`, clientName: c.nome });
+    });
+    (c.contatosPessoas || []).forEach(pessoa => {
+      const info = aniversarioInfo(pessoa.dataNascimento);
+      if (info) events.push({ data: addDays(todayStr(), info.dias), hora: "", classe: "aniversario", label: `Ligar para parabenizar: ${pessoa.nome || "contato"}`, clientName: c.nome });
     });
   });
   return events.filter(e => agendaActiveFilters.has(e.classe));
@@ -4843,8 +4893,9 @@ document.querySelectorAll(".btn-relatorio-rapido").forEach(btn => {
 
 // ---------- Fechar modais ----------
 document.querySelectorAll("[data-close-modal]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.dataset.closeModal)));
-// #modal-login fica de fora do fechamento genérico por clique fora — mesmo motivo do Escape acima.
-document.querySelectorAll(".modal-overlay:not(#modal-login)").forEach(overlay => overlay.addEventListener("click", e => { if (e.target === overlay) overlay.classList.add("hidden"); }));
+// Nenhum modal fecha por clique fora: todos são formulários de cadastro/edição, e um clique
+// perdido do lado de fora descartava silenciosamente o que já tinha sido digitado. Fechar exige
+// um clique explícito no X, em "Cancelar" ou Esc — igual ao #modal-login já fazia.
 function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
 
 // ============================================================
@@ -5053,9 +5104,18 @@ if (restoreBackupInput) restoreBackupInput.addEventListener("change", e => {
   reader.readAsText(file);
 });
 
-// ---------- Login / logout (Supabase Auth, magic link por e-mail) ----------
+// ---------- Login / logout (Supabase Auth, e-mail + senha) ----------
 function showLoginModal() { const m = document.getElementById("modal-login"); if (m) m.classList.remove("hidden"); }
 function hideLoginModal() { const m = document.getElementById("modal-login"); if (m) m.classList.add("hidden"); }
+// O modal de login tem 3 telas dentro do mesmo overlay: entrar (padrão), pedir link pra
+// definir/redefinir senha, e definir a nova senha (essa última abre sozinha quando o usuário
+// clica no link recebido por e-mail — ver o listener de PASSWORD_RECOVERY abaixo).
+function showLoginView(view) {
+  ["form-login", "form-login-recuperar", "form-login-nova-senha"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("hidden", id !== view);
+  });
+}
 
 async function initAuthAndSync() {
   if (!sb) return; // credenciais do Supabase ainda não configuradas: app roda só local, como hoje
@@ -5064,16 +5124,61 @@ async function initAuthAndSync() {
   if (formLogin) formLogin.addEventListener("submit", async e => {
     e.preventDefault();
     const email = document.getElementById("login-email").value.trim();
-    if (!email) return;
+    const senha = document.getElementById("login-senha").value;
+    if (!email || !senha) return;
     const btn = document.getElementById("btn-login-enviar");
     const statusEl = document.getElementById("login-status");
     btn.disabled = true;
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href } });
+    const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+    btn.disabled = false;
+    if (error && statusEl) {
+      statusEl.style.display = "block";
+      statusEl.textContent = "E-mail ou senha incorretos. Se ainda não definiu uma senha, use o link abaixo.";
+    }
+    // Se der certo, onAuthStateChange (SIGNED_IN) cuida de fechar o modal e sincronizar.
+  });
+
+  const btnIrRecuperar = document.getElementById("btn-login-ir-recuperar");
+  if (btnIrRecuperar) btnIrRecuperar.addEventListener("click", () => showLoginView("form-login-recuperar"));
+  const btnVoltarEntrar = document.getElementById("btn-login-voltar-entrar");
+  if (btnVoltarEntrar) btnVoltarEntrar.addEventListener("click", () => showLoginView("form-login"));
+
+  const formRecuperar = document.getElementById("form-login-recuperar");
+  if (formRecuperar) formRecuperar.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = document.getElementById("login-recuperar-email").value.trim();
+    if (!email) return;
+    const btn = document.getElementById("btn-login-recuperar-enviar");
+    const statusEl = document.getElementById("login-recuperar-status");
+    btn.disabled = true;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href });
     btn.disabled = false;
     if (statusEl) {
       statusEl.style.display = "block";
-      statusEl.textContent = error ? `Erro: ${error.message}` : "Link enviado — verifique seu e-mail.";
+      statusEl.textContent = error ? `Erro: ${error.message}` : "Link enviado — verifique seu e-mail e clique nele para definir a senha.";
     }
+  });
+
+  const formNovaSenha = document.getElementById("form-login-nova-senha");
+  if (formNovaSenha) formNovaSenha.addEventListener("submit", async e => {
+    e.preventDefault();
+    const senha = document.getElementById("login-nova-senha").value;
+    const confirmar = document.getElementById("login-nova-senha-confirmar").value;
+    const statusEl = document.getElementById("login-nova-senha-status");
+    if (senha !== confirmar) {
+      if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "As senhas não coincidem."; }
+      return;
+    }
+    const btn = document.getElementById("btn-login-nova-senha-salvar");
+    btn.disabled = true;
+    const { error } = await sb.auth.updateUser({ password: senha });
+    btn.disabled = false;
+    if (error) {
+      if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = `Erro: ${error.message}`; }
+      return;
+    }
+    showToast("Senha definida com sucesso.");
+    // onAuthStateChange (SIGNED_IN) já deixa autenticado com a sessão de recuperação — fecha o modal e sincroniza.
   });
 
   const btnContinuarOffline = document.getElementById("btn-login-continuar-offline");
@@ -5089,10 +5194,16 @@ async function initAuthAndSync() {
   });
 
   sb.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      showLoginModal();
+      showLoginView("form-login-nova-senha");
+      return;
+    }
     if (session) {
       hideLoginModal();
       if (event === "SIGNED_IN") pullAllTablesAndMerge().then(ok => { if (ok) boot(); });
     } else {
+      showLoginView("form-login");
       showLoginModal();
     }
   });
@@ -5102,6 +5213,7 @@ async function initAuthAndSync() {
     hideLoginModal();
     pullAllTablesAndMerge().then(ok => { if (ok) boot(); });
   } else {
+    showLoginView("form-login");
     showLoginModal();
   }
 

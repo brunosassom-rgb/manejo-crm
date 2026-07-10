@@ -1577,15 +1577,44 @@
       <div class="modal-header">
         <h3>Entrar no Manejo CRM</h3>
       </div>
+
+      <!-- Entrar com e-mail e senha -->
       <form id="form-login" class="form">
-        <p class="hint" id="login-hint">Digite seu e-mail para receber um link de acesso.</p>
         <label>E-mail
           <input type="email" id="login-email" required placeholder="voce@empresa.com" autocomplete="email">
         </label>
-        <button type="submit" class="btn-primary" id="btn-login-enviar">Enviar link de acesso</button>
+        <label>Senha
+          <input type="password" id="login-senha" required placeholder="Sua senha" autocomplete="current-password">
+        </label>
+        <button type="submit" class="btn-primary" id="btn-login-enviar">Entrar</button>
         <p class="hint" id="login-status" style="display:none;"></p>
-        <p class="hint" style="margin-top:2px;">Abra o link no mesmo aparelho e navegador onde você quer usar o CRM — é aqui que a sessão vai abrir, não necessariamente onde você pediu o link.</p>
+        <button type="button" class="btn-link" id="btn-login-ir-recuperar">Esqueci a senha / ainda não defini uma senha</button>
         <button type="button" class="btn-secondary" id="btn-login-continuar-offline" style="margin-top:4px;">Continuar sem entrar (só neste aparelho, sem sincronizar)</button>
+      </form>
+
+      <!-- Pedir link para definir/redefinir senha -->
+      <form id="form-login-recuperar" class="form hidden">
+        <p class="hint">Digite seu e-mail — vamos mandar um link para você definir (ou redefinir) sua senha.</p>
+        <label>E-mail
+          <input type="email" id="login-recuperar-email" required placeholder="voce@empresa.com" autocomplete="email">
+        </label>
+        <button type="submit" class="btn-primary" id="btn-login-recuperar-enviar">Enviar link</button>
+        <p class="hint" id="login-recuperar-status" style="display:none;"></p>
+        <p class="hint" style="margin-top:2px;">Abra o link no mesmo aparelho e navegador onde você quer usar o CRM.</p>
+        <button type="button" class="btn-link" id="btn-login-voltar-entrar">Voltar para o login</button>
+      </form>
+
+      <!-- Definir nova senha (aberto automaticamente ao clicar no link recebido por e-mail) -->
+      <form id="form-login-nova-senha" class="form hidden">
+        <p class="hint">Defina sua senha de acesso ao Manejo CRM.</p>
+        <label>Nova senha
+          <input type="password" id="login-nova-senha" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </label>
+        <label>Confirmar senha
+          <input type="password" id="login-nova-senha-confirmar" required minlength="6" placeholder="Repita a senha" autocomplete="new-password">
+        </label>
+        <button type="submit" class="btn-primary" id="btn-login-nova-senha-salvar">Salvar senha e entrar</button>
+        <p class="hint" id="login-nova-senha-status" style="display:none;"></p>
       </form>
     </div>
   </div>
