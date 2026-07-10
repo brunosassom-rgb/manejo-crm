@@ -15,7 +15,7 @@
   --surface: #FFFFFF;
   --text: #111827;
   --text-muted: #6B7280;
-  --text-faint: #9CA3AF;
+  --text-faint: #6E7863; /* era #9CA3AF (2.54:1 sobre --surface, abaixo do mínimo legível) — 4.64:1 */
   --border: #E5E7EB;
   --border-soft: #F3F4F6;
 
@@ -50,7 +50,7 @@
   --surface: #16181A;
   --text: #F3F4F6;
   --text-muted: #9CA3AF;
-  --text-faint: #6B7280;
+  --text-faint: #848A94; /* era #6B7280 (3.60:1 sobre --surface, abaixo de 4.5) — 5.01:1 */
   --border: #2A2D31;
   --border-soft: #212327;
   --primary: #6C7A52; /* Alcaparra — tons mais claros do grupo (Orégano+) caem abaixo de 4.5:1 com texto branco nos botões sólidos */
@@ -371,7 +371,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .alert-dot.upcoming { background: #16A34A; }
 .alert-dot.orange { background: #d97b1e; }
 .alert-dot.info { background: #2a6fd6; }
-.alert-item .name { font-weight: 500; font-size: 13px; color: #374151; }
+.alert-item .name { font-weight: 500; font-size: 13px; color: var(--text); } /* era #374151 fixo — 1.69:1 no tema escuro, quase invisível */
 .alert-item .msg { font-size: 12px; color: var(--text-faint); margin-top: 1px; }
 
 /* ============ Próximos contatos (timeline curta) ============ */
@@ -387,12 +387,16 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .contact-row .when { font-size: 0.72rem; color: var(--text-faint); white-space: nowrap; }
 
 /* ============ Ranking top clientes ============ */
+/* Base sem escopo: .rank-track/.rank-fill também são usados sozinhos (ex: widget "Visitas
+   técnicas no mês"), fora de um .rank-row — sem essa regra base a barra inteira ficava sem
+   altura nem cor de fundo, invisível. */
+.rank-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.rank-fill { height: 100%; background: var(--primary); border-radius: 3px; }
 .rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--border-soft); }
 .rank-row:last-child { border-bottom: none; }
 .rank-row .rank-n { font-size: 0.74rem; font-weight: 700; color: var(--text-faint); width: 16px; }
 .rank-row .rank-name { font-size: 0.8rem; flex-shrink: 0; width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rank-row .rank-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-.rank-row .rank-fill { height: 100%; background: var(--primary); border-radius: 3px; }
+.rank-row .rank-track { flex: 1; }
 .rank-row .rank-val { font-size: 0.74rem; font-weight: 700; width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ============ Gráfico de barras (6 meses) ============ */
@@ -766,8 +770,17 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 .btn-close { background: transparent; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted); line-height: 1; }
 .tooltip-hint { font-size: 0.7rem; color: var(--text-faint); }
 
-/* Capa, cabeçalho/rodapé corridos e encerramento do relatório de cliente — só existem na impressão/PDF */
-.report-capa, .report-running-head, .report-running-foot, .report-encerramento, .report-content-scope { display: none; }
+/* Capa, cabeçalho/rodapé corridos (position:fixed, só fazem sentido repetindo por página impressa)
+   e encerramento do relatório — só existem na impressão/PDF. .report-content-scope NÃO entra
+   aqui: ele só é um wrapper em volta do .report-doc real, e escondê-lo deixava a tela de
+   Relatórios em branco depois de escolher um cliente — nenhum conteúdo aparecia, só os controles. */
+.report-capa, .report-running-head, .report-running-foot, .report-encerramento { display: none; }
+/* Algumas seções reaproveitadas de abas da ficha (ex: "Condições padrão deste cliente", em
+   Histórico de vendas) trazem campos editáveis marcados .no-print — fazem sentido na ficha, mas
+   não numa pré-visualização de relatório. .no-print já some na impressão via @media print; aqui
+   também some na tela, só dentro dos containers de relatório. */
+#relatorio-cliente-conteudo .no-print, #relatorio-cliente-periodo-conteudo .no-print,
+#relatorio-mensal-conteudo .no-print, #relatorio-funil-conteudo .no-print { display: none; }
 
 @page { size: A4; margin: 0; }
 
