@@ -996,6 +996,41 @@ function animateCounter(el, target, isMoney) {
 }
 
 // ============================================================
+// Ícones — linha fina monocromática (nunca emoji), reaproveitados em
+// Dashboard, Relatórios e Inteligência Competitiva via .panel-ico/.kpi-ico,
+// que já definem cor por tom (tone-sage/gold/blue/late/olive/purple).
+// ============================================================
+const ICONS = {
+  box: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg>`,
+  money: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.3c-.6-.7-1.6-1-2.5-1-1.4 0-2.5.7-2.5 1.9s1.1 1.6 2.5 1.9 2.5.6 2.5 1.9-1.1 1.9-2.5 1.9c-.9 0-1.9-.3-2.5-1"/><path d="M12 6.4v11.2"/></svg>`,
+  users: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  funnel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>`,
+  clipboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h1"/></svg>`,
+  barChart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>`,
+  bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
+  messageCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
+  trendingUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+  trendingDown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`,
+  award: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>`,
+  mapPin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  truck: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>`,
+  target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>`,
+  alertTriangle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  leaf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>`,
+  refreshCw: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  folder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`,
+  scale: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M5 7h14"/><path d="M5 7 2 14a3 3 0 0 0 6 0z"/><path d="M19 7l-3 7a3 3 0 0 0 6 0z"/></svg>`,
+  ticket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4z"/><line x1="9" y1="9" x2="9" y2="15"/></svg>`,
+  fileText: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>`,
+  phoneOff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.4 12.4 0 0 0 3.81.61 2 2 0 0 1 2 2v3.5a2 2 0 0 1-2 2A19 19 0 0 1 2.72 3.81 2 2 0 0 1 4.72 2h3.5a2 2 0 0 1 2 2 12.4 12.4 0 0 0 .61 3.81 2 2 0 0 1-.45 2.11z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>`,
+  lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  resize: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`,
+  gripVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg>`
+};
+
+// ============================================================
 // DASHBOARD — layout editável (widgets: arrastar e redimensionar)
 // ============================================================
 const DEFAULT_DASHBOARD_LAYOUT = [
@@ -1021,8 +1056,8 @@ const WIDGET_INNER_HTML = {
   visitas: `<div id="visitas-widget-body"></div>`
 };
 const WIDGET_ICON = {
-  roteiro: ["📋", "sage"], kpis: ["📊", "gold"], funil: ["🧭", "blue"], alertas: ["🔔", "late"],
-  contatos: ["💬", "olive"], volume6m: ["📈", "purple"], ranking: ["🏆", "gold"], territorio: ["📍", "sage"], visitas: ["🚜", "blue"]
+  roteiro: [ICONS.clipboard, "sage"], kpis: [ICONS.barChart, "gold"], funil: [ICONS.funnel, "blue"], alertas: [ICONS.bell, "late"],
+  contatos: [ICONS.messageCircle, "olive"], volume6m: [ICONS.trendingUp, "purple"], ranking: [ICONS.award, "gold"], territorio: [ICONS.mapPin, "sage"], visitas: [ICONS.truck, "blue"]
 };
 
 let dashboardEditMode = false;
@@ -1044,12 +1079,12 @@ function renderDashboardCanvas() {
   const layout = getDashboardLayout();
   const canvas = document.getElementById("dash-canvas");
   canvas.innerHTML = layout.map(w => {
-    const [icon, tone] = WIDGET_ICON[w.id] || ["📊", "sage"];
+    const [icon, tone] = WIDGET_ICON[w.id] || [ICONS.barChart, "sage"];
     return `
     <div class="dash-widget ${w.id === "kpis" ? "dash-widget-flat" : ""}" data-widget-id="${w.id}" data-span="${w.span}" style="grid-column: span ${w.span};" ${dashboardEditMode ? 'draggable="true"' : ""}>
       <div class="dash-widget-head">
         <h3><span class="panel-ico tone-${tone}">${icon}</span>${escapeHtml(w.title)}</h3>
-        ${dashboardEditMode ? `<div class="widget-controls"><button type="button" class="btn-resize-widget" data-widget-id="${w.id}" title="Mudar tamanho">⤢</button><span class="drag-handle" title="Arrastar sobre outro widget pra trocar de lugar">⠿</span></div>` : ""}
+        ${dashboardEditMode ? `<div class="widget-controls"><button type="button" class="btn-resize-widget" data-widget-id="${w.id}" title="Mudar tamanho">${ICONS.resize}</button><span class="drag-handle" title="Arrastar sobre outro widget pra trocar de lugar">${ICONS.gripVertical}</span></div>` : ""}
       </div>
       ${WIDGET_INNER_HTML[w.id]}
     </div>`;
@@ -1181,7 +1216,7 @@ function renderDashboard() {
     ? alerts.slice(0, 12).map(a => `
         <div class="alert-item ${a.tipo === "Estoque baixo" ? "alert-item-destaque" : ""}" data-client-id="${a.clientId}">
           <span class="alert-dot ${alertVisualClass(a.severidade)}"></span>
-          <div><div class="name">${escapeHtml(a.clientName)}</div><div class="msg">${a.tipo === "Estoque baixo" ? "📦 " : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
+          <div><div class="name">${escapeHtml(a.clientName)}</div><div class="msg">${a.tipo === "Estoque baixo" ? `<span class="inline-ico">${ICONS.box}</span> ` : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
         </div>`).join("")
     : `<div class="empty-state-plain">Nenhum alerta no momento.</div>`;
   document.querySelectorAll("#alertas-list .alert-item").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
@@ -1241,11 +1276,11 @@ function renderDashboard() {
           const isEstoque = a.tipo === "Estoque baixo";
           return `<div class="roteiro-item ${isEstoque ? "roteiro-item-destaque" : ""}">
             <span class="alert-dot ${alertVisualClass(a.severidade)}"></span>
-            <div class="roteiro-txt"><div class="roteiro-name">${escapeHtml(a.clientName)}</div><div class="roteiro-msg">${isEstoque ? "📦 " : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
+            <div class="roteiro-txt"><div class="roteiro-name">${escapeHtml(a.clientName)}</div><div class="roteiro-msg">${isEstoque ? `<span class="inline-ico">${ICONS.box}</span> ` : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
             <div class="roteiro-actions">
               ${isEstoque
-                ? `<button type="button" class="roteiro-lock-btn" data-client-id="${a.clientId || ""}" data-categoria-id="${a.categoriaAnimalId || ""}" data-data-leitura="${a.dataLeitura || ""}" title="Some quando o pedido for entregue — clique se perdeu essa venda">🔒</button>`
-                : `<button type="button" class="roteiro-feito-dot" data-compromisso-id="${a.compromissoId || ""}" data-client-id="${a.clientId || ""}" data-tipo="${escapeHtml(a.tipo)}" title="Marcar como feito">✓</button>`}
+                ? `<button type="button" class="roteiro-lock-btn" data-client-id="${a.clientId || ""}" data-categoria-id="${a.categoriaAnimalId || ""}" data-data-leitura="${a.dataLeitura || ""}" title="Some quando o pedido for entregue — clique se perdeu essa venda">${ICONS.lock}</button>`
+                : `<button type="button" class="roteiro-feito-dot" data-compromisso-id="${a.compromissoId || ""}" data-client-id="${a.clientId || ""}" data-tipo="${escapeHtml(a.tipo)}" title="Marcar como feito">${ICONS.check}</button>`}
               ${a.clientId ? `<button type="button" class="btn-mini roteiro-open" data-client-id="${a.clientId}">Abrir</button>` : ""}
               ${wa ? `<a class="btn-mini btn-mini-wa" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
             </div>
@@ -4314,10 +4349,10 @@ function renderVisitasGerencial(yyyyMM) {
   const visitasMes = state.visitas.filter(inMonth);
   const criticas = visitasMes.filter(v => v.condicaoGeral === "Crítica").length;
   const tiles = [
-    { icon: "🚜", label: "Visitas no período", value: visitasMes.length },
-    { icon: "🎯", label: "Meta do mês", value: state.metaVisitasMes || 0 },
-    { icon: "⚠️", label: "Condições críticas", value: criticas },
-    { icon: "🧑‍🌾", label: "Clientes distintos visitados", value: new Set(visitasMes.map(v => v.clientId)).size }
+    { icon: ICONS.truck, label: "Visitas no período", value: visitasMes.length },
+    { icon: ICONS.target, label: "Meta do mês", value: state.metaVisitasMes || 0 },
+    { icon: ICONS.alertTriangle, label: "Condições críticas", value: criticas },
+    { icon: ICONS.users, label: "Clientes distintos visitados", value: new Set(visitasMes.map(v => v.clientId)).size }
   ];
   document.getElementById("visitas-gerencial-kpis").innerHTML = reportStatTileItems(tiles);
 
@@ -4531,15 +4566,15 @@ function renderRelatorioCliente(clientId) {
   // vendas) ficam em coluna única. As demais entram no grid de 2 colunas — o CSS impõe
   // table-layout:fixed nas tabelas de lá, então o texto quebra em vez de vazar/cortar.
   const secoesLargas = [
-    ["🌱", "Perfil produtivo", renderProdutivoTab(client)],
-    ["📦", "Histórico de vendas", stripActionsRow(renderVendasTab(client))]
+    [ICONS.leaf, "Perfil produtivo", renderProdutivoTab(client)],
+    [ICONS.box, "Histórico de vendas", stripActionsRow(renderVendasTab(client))]
   ];
   const secoesCompactas = [
-    ["🔁", "Ciclo de recompra", stripActionsRow(renderRecompraTab(client))],
-    ["📈", "Oportunidades de upsell", stripActionsRow(renderUpsellTab(client))],
-    ["💬", "Histórico de contatos", stripActionsRow(renderContatosTimelineTab(client))],
-    ["🎫", "SAC", stripActionsRow(renderSacTab(client))],
-    ["🗂️", "Cadastro", stripActionsRow(renderCadastroIdentificacaoTab(client))]
+    [ICONS.refreshCw, "Ciclo de recompra", stripActionsRow(renderRecompraTab(client))],
+    [ICONS.trendingUp, "Oportunidades de upsell", stripActionsRow(renderUpsellTab(client))],
+    [ICONS.messageCircle, "Histórico de contatos", stripActionsRow(renderContatosTimelineTab(client))],
+    [ICONS.ticket, "SAC", stripActionsRow(renderSacTab(client))],
+    [ICONS.folder, "Cadastro", stripActionsRow(renderCadastroIdentificacaoTab(client))]
   ];
   const todosTopicos = [...secoesLargas, ...secoesCompactas].map(s => s[1]);
   const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
@@ -4572,12 +4607,12 @@ function renderRelatorioClientePeriodo(clientId, yyyyMM) {
   const [y, m] = yyyyMM.split("-");
   const mesLabel = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const tiles = [
-    { icon: "📦", label: "Pedidos no período", value: pedidosMes.length },
-    { icon: "⚖️", label: "Volume vendido (ton)", value: volumeMes.toFixed(1) },
-    { icon: "💰", label: "Valor vendido", value: formatMoney(valorMes) },
-    { icon: "💬", label: "Contatos realizados", value: contatosMes.length },
-    { icon: "🚜", label: "Visitas técnicas", value: visitasMes.length },
-    { icon: "🎫", label: "SAC aberto no período", value: sacsMes.length }
+    { icon: ICONS.box, label: "Pedidos no período", value: pedidosMes.length },
+    { icon: ICONS.scale, label: "Volume vendido (ton)", value: volumeMes.toFixed(1) },
+    { icon: ICONS.money, label: "Valor vendido", value: formatMoney(valorMes) },
+    { icon: ICONS.messageCircle, label: "Contatos realizados", value: contatosMes.length },
+    { icon: ICONS.truck, label: "Visitas técnicas", value: visitasMes.length },
+    { icon: ICONS.ticket, label: "SAC aberto no período", value: sacsMes.length }
   ];
   const pedidosRows = pedidosMes.map(p => `<tr><td>${formatDate(p.dataPedido)}</td><td>${escapeHtml(p.produto)}</td><td>${p.volume || "-"}</td><td>${p.valor ? formatMoney(p.valor) : "-"}</td></tr>`).join("") || `<tr><td colspan="4">Nenhum pedido no período.</td></tr>`;
   const contatosRows = contatosMes.map(c => `<tr><td>${formatDate(c.data)}</td><td>${escapeHtml(c.tipo)}</td><td>${escapeHtml(c.resumo || "-")}</td></tr>`).join("") || `<tr><td colspan="3">Nenhum contato no período.</td></tr>`;
@@ -4593,12 +4628,12 @@ function renderRelatorioClientePeriodo(clientId, yyyyMM) {
         ${reportDocHead(`${escapeHtml(client.nome)}${client.fazenda ? " · " + escapeHtml(client.fazenda) : ""}`, metaLinha)}
         ${reportStatTilesHtml(tiles)}
         <div class="report-sections">
-          ${reportSectionHtml("📦", "Pedidos do período", `<table class="mini"><thead><tr><th>Data</th><th>Produto</th><th>Volume</th><th>Valor</th></tr></thead><tbody>${pedidosRows}</tbody></table>`, 0)}
+          ${reportSectionHtml(ICONS.box, "Pedidos do período", `<table class="mini"><thead><tr><th>Data</th><th>Produto</th><th>Volume</th><th>Valor</th></tr></thead><tbody>${pedidosRows}</tbody></table>`, 0)}
         </div>
         <div class="report-sections-compact">
-          ${reportSectionHtml("💬", "Contatos do período", `<table class="mini"><thead><tr><th>Data</th><th>Tipo</th><th>Resumo</th></tr></thead><tbody>${contatosRows}</tbody></table>`, 1)}
-          ${reportSectionHtml("🚜", "Visitas técnicas do período", `<table class="mini"><thead><tr><th>Data</th><th>Objetivos</th></tr></thead><tbody>${visitasRows}</tbody></table>`, 2)}
-          ${reportSectionHtml("🎫", "SAC do período", `<table class="mini"><thead><tr><th>Número</th><th>Data</th><th>Tipo</th><th>Status</th></tr></thead><tbody>${sacsRows}</tbody></table>`, 3)}
+          ${reportSectionHtml(ICONS.messageCircle, "Contatos do período", `<table class="mini"><thead><tr><th>Data</th><th>Tipo</th><th>Resumo</th></tr></thead><tbody>${contatosRows}</tbody></table>`, 1)}
+          ${reportSectionHtml(ICONS.truck, "Visitas técnicas do período", `<table class="mini"><thead><tr><th>Data</th><th>Objetivos</th></tr></thead><tbody>${visitasRows}</tbody></table>`, 2)}
+          ${reportSectionHtml(ICONS.ticket, "SAC do período", `<table class="mini"><thead><tr><th>Número</th><th>Data</th><th>Tipo</th><th>Status</th></tr></thead><tbody>${sacsRows}</tbody></table>`, 3)}
         </div>
       </div>
       ${reportRunningFootHtml()}
@@ -4621,9 +4656,9 @@ function renderRelatorioMensal(yyyyMM) {
   const contatosPorTipo = {};
   contatosMes.forEach(c => { contatosPorTipo[c.tipo] = (contatosPorTipo[c.tipo] || 0) + 1; });
   const tiles = [
-    { icon: "🧑‍🌾", label: "Novos clientes", value: novosClientes.length }, { icon: "📦", label: "Pedidos no mês", value: pedidosMes.length },
-    { icon: "⚖️", label: "Volume vendido (ton)", value: volumeMes.toFixed(1) }, { icon: "💰", label: "Valor vendido", value: formatMoney(valorMes) },
-    { icon: "💬", label: "Contatos realizados", value: contatosMes.length }, { icon: "📝", label: "Propostas enviadas", value: propostasMes.length }
+    { icon: ICONS.users, label: "Novos clientes", value: novosClientes.length }, { icon: ICONS.box, label: "Pedidos no mês", value: pedidosMes.length },
+    { icon: ICONS.scale, label: "Volume vendido (ton)", value: volumeMes.toFixed(1) }, { icon: ICONS.money, label: "Valor vendido", value: formatMoney(valorMes) },
+    { icon: ICONS.messageCircle, label: "Contatos realizados", value: contatosMes.length }, { icon: ICONS.fileText, label: "Propostas enviadas", value: propostasMes.length }
   ];
   const [y, m] = yyyyMM.split("-");
   const mesLabel = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
@@ -4635,9 +4670,9 @@ function renderRelatorioMensal(yyyyMM) {
       ${reportDocHead("Atividades do mês", mesLabel)}
       ${reportStatTilesHtml(tiles)}
       <div class="report-sections">
-        ${reportSectionHtml("💬", "Contatos por tipo", `<div class="detalhe-grid">${contatosTipoGrid}</div>`, 0)}
-        ${reportSectionHtml("🧑‍🌾", "Novos clientes cadastrados", `<table class="mini"><thead><tr><th>Nome</th><th>Fazenda</th><th>Tipo</th></tr></thead><tbody>${novosRows}</tbody></table>`, 1)}
-        ${reportSectionHtml("📦", "Pedidos do mês", `<table class="mini"><thead><tr><th>Data</th><th>Cliente</th><th>Produto</th><th>Volume</th><th>Valor</th></tr></thead><tbody>${pedidosRows}</tbody></table>`, 2)}
+        ${reportSectionHtml(ICONS.messageCircle, "Contatos por tipo", `<div class="detalhe-grid">${contatosTipoGrid}</div>`, 0)}
+        ${reportSectionHtml(ICONS.users, "Novos clientes cadastrados", `<table class="mini"><thead><tr><th>Nome</th><th>Fazenda</th><th>Tipo</th></tr></thead><tbody>${novosRows}</tbody></table>`, 1)}
+        ${reportSectionHtml(ICONS.box, "Pedidos do mês", `<table class="mini"><thead><tr><th>Data</th><th>Cliente</th><th>Produto</th><th>Volume</th><th>Valor</th></tr></thead><tbody>${pedidosRows}</tbody></table>`, 2)}
       </div>
     </div>`;
 }
@@ -4695,10 +4730,10 @@ function renderRelatorioFunil() {
     <div class="report-doc">
       ${reportDocHead("Funil &amp; carteira", `Relatório gerado em ${formatDate(todayStr())}`)}
       <div class="report-sections">
-        ${reportSectionHtml("🔄", "Taxa de conversão lead → cliente (últimos 6 meses)", `<table class="mini"><thead><tr><th>Mês</th><th>Novos leads</th><th>Convertidos</th><th>Taxa</th></tr></thead><tbody>${conversaoRows}</tbody></table>`, 0)}
-        ${reportSectionHtml("⏱️", "Tempo médio de cada etapa do funil", `<table class="mini"><thead><tr><th>Etapa</th><th>Tempo médio</th><th>Passagens registradas</th></tr></thead><tbody>${etapaRows}</tbody></table>`, 1)}
-        ${reportSectionHtml("⚠️", "Clientes sem pedido há mais de um ciclo", `<table class="mini"><thead><tr><th>Cliente</th><th>Ciclo médio</th><th>Dias sem comprar</th></tr></thead><tbody>${semPedidoRows}</tbody></table>`, 2)}
-        ${reportSectionHtml("📵", "Leads sem contato há mais de 7 dias", `<table class="mini"><thead><tr><th>Lead</th><th>Etapa</th><th>Sem contato</th></tr></thead><tbody>${semContatoRows}</tbody></table>`, 3)}
+        ${reportSectionHtml(ICONS.refreshCw, "Taxa de conversão lead → cliente (últimos 6 meses)", `<table class="mini"><thead><tr><th>Mês</th><th>Novos leads</th><th>Convertidos</th><th>Taxa</th></tr></thead><tbody>${conversaoRows}</tbody></table>`, 0)}
+        ${reportSectionHtml(ICONS.clock, "Tempo médio de cada etapa do funil", `<table class="mini"><thead><tr><th>Etapa</th><th>Tempo médio</th><th>Passagens registradas</th></tr></thead><tbody>${etapaRows}</tbody></table>`, 1)}
+        ${reportSectionHtml(ICONS.alertTriangle, "Clientes sem pedido há mais de um ciclo", `<table class="mini"><thead><tr><th>Cliente</th><th>Ciclo médio</th><th>Dias sem comprar</th></tr></thead><tbody>${semPedidoRows}</tbody></table>`, 2)}
+        ${reportSectionHtml(ICONS.phoneOff, "Leads sem contato há mais de 7 dias", `<table class="mini"><thead><tr><th>Lead</th><th>Etapa</th><th>Sem contato</th></tr></thead><tbody>${semContatoRows}</tbody></table>`, 3)}
       </div>
     </div>`;
 }

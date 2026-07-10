@@ -310,10 +310,13 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .widget-controls { display: flex; gap: 6px; align-items: center; }
 .btn-resize-widget {
   background: transparent; border: 1px solid var(--border); border-radius: 6px;
-  width: 26px; height: 26px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted);
+  width: 26px; height: 26px; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
 }
+.btn-resize-widget svg { width: 14px; height: 14px; }
 .btn-resize-widget:hover { border-color: var(--primary); color: var(--primary); }
-.drag-handle { cursor: grab; color: var(--text-faint); font-size: 1.1rem; padding: 0 4px; }
+.drag-handle { cursor: grab; color: var(--text-faint); padding: 0 4px; display: inline-flex; align-items: center; }
+.drag-handle svg { width: 16px; height: 16px; }
 .dash-widget[draggable="true"] { cursor: default; }
 .dash-widget.dragging { opacity: 0.4; }
 .dash-widget.drag-over { outline: 2px dashed var(--primary); outline-offset: 2px; }
@@ -577,6 +580,9 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
   font-size: 13px; flex-shrink: 0;
 }
+.panel-ico svg { width: 15px; height: 15px; }
+.inline-ico { display: inline-flex; width: 13px; height: 13px; vertical-align: -2px; }
+.inline-ico svg { width: 100%; height: 100%; }
 .panel-ico.tone-olive { background: #E7EBDE; color: #566A38; }
 .panel-ico.tone-gold  { background: var(--gold-soft-bg); color: var(--gold); }
 .panel-ico.tone-sage  { background: #E2ECDF; color: #4F8A5E; }
@@ -1399,15 +1405,17 @@ h2 { font-size: 22px; }
 .roteiro-item-destaque { border-color: color-mix(in srgb, #d97b1e 45%, var(--border)); background: color-mix(in srgb, #d97b1e 8%, var(--surface-2)); }
 .roteiro-feito-dot {
   width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--surface);
-  color: transparent; font-size: 12px; line-height: 1; cursor: pointer; flex-shrink: 0;
+  color: transparent; line-height: 1; cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
+.roteiro-feito-dot svg { width: 13px; height: 13px; }
 .roteiro-feito-dot:hover { border-color: #1e7a3d; color: #1e7a3d; }
 .roteiro-lock-btn {
-  font-size: 13px; opacity: 0.65; flex-shrink: 0; background: none; border: none; cursor: pointer;
+  opacity: 0.65; flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--text-muted);
   width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%;
   transition: opacity 0.15s, background 0.15s;
 }
+.roteiro-lock-btn svg { width: 14px; height: 14px; }
 .roteiro-lock-btn:hover { opacity: 1; background: var(--surface-2); }
 .alert-item-destaque { border-left: 3px solid #d97b1e; background: color-mix(in srgb, #d97b1e 6%, transparent); padding-left: 9px; margin-left: -3px; border-radius: 4px; }
 .btn-mini {
