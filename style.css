@@ -459,7 +459,13 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 10px;
 }
-.ficha-left .fnome { font-size: 1.1rem; font-weight: 700; }
+/* .fnome/.card-sub/.hint são genéricos (usados em cards sobre fundo claro em outras telas) —
+   aqui dentro sentam direto sobre o fundo oliva escuro da sidebar (--rail-bg) sem nenhum fundo
+   próprio, então herdavam --text/--text-muted (pensados pra --surface) com contraste péssimo
+   (~2:1 e ~1.65:1). --sidebar-text/--sidebar-sub já existem prontos pra esse fundo específico. */
+.ficha-left .fnome { font-size: 1.1rem; font-weight: 700; color: var(--sidebar-text-active); }
+.ficha-left .card-sub { color: var(--sidebar-sub); }
+.ficha-left .hint { color: var(--sidebar-sub); }
 .ficha-left .fbadge { margin-top: 6px; }
 .ficha-contacts { margin-top: 16px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
 .ficha-contact-btn {
