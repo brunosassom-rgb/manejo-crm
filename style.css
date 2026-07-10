@@ -817,6 +817,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
   .report-enc-card .nome { font-weight: 700; font-size: 1.05rem; }
   .report-enc-card .cargo { font-size: 0.84rem; color: #5B6154; }
   .report-enc-card .empresa { font-size: 0.78rem; color: #8B917F; margin-top: 4px; }
+  .report-enc-card .contato { font-size: 0.76rem; color: #5B6154; margin-top: 8px; padding-top: 8px; border-top: 1px solid #E4E7DA; }
   .report-enc-bottom { position: relative; z-index: 1; text-align: center; }
   .report-enc-linha { width: 44px; height: 2px; background: var(--gold); margin: 0 auto 12px; }
   .report-enc-foot-brand { font-size: 0.7rem; color: #8B917F; letter-spacing: 0.08em; text-transform: uppercase; }

@@ -4610,6 +4610,11 @@ function reportBarsHtml(items) {
 function reportLocalLinha(client) {
   return [client.fazenda, client.municipio ? client.municipio + (client.estado ? ", " + client.estado : "") : ""].filter(Boolean).join(" — ");
 }
+// Celular/e-mail do usuário (Configurações → Empresa e marca) — permite o cliente que recebe o
+// relatório contatar o consultor direto a partir do PDF, sem precisar procurar em outro lugar.
+function reportContatoUsuarioLinha(cfg) {
+  return [cfg.whatsappUsuario, cfg.emailUsuario].filter(Boolean).join(" · ");
+}
 
 // ---------- Capa, encerramento e cabeçalho/rodapé fixo — comuns a todos os relatórios ----------
 function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
@@ -4619,6 +4624,7 @@ function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
     ? `<img src="${cfg.logoRepresentanteDataUrl}" alt="${escapeHtml(empresaRep)}">`
     : `<img src="assets/brand-mark.png" alt="Manejo CRM">`;
   const chipsHtml = (topicos || []).map(t => `<span class="report-capa-chip">${escapeHtml(t)}</span>`).join("");
+  const contatoLinha = reportContatoUsuarioLinha(cfg);
   return `
     <div class="report-capa">
       <img class="report-capa-wm" src="assets/touro-corpo.png" alt="">
@@ -4635,7 +4641,7 @@ function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
         ${chipsHtml ? `<div class="report-capa-chips">${chipsHtml}</div>` : ""}
       </div>
       <div class="report-capa-bottom">
-        <div>Preparado por<br><b>${escapeHtml(cfg.nomeUsuario || "-")}</b>${cfg.cargoUsuario ? " — " + escapeHtml(cfg.cargoUsuario) : ""}</div>
+        <div>Preparado por<br><b>${escapeHtml(cfg.nomeUsuario || "-")}</b>${cfg.cargoUsuario ? " — " + escapeHtml(cfg.cargoUsuario) : ""}${contatoLinha ? `<br><span style="opacity:0.75;">${escapeHtml(contatoLinha)}</span>` : ""}</div>
         <div style="text-align:right;">${escapeHtml(empresaRep)}<br><b>Documento confidencial</b></div>
       </div>
     </div>`;
@@ -4667,6 +4673,7 @@ function reportEncerramentoHtml(nomeSaudacao) {
           <div class="nome">${escapeHtml(cfg.nomeUsuario || "-")}</div>
           <div class="cargo">${escapeHtml(cfg.cargoUsuario || "Consultor Técnico")}</div>
           <div class="empresa">${escapeHtml(empresaRep)}</div>
+          ${reportContatoUsuarioLinha(cfg) ? `<div class="contato">${escapeHtml(reportContatoUsuarioLinha(cfg))}</div>` : ""}
         </div>
       </div>
       <div class="report-enc-bottom">
