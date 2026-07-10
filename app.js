@@ -80,7 +80,7 @@ function loadState() {
     clients: [], leads: [], clientesAtivos: [], propostas: [], upsells: [],
     pedidos: [], contatos: [], competitivas: [], consultores: [], sacs: [], compromissos: [],
     avaliacaoCompetitiva: {}, fornecedores: [], dashboardLayout: [], visitas: [], metaVisitasMes: 20, estoques: [], roteiroDispensados: [], estoqueAlertasDispensados: [],
-    config: { nomeEmpresa: "", nomeCrm: "Manejo", nomeUsuario: "Bruno Sasso", cargoUsuario: "Gerente de Território", whatsappUsuario: "", emailUsuario: "", precoMedioTon: "", empresaRepresentante: "", logoRepresentanteDataUrl: "" }
+    config: { nomeEmpresa: "", nomeCrm: "Manejo", nomeUsuario: "Bruno Sasso", cargoUsuario: "Gerente de Território", whatsappUsuario: "", emailUsuario: "", empresaRepresentante: "", logoRepresentanteDataUrl: "" }
   };
   if (!raw) return base;
   try {
@@ -500,12 +500,10 @@ function onlyDigits(str) { return (str || "").replace(/\D/g, ""); }
 
 // ---------- Acessores ----------
 function pedidosForClient(clientId) { return state.pedidos.filter(p => p.clientId === clientId).sort((a, b) => new Date(a.dataPedido) - new Date(b.dataPedido)); }
-// Valor do pedido: usa o valor lançado; se vazio, estima por volume × preço médio (config)
+// Valor do pedido: só o valor lançado — preço varia demais por produto pra estimar por um
+// "preço médio" único (mineral simples e ração premium não têm o mesmo R$/ton).
 function valorPedido(p) {
-  const v = Number(p.valor) || 0;
-  if (v > 0) return v;
-  const preco = Number(state.config && state.config.precoMedioTon) || 0;
-  return (Number(p.volume) || 0) * preco;
+  return Number(p.valor) || 0;
 }
 // Link de WhatsApp do contato principal de um cliente/lead
 function waLinkForClient(clientId) {
@@ -994,8 +992,6 @@ function switchMainTab(tabName, preselectClientId) {
     document.getElementById("config-email-usuario").value = state.config.emailUsuario || "";
     document.getElementById("config-empresa-representante").value = state.config.empresaRepresentante || "";
     renderLogoRepresentantePreview();
-    const precoEl = document.getElementById("config-preco-ton");
-    if (precoEl) precoEl.value = state.config.precoMedioTon || "";
   }
   if (preselectClientId) { /* reserved for future preselect needs */ }
 }
@@ -1019,14 +1015,6 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
   saveState();
   if (document.getElementById("visitas-widget-body")) renderVisitasWidget();
 });
-const precoTonEl = document.getElementById("config-preco-ton");
-if (precoTonEl) precoTonEl.addEventListener("change", e => {
-  const v = Number(e.target.value);
-  state.config.precoMedioTon = v > 0 ? v : "";
-  saveState();
-  if (document.getElementById("kpi-row")) renderDashboard();
-});
-
 [["config-nome-empresa", "nomeEmpresa"], ["config-nome-usuario", "nomeUsuario"], ["config-cargo-usuario", "cargoUsuario"], ["config-whatsapp-usuario", "whatsappUsuario"], ["config-email-usuario", "emailUsuario"], ["config-empresa-representante", "empresaRepresentante"]]
   .forEach(([domId, key]) => {
     document.getElementById(domId).addEventListener("change", e => {
@@ -1405,12 +1393,7 @@ function renderDashboard() {
       return { compromissoId: c.id, clientId: c.clientId || null, clientName: cli ? cli.nome : (c.descricao || "Compromisso"), tipo: "Agenda de hoje", mensagem: `${c.descricao || "Compromisso"}${c.hora ? " · " + c.hora : ""}`, severidade: "today" };
     });
     const itens = [...visitasHoje, ...acionaveis];
-    const precoTon = Number(state.config && state.config.precoMedioTon) || 0;
-    const valorRisco = precoTon ? state.clientesAtivos.filter(c => c.status === "Ativo").reduce((s, c) => {
-      const ins = computeClientInsight(c);
-      return s + (ins.status === "atrasado" ? (Number(ins.avgVolume) || 0) * precoTon : 0);
-    }, 0) : 0;
-    const head = `<div class="roteiro-head"><span class="roteiro-count">${itens.length} ${itens.length === 1 ? "ação para hoje" : "ações para hoje"}</span>${valorRisco ? `<span class="roteiro-risco" title="Volume médio dos clientes atrasados × preço médio">Valor em risco: ${formatMoney(valorRisco)}</span>` : ""}</div>`;
+    const head = `<div class="roteiro-head"><span class="roteiro-count">${itens.length} ${itens.length === 1 ? "ação para hoje" : "ações para hoje"}</span></div>`;
     document.getElementById("roteiro-list").innerHTML = head + (itens.length
       ? `<div class="roteiro-items">` + itens.slice(0, 12).map(a => {
           const wa = waLinkForClient(a.clientId);
