@@ -80,7 +80,7 @@ function loadState() {
     clients: [], leads: [], clientesAtivos: [], propostas: [], upsells: [],
     pedidos: [], contatos: [], competitivas: [], consultores: [], sacs: [], compromissos: [],
     avaliacaoCompetitiva: {}, fornecedores: [], dashboardLayout: [], visitas: [], metaVisitasMes: 20, estoques: [], roteiroDispensados: [], estoqueAlertasDispensados: [],
-    config: { nomeEmpresa: "", nomeCrm: "Manejo", nomeUsuario: "Bruno Sasso", cargoUsuario: "Gerente de Território", precoMedioTon: "", empresaRepresentante: "", logoRepresentanteDataUrl: "" }
+    config: { nomeEmpresa: "", nomeCrm: "Manejo", nomeUsuario: "Bruno Sasso", cargoUsuario: "Gerente de Território", whatsappUsuario: "", emailUsuario: "", precoMedioTon: "", empresaRepresentante: "", logoRepresentanteDataUrl: "" }
   };
   if (!raw) return base;
   try {
@@ -936,6 +936,8 @@ function switchMainTab(tabName, preselectClientId) {
     document.getElementById("config-nome-empresa").value = state.config.nomeEmpresa || "";
     document.getElementById("config-nome-usuario").value = state.config.nomeUsuario || "";
     document.getElementById("config-cargo-usuario").value = state.config.cargoUsuario || "";
+    document.getElementById("config-whatsapp-usuario").value = state.config.whatsappUsuario || "";
+    document.getElementById("config-email-usuario").value = state.config.emailUsuario || "";
     document.getElementById("config-empresa-representante").value = state.config.empresaRepresentante || "";
     renderLogoRepresentantePreview();
     const precoEl = document.getElementById("config-preco-ton");
@@ -971,7 +973,7 @@ if (precoTonEl) precoTonEl.addEventListener("change", e => {
   if (document.getElementById("kpi-row")) renderDashboard();
 });
 
-[["config-nome-empresa", "nomeEmpresa"], ["config-nome-usuario", "nomeUsuario"], ["config-cargo-usuario", "cargoUsuario"], ["config-empresa-representante", "empresaRepresentante"]]
+[["config-nome-empresa", "nomeEmpresa"], ["config-nome-usuario", "nomeUsuario"], ["config-cargo-usuario", "cargoUsuario"], ["config-whatsapp-usuario", "whatsappUsuario"], ["config-email-usuario", "emailUsuario"], ["config-empresa-representante", "empresaRepresentante"]]
   .forEach(([domId, key]) => {
     document.getElementById(domId).addEventListener("change", e => {
       state.config[key] = e.target.value.trim();
