@@ -572,11 +572,27 @@ function showToast(message) {
 }
 
 // ---------- Módulo 4 · Ciclo de recompra ----------
-// Soma o consumo mensal declarado (campo "Volume mensal estimado" de cada categoria animal,
-// aba Perfil Produtivo) — é o "consumo" que alimenta a estimativa de recompra quando ainda não
-// há histórico de pedidos suficiente pra calcular uma média.
-function consumoMensalTotalCliente(client) {
-  return (client.categoriasAnimais || []).reduce((s, c) => s + (Number(c.volumeMensalEstimado) || 0), 0);
+// Consumo mensal declarado por PRODUTO (campos "Produto que usa hoje" + "Volume mensal
+// estimado", lado a lado em cada categoria animal na aba Perfil Produtivo) — não por cliente.
+// Categorias diferentes podem usar produtos diferentes com ritmos de consumo bem diferentes
+// (ex: mineral pra cria, ração pra engorda), então somar tudo num único total do cliente dava
+// uma estimativa de recompra sem sentido quando comparada ao volume de UM pedido específico.
+function consumosPorProdutoCliente(client) {
+  const mapa = {};
+  (client.categoriasAnimais || []).forEach(c => {
+    const produto = (c.produtoAtual || "").trim();
+    const volume = Number(c.volumeMensalEstimado) || 0;
+    if (!produto || !volume) return;
+    mapa[produto] = (mapa[produto] || 0) + volume;
+  });
+  return Object.entries(mapa).map(([produto, consumoMensal]) => ({ produto, consumoMensal }));
+}
+function consumoMensalPorProduto(client, produtoNome) {
+  if (!produtoNome) return 0;
+  const alvo = produtoNome.trim().toLowerCase();
+  return consumosPorProdutoCliente(client)
+    .filter(c => c.produto.toLowerCase() === alvo)
+    .reduce((s, c) => s + c.consumoMensal, 0);
 }
 function classificarCicloStatus(daysSinceLast, cicloDias, favoriteProduct) {
   const ratio = daysSinceLast / cicloDias;
@@ -599,19 +615,20 @@ function computeClientInsight(client) {
   const ltv = pedidos.reduce((sum, p) => sum + valorPedido(p), 0);
   const favoriteProduct = mostBoughtProduct(pedidos);
   const lastContactDate = contatos.length ? contatos[0].data : null;
-  const consumoMensalTotal = consumoMensalTotalCliente(client);
+  const consumosPorProduto = consumosPorProdutoCliente(client);
 
   if (pedidos.length < 2) {
     const last = pedidos[pedidos.length - 1];
     const daysSinceLast = last ? daysBetween(last.dataPedido, todayStr()) : null;
 
-    // Sem 2 pedidos não dá pra tirar uma média de intervalo — mas se o consumo mensal foi
-    // informado e existe pelo menos um pedido (âncora de data e volume), dá pra estimar quantos
-    // dias aquele volume deve durar no ritmo de consumo declarado, e prever a próxima compra
-    // a partir disso em vez de deixar "sem histórico suficiente".
-    if (last && consumoMensalTotal > 0) {
+    // Sem 2 pedidos não dá pra tirar uma média de intervalo — mas se existe consumo mensal
+    // declarado especificamente para o PRODUTO desse pedido (não uma soma de todos os produtos
+    // do cliente), dá pra estimar quantos dias aquele volume deve durar e prever a próxima
+    // compra a partir disso em vez de deixar "sem histórico suficiente".
+    const consumoDoProduto = last ? consumoMensalPorProduto(client, last.produto) : 0;
+    if (last && consumoDoProduto > 0) {
       const volumeUltimo = Number(last.volume) || 0;
-      const consumoDiario = consumoMensalTotal / 30;
+      const consumoDiario = consumoDoProduto / 30;
       const cicloDias = volumeUltimo > 0 ? Math.max(1, Math.round(volumeUltimo / consumoDiario)) : null;
       if (cicloDias) {
         const nextExpectedDate = addDays(last.dataPedido, cicloDias);
@@ -621,8 +638,8 @@ function computeClientInsight(client) {
         return {
           status, statusLabel, avgInterval: cicloDias, avgVolume: volumeUltimo, daysSinceLast,
           lastPedidoDate: last.dataPedido, nextExpectedDate, diasRestantes, progresso,
-          ltv, favoriteProduct, lastContactDate, consumoMensalTotal, cicloOrigem: "consumo",
-          tip: `${tip} Estimativa baseada no consumo mensal declarado (${consumoMensalTotal.toFixed(1)} t/mês), não em histórico de pedidos.`
+          ltv, favoriteProduct, lastContactDate, consumosPorProduto, cicloOrigem: "consumo",
+          tip: `${tip} Estimativa baseada no consumo declarado de ${last.produto} (${consumoDoProduto.toFixed(1)} t/mês), não em histórico de pedidos.`
         };
       }
     }
@@ -630,12 +647,12 @@ function computeClientInsight(client) {
     return {
       status: "sem-historico", statusLabel: "Sem histórico suficiente", avgInterval: null,
       daysSinceLast, lastPedidoDate: last ? last.dataPedido : null, nextExpectedDate: null,
-      ltv, favoriteProduct, lastContactDate, consumoMensalTotal, cicloOrigem: null,
+      ltv, favoriteProduct, lastContactDate, consumosPorProduto, cicloOrigem: null,
       tip: pedidos.length === 0
-        ? (consumoMensalTotal > 0
-          ? `Consumo mensal declarado de ${consumoMensalTotal.toFixed(1)} t, mas ainda sem nenhum pedido registrado — registre o primeiro pedido para a previsão de recompra começar a valer.`
+        ? (consumosPorProduto.length
+          ? "Há consumo mensal declarado por produto, mas ainda sem nenhum pedido registrado — registre o primeiro pedido para a previsão de recompra começar a valer."
           : "Cliente ainda sem nenhum pedido registrado. Registre o primeiro pedido para começar a acompanhar o ciclo de compra.")
-        : "Só há um pedido registrado, sem volume ou sem consumo mensal declarado — ainda não dá para estimar a recompra."
+        : "Só há um pedido registrado, e não há consumo mensal declarado para o produto desse pedido — ainda não dá para estimar a recompra."
     };
   }
 
@@ -656,7 +673,7 @@ function computeClientInsight(client) {
     const daysSinceContact = daysBetween(lastContactDate, todayStr());
     if (daysSinceContact > avgInterval) tip += ` Último contato foi há ${daysSinceContact} dias — vale retomar.`;
   }
-  return { status, statusLabel, avgInterval, avgVolume, daysSinceLast, lastPedidoDate, nextExpectedDate, diasRestantes, progresso, ltv, favoriteProduct, lastContactDate, consumoMensalTotal, cicloOrigem: "historico", tip };
+  return { status, statusLabel, avgInterval, avgVolume, daysSinceLast, lastPedidoDate, nextExpectedDate, diasRestantes, progresso, ltv, favoriteProduct, lastContactDate, consumosPorProduto, cicloOrigem: "historico", tip };
 }
 
 // ---------- Estoque do cliente (por categoria animal) — base do forecast de recompra ----------
@@ -3321,20 +3338,22 @@ function renderRecompraTab(client) {
     <div class="ciclo-progresso"><div class="ciclo-progresso-fill" style="width:${Math.min(100, insight.progresso)}%; background:${cor};"></div></div>
     <p class="hint">${insight.diasRestantes >= 0 ? `Faltam ~${insight.diasRestantes} dias para o próximo pedido previsto.` : `${Math.abs(insight.diasRestantes)} dias além do previsto.`}</p>` : "";
   const origemLabel = insight.cicloOrigem === "consumo" ? "estimado pelo consumo declarado" : insight.cicloOrigem === "historico" ? "calculado pelo histórico de pedidos" : "";
+  const consumosHtml = (insight.consumosPorProduto || []).length
+    ? `<div class="detalhe-grid">${insight.consumosPorProduto.map(c => field(c.produto, c.consumoMensal.toFixed(1) + " t/mês")).join("")}</div>`
+    : `<p class="hint">Sem consumo mensal declarado — em cada categoria animal, na aba Perfil Produtivo, informe "Produto que usa hoje" e "Volume mensal estimado" para o sistema estimar a recompra desse produto mesmo sem histórico de pedidos.</p>`;
   return `
     <div class="tip-box"><strong>${insight.statusLabel}.</strong> ${escapeHtml(insight.tip)}</div>
     ${barra}
     <div class="detalhe-grid">
       ${field(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
       ${field("Volume médio por pedido", insight.avgVolume ? insight.avgVolume.toFixed(1) + " t" : "")}
-      ${field("Consumo mensal declarado", insight.consumoMensalTotal ? insight.consumoMensalTotal.toFixed(1) + " t/mês" : "")}
       ${field("Data do último pedido", insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "")}
       ${field("Dias desde o último pedido", insight.daysSinceLast !== null ? insight.daysSinceLast : "")}
       ${field("Próximo pedido previsto", insight.nextExpectedDate ? formatDate(insight.nextExpectedDate) : "")}
       ${field("Produto favorito", insight.favoriteProduct)}
       ${field("Avisar (dias antes do previsto)", client.alertaRecompraDias)}
     </div>
-    ${!insight.consumoMensalTotal ? `<p class="hint" style="margin-top:8px;">Sem consumo mensal declarado — informe o "Volume mensal estimado" de cada categoria animal na aba Perfil Produtivo para o sistema estimar a recompra mesmo sem histórico de pedidos.</p>` : ""}
+    <div class="detalhe-section"><h4>Consumo mensal declarado por produto</h4>${consumosHtml}</div>
     ${client.cicloObs ? `<div class="detalhe-section"><h4>Observações sobre o ciclo</h4><p>${escapeHtml(client.cicloObs)}</p></div>` : ""}`;
 }
 
