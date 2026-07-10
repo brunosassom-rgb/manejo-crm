@@ -412,6 +412,26 @@ function migrateFornecedoresEhCasaIfNeeded() {
   if (mudou) saveState();
 }
 
+// ---------- Migração: "Volume mensal estimado" digitado à mão → "consumo por animal" ----------
+// Volume mensal estimado passou a ser sempre CALCULADO (quantidade × consumo por animal), não
+// mais digitado direto. Quem já tinha um volume declarado à mão ganha aqui um "consumo por
+// animal" equivalente, pra não perder a estimativa já existente quando o campo virar somente
+// leitura na próxima edição.
+function migrateConsumoPorAnimalIfNeeded() {
+  let mudou = false;
+  [...state.leads, ...state.clientesAtivos].forEach(entidade => {
+    (entidade.categoriasAnimais || []).forEach(cat => {
+      if (cat.consumoPorAnimalDia === undefined) {
+        const qtd = Number(cat.quantidade) || 0;
+        const vol = Number(cat.volumeMensalEstimado) || 0;
+        cat.consumoPorAnimalDia = (qtd > 0 && vol > 0) ? String(Math.round((vol * 1000 / (qtd * 30)) * 1000) / 1000) : "";
+        mudou = true;
+      }
+    });
+  });
+  if (mudou) saveState();
+}
+
 // ---------- Acessores combinados (usados por pedidos, contatos, agenda, busca, etc.) ----------
 function getEntidadeById(id) {
   return state.leads.find(x => x.id === id) || state.clientesAtivos.find(x => x.id === id) || null;
@@ -425,6 +445,7 @@ let state = loadState();
 migrateLegacyClientsIfNeeded();
 migrateLeadSchemaV5IfNeeded();
 migrateFornecedoresEhCasaIfNeeded();
+migrateConsumoPorAnimalIfNeeded();
 // Renomeação da marca: instâncias antigas (BRUNOSASSO) ou sem nome passam a "Manejo"
 function migrateBrandNameIfNeeded() {
   if (state.config && (!state.config.nomeCrm || /brunosasso/i.test(state.config.nomeCrm))) {
@@ -1771,8 +1792,16 @@ let currentCategoriasAnimais = [];
 function categoriaRowLabel(row) { return row.faseProducao ? `${row.tipoAnimal} — ${row.faseProducao}` : (row.tipoAnimal || ""); }
 function categoriaVazia() {
   return { id: uid(), tipoAnimal: "", faseProducao: "", quantidade: "", sistemaProducao: "",
-    fornecedorAtual: "", produtoAtual: "", volumeMensalEstimado: "", prazoPagamento: "", tipoFrete: "FOB",
+    fornecedorAtual: "", produtoAtual: "", volumeMensalEstimado: "", consumoPorAnimalDia: "", prazoPagamento: "", tipoFrete: "FOB",
     satisfacao: "", reclamacoes: "", tempoDeUso: "" };
+}
+// "Volume mensal estimado" (toneladas) NUNCA é digitado à mão — é sempre calculado a partir da
+// quantidade de animais × consumo por animal (kg/dia), pra nunca ficar dessincronizado quando o
+// rebanho muda numa visita técnica.
+function calcVolumeMensalEstimado(quantidade, consumoPorAnimalDia) {
+  const qtd = Number(quantidade) || 0;
+  const consumo = Number(consumoPorAnimalDia) || 0;
+  return (qtd * consumo * 30) / 1000;
 }
 
 function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender) {
@@ -1804,7 +1833,10 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
         <div class="categoria-situacao-grid">
           <input type="text" class="cat-fornecedor" placeholder="Empresa fornecedora atual" list="fornecedores-datalist" value="${escapeHtml(row.fornecedorAtual || "")}">
           <input type="text" class="cat-produto" placeholder="Produto que usa hoje" value="${escapeHtml(row.produtoAtual || "")}">
-          <input type="text" class="cat-volume" placeholder="Volume mensal estimado" value="${escapeHtml(row.volumeMensalEstimado || "")}">
+          <div class="cat-consumo-wrap">
+            <input type="number" class="cat-consumo-animal" min="0" step="any" placeholder="Consumo por animal (kg/dia)" value="${escapeHtml(row.consumoPorAnimalDia || "")}">
+            <span class="cat-volume-calc">${calcVolumeMensalEstimado(row.quantidade, row.consumoPorAnimalDia).toFixed(1)} t/mês estimado</span>
+          </div>
           <input type="text" class="cat-prazo" placeholder="Prazo de pagamento" value="${escapeHtml(row.prazoPagamento || "")}">
           <select class="cat-frete"><option value="FOB" ${row.tipoFrete === "FOB" ? "selected" : ""}>FOB</option><option value="CIF" ${row.tipoFrete === "CIF" ? "selected" : ""}>CIF</option></select>
           <select class="cat-satisfacao">
@@ -1820,13 +1852,18 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
 
   container.querySelectorAll(".categoria-card").forEach(card => {
     const idx = Number(card.dataset.idx);
+    const recalcularVolume = () => {
+      list[idx].volumeMensalEstimado = calcVolumeMensalEstimado(list[idx].quantidade, list[idx].consumoPorAnimalDia);
+      const calcEl = card.querySelector(".cat-volume-calc");
+      if (calcEl) calcEl.textContent = `${list[idx].volumeMensalEstimado.toFixed(1)} t/mês estimado`;
+    };
     card.querySelector(".cat-tipo").addEventListener("change", e => { list[idx].tipoAnimal = e.target.value; list[idx].faseProducao = ""; rerender(); });
     card.querySelector(".cat-fase").addEventListener("change", e => { list[idx].faseProducao = e.target.value; });
-    card.querySelector(".cat-qty").addEventListener("input", e => { list[idx].quantidade = e.target.value; renderCategoriasTotalGeneric(list, totalId); });
+    card.querySelector(".cat-qty").addEventListener("input", e => { list[idx].quantidade = e.target.value; renderCategoriasTotalGeneric(list, totalId); recalcularVolume(); });
     card.querySelector(".cat-sistema").addEventListener("change", e => { list[idx].sistemaProducao = e.target.value; });
     card.querySelector(".cat-fornecedor").addEventListener("input", e => { list[idx].fornecedorAtual = e.target.value; });
     card.querySelector(".cat-produto").addEventListener("input", e => { list[idx].produtoAtual = e.target.value; });
-    card.querySelector(".cat-volume").addEventListener("input", e => { list[idx].volumeMensalEstimado = e.target.value; });
+    card.querySelector(".cat-consumo-animal").addEventListener("input", e => { list[idx].consumoPorAnimalDia = e.target.value; recalcularVolume(); });
     card.querySelector(".cat-prazo").addEventListener("input", e => { list[idx].prazoPagamento = e.target.value; });
     card.querySelector(".cat-frete").addEventListener("change", e => { list[idx].tipoFrete = e.target.value; });
     card.querySelector(".cat-satisfacao").addEventListener("change", e => { list[idx].satisfacao = e.target.value; });
@@ -4163,9 +4200,9 @@ document.getElementById("form-visita").addEventListener("submit", e => {
   if (!clientId) { showToast("Selecione um cliente/lead."); return; }
   const entidadeVisita = getEntidadeById(clientId);
   const estoqueCards = [...document.querySelectorAll("#visita-estoque-categorias-list .categoria-card")];
-  const cardEstoqueFaltando = estoqueCards.find(card => !card.querySelector(".visita-estoque-quantidade").value);
+  const cardEstoqueFaltando = estoqueCards.find(card => !card.querySelector(".visita-estoque-quantidade").value || !card.querySelector(".visita-estoque-qtd-animais").value);
   if (cardEstoqueFaltando) {
-    showToast("Informe o estoque atual de todas as categorias animais antes de salvar a visita.");
+    showToast("Informe a quantidade de animais e o estoque atual de todas as categorias animais antes de salvar a visita.");
     document.getElementById("visita-section-situacao").open = true;
     return;
   }
@@ -4211,7 +4248,12 @@ document.getElementById("form-visita").addEventListener("submit", e => {
       const categoria = (entidadeVisita.categoriasAnimais || []).find(c => c.id === categoriaId);
       const qtdAnimais = card.querySelector(".visita-estoque-qtd-animais").value;
       const qtdEstoque = card.querySelector(".visita-estoque-quantidade").value;
-      if (categoria && qtdAnimais !== "") categoria.quantidade = qtdAnimais;
+      if (categoria && qtdAnimais !== "") {
+        categoria.quantidade = qtdAnimais;
+        // Rebanho mudou na visita → "Volume mensal estimado" (calculado, nunca digitado) precisa
+        // ser recalculado agora, senão a previsão de estoque fica presa na quantidade antiga.
+        categoria.volumeMensalEstimado = calcVolumeMensalEstimado(categoria.quantidade, categoria.consumoPorAnimalDia);
+      }
       state.estoques.push({
         id: uid(), clientId, categoriaAnimalId: categoriaId,
         data: visita.dataVisita, quantidadeEstoque: Number(qtdEstoque) || 0,

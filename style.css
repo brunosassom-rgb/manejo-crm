@@ -705,6 +705,8 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 .categoria-situacao-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .categoria-situacao-grid input, .categoria-situacao-grid select, .categoria-situacao-grid textarea { margin-top: 0; }
 .categoria-situacao-grid textarea { grid-column: 1 / -1; }
+.cat-consumo-wrap { display: flex; flex-direction: column; gap: 3px; }
+.cat-volume-calc { font-size: 0.72rem; color: var(--text-muted); }
 
 .contato-pessoa-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .contato-pessoa-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
