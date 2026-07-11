@@ -535,15 +535,20 @@ function waLinkForClient(clientId) {
   const p = pessoas.find(cp => cp.principal && onlyDigits(cp.whatsapp)) || pessoas.find(cp => onlyDigits(cp.whatsapp));
   return p ? `https://wa.me/55${onlyDigits(p.whatsapp)}` : null;
 }
-// Tendência de volume: últimos 12 meses vs. os 12 meses anteriores (reutilizado por fidelização e churn)
+// Tendência de volume (e valor) : últimos 12 meses vs. os 12 meses anteriores (reutilizado por
+// fidelização, churn e a Matriz Nine Box).
 function computeVolumeTrend(cliente) {
   const pedidos = pedidosForClient(cliente.id);
   const hoje = todayStr();
   const inicioAtual = addDays(hoje, -365);
   const inicioAnterior = addDays(hoje, -730);
-  const volumeAtual = pedidos.filter(p => p.dataPedido >= inicioAtual && p.dataPedido <= hoje).reduce((s, p) => s + (Number(p.volume) || 0), 0);
-  const volumeAnterior = pedidos.filter(p => p.dataPedido >= inicioAnterior && p.dataPedido < inicioAtual).reduce((s, p) => s + (Number(p.volume) || 0), 0);
-  return { volumeAtual, volumeAnterior };
+  const pedidosAtuais = pedidos.filter(p => p.dataPedido >= inicioAtual && p.dataPedido <= hoje);
+  const pedidosAnteriores = pedidos.filter(p => p.dataPedido >= inicioAnterior && p.dataPedido < inicioAtual);
+  const volumeAtual = pedidosAtuais.reduce((s, p) => s + (Number(p.volume) || 0), 0);
+  const volumeAnterior = pedidosAnteriores.reduce((s, p) => s + (Number(p.volume) || 0), 0);
+  const valorAtual = pedidosAtuais.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+  const valorAnterior = pedidosAnteriores.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+  return { volumeAtual, volumeAnterior, valorAtual, valorAnterior };
 }
 // "Cliente Fidelizado": cresceu (ou manteve +1t) frente ao período anterior. Sem período anterior, não classifica.
 function isClienteFidelizado(cliente) {
@@ -572,6 +577,52 @@ function computeChurnRisco(cliente) {
   const nivel = score <= 30 ? "Baixo" : score <= 60 ? "Médio" : "Alto";
   return { score, nivel, motivos };
 }
+
+// ---------- Matriz Nine Box (Clientes) ----------
+// Divide uma lista de {id, valor} em terços relativos (nunca faixas fixas em R$/score) — o mesmo
+// cliente pode mudar de terço só porque a carteira ao redor dele mudou, e é assim mesmo que deve
+// funcionar: a classificação é sempre relativa à carteira atual.
+function computeTercosPorId(itens) {
+  const validos = itens.filter(x => x.valor != null);
+  const ordenado = validos.slice().sort((a, b) => a.valor - b.valor);
+  const n = ordenado.length;
+  const corte1 = Math.floor(n / 3);
+  const corte2 = Math.floor(n * 2 / 3);
+  const nivelPorId = {};
+  ordenado.forEach((x, i) => { nivelPorId[x.id] = i < corte1 ? "Baixo" : i < corte2 ? "Médio" : "Alto"; });
+  return nivelPorId;
+}
+// R$/atividade nos últimos 12 meses — null (sem dado) quando não há contato nem visita registrada,
+// pra não dividir por zero nem sugerir uma eficiência que não dá pra calcular de verdade.
+function computeEficienciaCliente(cliente, valorUltimos12Meses) {
+  const atividades = contatosForClient(cliente.id).length + visitasForClient(cliente.id).length;
+  if (!atividades) return null;
+  return valorUltimos12Meses / atividades;
+}
+// Selo por terço de eficiência: só os extremos (top/bottom 1/3) recebem selo — o terço do meio fica
+// sem marcação pra não poluir a matriz com informação que não muda a ação a tomar.
+function computeEficienciaSelos(clientesAtivos, valorPorClientId) {
+  const itens = clientesAtivos
+    .map(c => ({ id: c.id, valor: computeEficienciaCliente(c, valorPorClientId[c.id] || 0) }))
+    .filter(x => x.valor != null);
+  const ordenado = itens.slice().sort((a, b) => a.valor - b.valor);
+  const n = ordenado.length;
+  const corte1 = Math.floor(n / 3);
+  const corte2 = Math.floor(n * 2 / 3);
+  const seloPorId = {};
+  ordenado.forEach((x, i) => {
+    if (i < corte1) seloPorId[x.id] = "manutencao";
+    else if (i >= corte2) seloPorId[x.id] = "eficiente";
+  });
+  return seloPorId;
+}
+const NINE_BOX_LABELS = {
+  Alto:  { Baixo: "Reavaliar esforço", Médio: "Atenção",         Alto: "Resgate urgente" },
+  Médio: { Baixo: "Monitorar",         Médio: "Manter relação",  Alto: "Proteger" },
+  Baixo: { Baixo: "Desenvolver",       Médio: "Expandir",        Alto: "Cliente-modelo" }
+};
+const NINE_BOX_ROW_TONE = { Alto: "late", Médio: "warn", Baixo: "ok" };
+
 // Programa de indicação — quem foi indicado por este cliente (cruzamento por NOME em texto livre;
 // sensível a digitação diferente, ex.: "Luiz" vs "Luiz Mousquer" — limitação aceitável nesta 1ª versão)
 function indicadosPor(cliente) {
@@ -1598,6 +1649,88 @@ function renderClientList() {
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
 }
 document.getElementById("busca-cliente").addEventListener("input", renderClientList);
+
+function clienteMiniCardMatrizHtml(cliente, valor, riscoInfo, selo) {
+  const atividades = contatosForClient(cliente.id).length + visitasForClient(cliente.id).length;
+  const seloHtml = selo === "eficiente" ? `<span class="matriz-selo matriz-selo-eficiente">⚡ eficiente</span>`
+    : selo === "manutencao" ? `<span class="matriz-selo matriz-selo-manutencao">🔧 alta manutenção</span>` : "";
+  return `
+    <div class="matriz-card" data-client-id="${cliente.id}">
+      <div class="matriz-card-nome">${escapeHtml(cliente.nome)}</div>
+      <div class="matriz-card-linha"><span>${formatMoney(valor)}</span><span>${atividades} ativ.</span></div>
+      <div class="matriz-card-linha"><span>Risco: ${riscoInfo.score}</span>${seloHtml}</div>
+    </div>`;
+}
+
+function renderClientesMatriz() {
+  const container = document.getElementById("clientes-matriz");
+  const clientesAtivos = state.clientesAtivos;
+
+  const valorPorClientId = {};
+  clientesAtivos.forEach(c => { valorPorClientId[c.id] = computeVolumeTrend(c).valorAtual; });
+  const nivelValorPorId = computeTercosPorId(clientesAtivos.map(c => ({ id: c.id, valor: valorPorClientId[c.id] })));
+  const seloPorId = computeEficienciaSelos(clientesAtivos, valorPorClientId);
+
+  const grid = { Alto: { Baixo: [], Médio: [], Alto: [] }, Médio: { Baixo: [], Médio: [], Alto: [] }, Baixo: { Baixo: [], Médio: [], Alto: [] } };
+  const riscoPorId = {};
+  clientesAtivos.forEach(c => {
+    const riscoInfo = computeChurnRisco(c);
+    riscoPorId[c.id] = riscoInfo;
+    const valorNivel = nivelValorPorId[c.id] || "Baixo";
+    grid[riscoInfo.nivel][valorNivel].push(c);
+  });
+
+  const rows = ["Alto", "Médio", "Baixo"];
+  const cols = ["Baixo", "Médio", "Alto"];
+
+  if (!clientesAtivos.length) {
+    container.innerHTML = `<div class="empty-state">Nenhum cliente ativo encontrado.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="nine-box-grid">
+      <div class="nine-box-corner"></div>
+      ${cols.map(v => `<div class="nine-box-col-header">Valor ${v}</div>`).join("")}
+      ${rows.map(r => `
+        <div class="nine-box-row-header tone-${NINE_BOX_ROW_TONE[r]}">Risco ${r}</div>
+        ${cols.map(v => {
+          const clientesCell = grid[r][v];
+          const urgente = r === "Alto" && v === "Alto";
+          return `
+            <div class="nine-box-cell tone-${NINE_BOX_ROW_TONE[r]}${urgente ? " nine-box-cell-urgente" : ""}">
+              <div class="nine-box-cell-label">${NINE_BOX_LABELS[r][v]}</div>
+              <div class="nine-box-cell-count">${clientesCell.length} cliente${clientesCell.length === 1 ? "" : "s"}</div>
+              <div class="nine-box-cell-cards">
+                ${clientesCell.length
+                  ? clientesCell.map(c => clienteMiniCardMatrizHtml(c, valorPorClientId[c.id], riscoPorId[c.id], seloPorId[c.id])).join("")
+                  : `<p class="hint" style="margin:0;">Nenhum cliente</p>`}
+              </div>
+            </div>`;
+        }).join("")}
+      `).join("")}
+    </div>
+    <div class="nine-box-legenda">
+      <span><i class="nine-box-legenda-dot tone-late"></i>Risco alto</span>
+      <span><i class="nine-box-legenda-dot tone-warn"></i>Risco médio</span>
+      <span><i class="nine-box-legenda-dot tone-ok"></i>Risco baixo</span>
+      <span><span class="matriz-selo matriz-selo-eficiente">⚡ eficiente</span> maior R$/atividade (1/3 superior)</span>
+      <span><span class="matriz-selo matriz-selo-manutencao">🔧 alta manutenção</span> menor R$/atividade (1/3 inferior)</span>
+    </div>`;
+  container.querySelectorAll(".matriz-card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
+}
+
+document.querySelectorAll("#clientes-view-switch button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#clientes-view-switch button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const isMatriz = btn.dataset.view === "matriz";
+    document.getElementById("busca-cliente").classList.toggle("hidden", isMatriz);
+    document.getElementById("clientes-list").classList.toggle("hidden", isMatriz);
+    document.getElementById("clientes-matriz").classList.toggle("hidden", !isMatriz);
+    if (isMatriz) renderClientesMatriz();
+  });
+});
 
 function renderLeadsList() {
   const container = document.getElementById("leads-list");

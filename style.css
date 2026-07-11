@@ -538,9 +538,50 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 
 /* ============ Agenda ============ */
 .agenda-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
-.view-switch { display: flex; gap: 4px; }
-.view-switch-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.84rem; }
-.view-switch-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.view-switch, .clientes-toggle { display: flex; gap: 4px; }
+.view-switch-btn, .clientes-toggle-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.84rem; }
+.view-switch-btn.active, .clientes-toggle-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.clientes-toggle { margin: 10px 0 14px; }
+
+/* ============ Clientes: Matriz Nine Box ============ */
+.nine-box-grid { display: grid; grid-template-columns: 130px repeat(3, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+.nine-box-col-header {
+  font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px 0;
+}
+.nine-box-row-header {
+  font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  display: flex; align-items: center; padding: 10px; border-radius: 10px;
+}
+.nine-box-row-header.tone-late { background: var(--late-bg); color: var(--late-text); }
+.nine-box-row-header.tone-warn { background: var(--warn-bg); color: var(--warn-text); }
+.nine-box-row-header.tone-ok   { background: var(--ok-bg); color: var(--ok-text); }
+.nine-box-cell {
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px; min-height: 120px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.nine-box-cell.tone-late { background: color-mix(in srgb, var(--late-bg) 45%, var(--surface)); }
+.nine-box-cell.tone-warn { background: color-mix(in srgb, var(--warn-bg) 45%, var(--surface)); }
+.nine-box-cell.tone-ok   { background: color-mix(in srgb, var(--ok-bg) 45%, var(--surface)); }
+.nine-box-cell-urgente { border: 2px solid var(--late-text); box-shadow: var(--shadow-md); }
+.nine-box-cell-label { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+.nine-box-cell-count { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 2px; }
+.nine-box-cell-cards { display: flex; flex-direction: column; gap: 6px; }
+.matriz-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  cursor: pointer; box-shadow: var(--shadow-sm); transition: box-shadow 0.15s, transform 0.15s;
+}
+.matriz-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.matriz-card-nome { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.matriz-card-linha { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); }
+.matriz-selo { font-size: 0.66rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.matriz-selo-eficiente { background: var(--ok-bg); color: var(--ok-text); }
+.matriz-selo-manutencao { background: var(--warn-bg); color: var(--warn-text); }
+.nine-box-legenda { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 16px; font-size: 0.78rem; color: var(--text-muted); }
+.nine-box-legenda-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.nine-box-legenda-dot.tone-late { background: var(--late-text); }
+.nine-box-legenda-dot.tone-warn { background: var(--warn-text); }
+.nine-box-legenda-dot.tone-ok   { background: var(--ok-text); }
 
 .agenda-filters { display: flex; gap: 6px; flex-wrap: wrap; }
 .agenda-filter-chip {

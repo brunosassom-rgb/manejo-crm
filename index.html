@@ -97,8 +97,13 @@
         <h2>Clientes</h2>
       </div>
       <p class="hint">Convertidos a partir do Fechamento do funil de Lead — não participam mais do funil de vendas. Para cadastrar um novo contato, use "+ Novo lead" na aba Leads.</p>
+      <div class="clientes-toggle" id="clientes-view-switch">
+        <button type="button" class="clientes-toggle-btn active" data-view="lista">Lista</button>
+        <button type="button" class="clientes-toggle-btn" data-view="matriz">Matriz</button>
+      </div>
       <input id="busca-cliente" type="text" placeholder="Buscar por nome, fazenda, cidade ou região..." class="search-input">
       <div id="clientes-list" class="cards"></div>
+      <div id="clientes-matriz" class="hidden"></div>
     </section>
 
     <!-- ==================== LEADS ==================== -->
