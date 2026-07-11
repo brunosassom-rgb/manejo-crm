@@ -804,7 +804,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 @page { size: A4; margin: 0; }
 
 @media print {
-  .rail, .appbar, .report-switch, .no-print, .hidden-for-print { display: none !important; }
+  .rail, .rail-side, .appbar, .report-switch, .no-print, .hidden-for-print { display: none !important; }
   .app-shell { display: block; min-height: 0; }
   main { max-width: 100%; padding: 0; margin: 0; }
   body { background: white; }
@@ -1294,25 +1294,43 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
   border-left: 1px solid var(--sidebar-sep);
 }
 
-/* ---------- Barra lateral de ícones (Dashboard...Relatórios + perfil) ---------- */
-.app-shell { display: flex; min-height: 100vh; }
-.rail-side {
-  width: 58px; flex-shrink: 0; background: var(--rail-side-bg);
-  display: flex; flex-direction: column; align-items: center; padding: 14px 0;
-  position: sticky; top: 0; height: 100vh;
+/* ---------- Topbar em toda a largura + barra lateral de ícones abaixo dela ----------
+   Tudo dentro de @media screen de propósito: o bloco de impressão (linha ~800) já
+   define .app-shell{display:block} pra PDF/relatório, e como ele vem antes deste bloco
+   no arquivo, uma regra .app-shell sem media (valendo pra "all", inclusive print) viraria
+   a última declaração e VENCERIA na hora de imprimir — quebrando os relatórios. Escopando
+   pra screen, esse conflito nem existe.
+   .app-shell é uma coluna de altura fixa (100vh, sem crescer): a topbar (.rail) fica
+   inteira em cima, ocupando as duas laterais da tela; .body-row abaixo dela divide o
+   espaço restante entre a barra de ícones (.rail-side, do topo ao fim dessa área) e o
+   conteúdo (<main>), que rola por dentro — assim não precisa calcular altura da topbar
+   na mão pra "grudar" a barra lateral logo abaixo dela. */
+@media screen {
+  .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .rail { flex-shrink: 0; }
+  .body-row { display: flex; flex: 1; min-height: 0; }
+
+  .rail-side {
+    width: 58px; flex-shrink: 0; background: var(--rail-side-bg);
+    display: flex; flex-direction: column; align-items: center; padding: 14px 0;
+  }
+  .rail-side-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 8px; }
+  .rail-side .tab-btn { justify-content: center; padding: 11px; border-radius: 9px; }
+  .rail-side .tab-btn .ico { width: 19px; height: 19px; }
+  .rail-side .tab-btn:hover { background: var(--rail-side-hover); color: var(--sidebar-text-active); }
+  .rail-side .tab-btn.active { background: var(--rail-side-active); color: var(--sidebar-text-active); }
+  .rail-side-profile {
+    width: 100%; padding: 12px 8px 0; margin-top: auto;
+    border-top: 1px solid rgba(255,255,255,.14); display: flex; justify-content: center;
+  }
+  .rail-side-profile .rail-user { padding: 0; }
+  .rail-side-profile .avatar { width: 34px; height: 34px; border-radius: 50%; }
+
+  /* <main> é o único item que rola de verdade — brand fica fixa à esquerda da topbar,
+     o resto (busca, +Novo, sino, tema) empurra pra direita com margin-left:auto no primeiro. */
+  main { flex: 1; min-width: 0; overflow-y: auto; }
+  .appbar-search { margin-left: auto; }
 }
-.rail-side-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 8px; }
-.rail-side .tab-btn { justify-content: center; padding: 11px; border-radius: 9px; }
-.rail-side .tab-btn .ico { width: 19px; height: 19px; }
-.rail-side .tab-btn:hover { background: var(--rail-side-hover); color: var(--sidebar-text-active); }
-.rail-side .tab-btn.active { background: var(--rail-side-active); color: var(--sidebar-text-active); }
-.rail-side-profile {
-  width: 100%; padding: 12px 8px 0; margin-top: auto;
-  border-top: 1px solid rgba(255,255,255,.14); display: flex; justify-content: center;
-}
-.rail-side-profile .rail-user { padding: 0; }
-.rail-side-profile .avatar { width: 34px; height: 34px; border-radius: 50%; }
-.app-main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 /* ---------- Menu "+ Novo" (ações rápidas) na barra ---------- */
 .quick-actions-menu { position: relative; flex-shrink: 0; }
