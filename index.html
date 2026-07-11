@@ -62,22 +62,6 @@
           <div class="role" id="rail-user-cargo">Gerente de território</div>
         </div>
       </button>
-      <div class="rail-user-dropdown hidden" id="rail-user-dropdown">
-        <div class="rail-user-dropdown-title">Meu perfil</div>
-        <label>Nome
-          <input type="text" id="perfil-nome-usuario" placeholder="Ex: Bruno Sasso">
-        </label>
-        <label>Cargo
-          <input type="text" id="perfil-cargo-usuario" placeholder="Ex: Gerente de Território">
-        </label>
-        <label>Celular
-          <input type="text" id="perfil-whatsapp-usuario" placeholder="Ex: (66) 99999-0000">
-        </label>
-        <label>E-mail
-          <input type="email" id="perfil-email-usuario" placeholder="Ex: voce@empresa.com">
-        </label>
-        <button type="button" class="btn-secondary" id="btn-logout">Sair</button>
-      </div>
     </div>
   </nav>
 
@@ -299,6 +283,46 @@
           <button id="btn-imprimir-relatorio-funil" class="btn-secondary">Imprimir / Salvar PDF</button>
         </div>
         <div id="relatorio-funil-conteudo"></div>
+      </div>
+    </section>
+
+    <!-- ==================== MEUS DADOS ==================== -->
+    <section id="meus-dados" class="tab-panel">
+      <h2>Meus dados</h2>
+      <div class="settings-grid">
+        <div class="settings-card settings-card-wide">
+          <div class="settings-card-title">Perfil</div>
+          <div class="form">
+            <div class="perfil-foto-row">
+              <div class="perfil-foto-preview" id="perfil-foto-preview">BS</div>
+              <div class="perfil-foto-actions">
+                <label class="btn-secondary perfil-foto-upload-label">Alterar foto
+                  <input type="file" id="perfil-foto-input" accept="image/*" style="display:none">
+                </label>
+                <button type="button" class="btn-mini" id="btn-remover-foto-perfil" style="display:none">Remover foto</button>
+              </div>
+            </div>
+            <label>Nome
+              <input type="text" id="perfil-nome-usuario" placeholder="Ex: Bruno Sasso">
+            </label>
+            <label>Cargo
+              <input type="text" id="perfil-cargo-usuario" placeholder="Ex: Gerente de Território">
+            </label>
+            <label>Celular
+              <input type="text" id="perfil-whatsapp-usuario" placeholder="Ex: (66) 99999-0000">
+            </label>
+            <label>E-mail
+              <input type="email" id="perfil-email-usuario" placeholder="Ex: voce@empresa.com">
+            </label>
+            <div class="actions-row" style="margin-top:6px">
+              <button type="button" class="btn-primary" id="btn-salvar-perfil">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row" style="margin-top:20px">
+        <button type="button" class="btn-secondary" id="btn-ir-configuracoes">Ir para Configurações</button>
+        <button type="button" class="btn-secondary" id="btn-logout">Sair</button>
       </div>
     </section>
 

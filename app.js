@@ -465,8 +465,13 @@ function aplicarConfigMarca() {
   if (railNome) railNome.textContent = cfg.nomeUsuario || "Usuário";
   const railCargo = document.getElementById("rail-user-cargo");
   if (railCargo) railCargo.textContent = cfg.cargoUsuario || "";
+  const avatarHtml = cfg.fotoUsuarioDataUrl ? `<img src="${cfg.fotoUsuarioDataUrl}" alt="">` : initials(cfg.nomeUsuario);
   const railAvatar = document.getElementById("rail-user-avatar");
-  if (railAvatar) railAvatar.textContent = initials(cfg.nomeUsuario);
+  if (railAvatar) railAvatar.innerHTML = avatarHtml;
+  const perfilFotoPreview = document.getElementById("perfil-foto-preview");
+  if (perfilFotoPreview) perfilFotoPreview.innerHTML = avatarHtml;
+  const btnRemoverFotoPerfil = document.getElementById("btn-remover-foto-perfil");
+  if (btnRemoverFotoPerfil) btnRemoverFotoPerfil.style.display = cfg.fotoUsuarioDataUrl ? "" : "none";
   const perfilNome = document.getElementById("perfil-nome-usuario");
   if (perfilNome) perfilNome.value = cfg.nomeUsuario || "";
   const perfilCargo = document.getElementById("perfil-cargo-usuario");
@@ -1028,8 +1033,7 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
   saveState();
   if (document.getElementById("visitas-widget-body")) renderVisitasWidget();
 });
-[["config-nome-empresa", "nomeEmpresa"], ["config-empresa-representante", "empresaRepresentante"],
- ["perfil-nome-usuario", "nomeUsuario"], ["perfil-cargo-usuario", "cargoUsuario"], ["perfil-whatsapp-usuario", "whatsappUsuario"], ["perfil-email-usuario", "emailUsuario"]]
+[["config-nome-empresa", "nomeEmpresa"], ["config-empresa-representante", "empresaRepresentante"]]
   .forEach(([domId, key]) => {
     document.getElementById(domId).addEventListener("change", e => {
       state.config[key] = e.target.value.trim();
@@ -1039,15 +1043,29 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
   });
 
 // ---------- Dropdown de perfil do usuário (avatar no topo) ----------
-document.getElementById("btn-rail-user").addEventListener("click", e => {
-  e.stopPropagation();
-  document.getElementById("rail-user-dropdown").classList.toggle("hidden");
+document.getElementById("btn-rail-user").addEventListener("click", () => switchMainTab("meus-dados"));
+document.getElementById("btn-ir-configuracoes").addEventListener("click", () => switchMainTab("configuracoes"));
+document.getElementById("btn-salvar-perfil").addEventListener("click", () => {
+  state.config.nomeUsuario = document.getElementById("perfil-nome-usuario").value.trim();
+  state.config.cargoUsuario = document.getElementById("perfil-cargo-usuario").value.trim();
+  state.config.whatsappUsuario = document.getElementById("perfil-whatsapp-usuario").value.trim();
+  state.config.emailUsuario = document.getElementById("perfil-email-usuario").value.trim();
+  saveState();
+  aplicarConfigMarca();
+  showToast("Dados do perfil salvos.");
 });
-document.addEventListener("click", e => {
-  const dropdown = document.getElementById("rail-user-dropdown");
-  if (!dropdown.classList.contains("hidden") && !e.target.closest(".rail-user-menu")) {
-    dropdown.classList.add("hidden");
-  }
+document.getElementById("perfil-foto-input").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  state.config.fotoUsuarioDataUrl = await compressImageFile(file);
+  saveState();
+  aplicarConfigMarca();
+  e.target.value = "";
+});
+document.getElementById("btn-remover-foto-perfil").addEventListener("click", () => {
+  state.config.fotoUsuarioDataUrl = "";
+  saveState();
+  aplicarConfigMarca();
 });
 
 function renderLogoRepresentantePreview() {
