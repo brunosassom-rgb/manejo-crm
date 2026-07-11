@@ -1304,11 +1304,11 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
 main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 
 @media (max-width: 1500px) {
-  /* 8 abas com rótulo completo (Dashboard/Pipeline/.../Configurações) só cabem
+  /* As abas com rótulo completo (Dashboard/Pipeline/.../Relatórios) só cabem
      numa única linha em monitores bem largos — em qualquer notebook comum
      (1440px, 1366px...) os rótulos já não cabem todos e o menu ficava cortado
      no meio, com rolagem escondida sem nenhuma pista visual. Some o texto e
-     fica só ícone — nesse modo os 8 cabem numa linha só até uma tela bem
+     fica só ícone — nesse modo cabem numa linha só até uma tela bem
      estreita (ver breakpoint de 820px abaixo), sem gastar altura extra. */
   .tab-btn .label-text { display: none; }
   .rail-nav .tab-btn { padding: 8px 10px; }
