@@ -789,6 +789,20 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 .btn-close { background: transparent; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted); line-height: 1; }
 .tooltip-hint { font-size: 0.7rem; color: var(--text-faint); }
 
+/* ---------- Modal de pré-visualização de impressão ---------- */
+.print-preview-modal {
+  background: var(--surface-2); border-radius: 10px; width: 100%; max-width: 900px;
+  height: 92vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); overflow: hidden;
+}
+.print-preview-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.print-preview-toolbar-title { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+.print-preview-toolbar-actions { display: flex; gap: 10px; }
+.print-preview-scroll { flex: 1; overflow-y: auto; padding: 28px 20px; background: #B9BEAC; }
+.theme-dark .print-preview-scroll { background: #14150F; }
+
 /* Capa, cabeçalho/rodapé corridos (position:fixed, só fazem sentido repetindo por página impressa)
    e encerramento do relatório — só existem na impressão/PDF. .report-content-scope NÃO entra
    aqui: ele só é um wrapper em volta do .report-doc real, e escondê-lo deixava a tela de
@@ -800,6 +814,94 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
    também some na tela, só dentro dos containers de relatório. */
 #relatorio-cliente-conteudo .no-print, #relatorio-cliente-periodo-conteudo .no-print,
 #relatorio-mensal-conteudo .no-print, #relatorio-funil-conteudo .no-print { display: none; }
+
+/* ---------- Preview de impressão (dentro de #modal-print-preview) ----------
+   Reaproveita os MESMOS elementos que hoje só existem pra impressão (capa, cabeçalho/rodapé
+   corridos, encerramento) e os torna visíveis + com aparência de "folha" na tela, dentro do
+   ancestral .print-preview-mode. Não reproduz quebra de página exata (cabeçalho/rodapé corridos
+   aparecem uma vez só, emoldurando o conteúdo, em vez de repetir por página física) — só dá uma
+   ideia fiel do resultado antes de imprimir de verdade. */
+.print-preview-mode .report-capa,
+.print-preview-mode .report-encerramento,
+.print-preview-mode .report-running-head,
+.print-preview-mode .report-running-foot { display: flex; }
+.print-preview-mode .report-doc-head { display: none; }
+
+.print-preview-mode .report-capa,
+.print-preview-mode .report-encerramento {
+  flex-direction: column; width: 210mm; max-width: 100%; box-sizing: border-box;
+  margin: 0 auto 28px; padding: 18mm 16mm; position: relative; overflow: hidden;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.3); border-radius: 3px;
+}
+.print-preview-mode .report-capa {
+  min-height: 296mm; justify-content: flex-start; color: #F3F1E8;
+  background: linear-gradient(160deg, #3D4438, #4B5347 55%, #2F352A);
+}
+.print-preview-mode .report-encerramento {
+  min-height: 210mm; justify-content: flex-start; padding-top: 18mm; padding-bottom: 14mm;
+  background: #fff; color: #1a1a1a;
+}
+.print-preview-mode .report-capa-wm { position: absolute; left: 50%; bottom: 38mm; width: 175mm; transform: translateX(-50%); opacity: 0.16; filter: brightness(2.3) saturate(0); pointer-events: none; }
+.print-preview-mode .report-enc-wm { position: absolute; left: 50%; bottom: 8mm; width: 130mm; transform: translateX(-50%); opacity: 0.07; filter: grayscale(1); pointer-events: none; }
+.print-preview-mode .report-capa-interno {
+  position: absolute; top: 16mm; right: 16mm; z-index: 2;
+  background: var(--gold); color: #2A2312; font-weight: 700; font-size: 0.66rem;
+  text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 12px; border-radius: 999px;
+}
+.print-preview-mode .report-capa-brand, .print-preview-mode .report-enc-brand { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
+.print-preview-mode .report-capa-brand img, .print-preview-mode .report-enc-brand img { width: 60px; height: 60px; object-fit: contain; }
+.print-preview-mode .report-capa-brand .rcb-main, .print-preview-mode .report-enc-brand .rcb-main { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: 0.03em; white-space: nowrap; text-transform: uppercase; line-height: 1; }
+.print-preview-mode .report-capa-brand .rcb-sub, .print-preview-mode .report-enc-brand .rcb-sub { display: block; font-size: 0.78rem; opacity: 0.65; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+.print-preview-mode .report-enc-brand .rcb-main, .print-preview-mode .report-enc-brand .rcb-sub { color: #1a1a1a; opacity: 1; }
+.print-preview-mode .report-enc-brand .rcb-sub { color: #6C7A52; opacity: 0.8; }
+.print-preview-mode .report-capa-mid { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.print-preview-mode .report-capa-eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; color: #C9B77A; font-weight: 700; margin-bottom: 16px; }
+.print-preview-mode .report-capa-nome { font-family: var(--font-display); font-size: 2.7rem; line-height: 1.1; margin: 0 0 10px; color: #F3F1E8; }
+.print-preview-mode .report-capa-fazenda { font-size: 1.1rem; opacity: 0.85; }
+.print-preview-mode .report-capa-linha { width: 60px; height: 3px; background: var(--gold); margin: 24px 0; }
+.print-preview-mode .report-capa-meta { font-size: 0.84rem; opacity: 0.8; }
+.print-preview-mode .report-capa-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.print-preview-mode .report-capa-chip {
+  font-size: 0.72rem; padding: 5px 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.08); letter-spacing: 0.02em;
+}
+.print-preview-mode .report-capa-bottom {
+  position: relative; z-index: 1; margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end;
+  font-size: 0.72rem; opacity: 0.75; border-top: 1px solid rgba(255,255,255,0.18); padding-top: 15px;
+}
+.print-preview-mode .report-capa-bottom b { display: block; opacity: 1; font-size: 0.84rem; }
+.print-preview-mode .report-capa-credit { font-size: 0.64rem; opacity: 0.65; }
+.print-preview-mode .report-enc-mid { position: relative; z-index: 1; text-align: center; margin: 26mm 0 30mm; padding: 0 10mm; }
+.print-preview-mode .report-enc-eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--gold); font-weight: 700; margin-bottom: 14px; }
+.print-preview-mode .report-enc-title { font-family: var(--font-display); font-size: 1.9rem; margin: 0 0 14px; line-height: 1.15; color: #1a1a1a; }
+.print-preview-mode .report-enc-texto { font-size: 0.94rem; color: #5B6154; max-width: 46ch; line-height: 1.65; margin: 0 auto 28px; }
+.print-preview-mode .report-enc-card { background: #F4F5EE; border: 1px solid #D9DECB; border-radius: 14px; padding: 20px 30px; display: inline-flex; flex-direction: column; gap: 4px; }
+.print-preview-mode .report-enc-card .nome { font-weight: 700; font-size: 1.05rem; }
+.print-preview-mode .report-enc-card .cargo { font-size: 0.84rem; color: #5B6154; }
+.print-preview-mode .report-enc-card .empresa { font-size: 0.78rem; color: #8B917F; margin-top: 4px; }
+.print-preview-mode .report-enc-card .contato { font-size: 0.76rem; color: #5B6154; margin-top: 8px; padding-top: 8px; border-top: 1px solid #E4E7DA; }
+.print-preview-mode .report-enc-bottom { position: relative; z-index: 1; text-align: center; }
+.print-preview-mode .report-enc-linha { width: 44px; height: 2px; background: var(--gold); margin: 0 auto 12px; }
+.print-preview-mode .report-enc-foot-brand { font-size: 0.7rem; color: #8B917F; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.print-preview-mode .report-content-scope {
+  display: block; width: 210mm; max-width: 100%; margin: 0 auto 28px; background: #fff;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.24); border-radius: 3px; padding: 18mm 15mm; box-sizing: border-box;
+  color: #1a1a1a;
+}
+.print-preview-mode .report-running-head {
+  justify-content: space-between; align-items: baseline; position: static;
+  margin: 0 0 14px; padding-bottom: 6px;
+  font-size: 0.68rem; color: #8B917F; border-bottom: 1px solid #D9DECB;
+}
+.print-preview-mode .report-running-head b { color: #5B6154; font-weight: 700; }
+.print-preview-mode .report-running-foot {
+  justify-content: center; position: static;
+  margin: 16px 0 0; padding-top: 6px;
+  font-size: 0.64rem; color: #8B917F; border-top: 1px solid #D9DECB;
+}
+.print-preview-mode .report-running-foot .rf-mark { display: flex; align-items: center; gap: 6px; }
+.print-preview-mode .report-running-foot .rf-mark img { width: 13px; height: 13px; border-radius: 3px; }
 
 @page { size: A4; margin: 0; }
 

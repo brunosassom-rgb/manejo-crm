@@ -1596,6 +1596,23 @@
     </div>
   </div>
 
+  <!-- MODAL: pré-visualização de impressão (mostra capa/cabeçalho/rodapé/encerramento antes de
+       abrir a caixa de impressão de verdade) -->
+  <div id="modal-print-preview" class="modal-overlay hidden no-print">
+    <div class="print-preview-modal">
+      <div class="print-preview-toolbar">
+        <div class="print-preview-toolbar-title">Pré-visualização de impressão</div>
+        <div class="print-preview-toolbar-actions">
+          <button type="button" class="btn-secondary" id="btn-print-preview-fechar">Fechar</button>
+          <button type="button" class="btn-primary" id="btn-print-preview-imprimir">Imprimir / Salvar PDF</button>
+        </div>
+      </div>
+      <div class="print-preview-scroll">
+        <div class="print-preview-content" id="print-preview-content"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- LOGIN: acesso ao Manejo CRM (fica visível até haver sessão ativa) -->
   <div id="modal-login" class="modal-overlay hidden">
     <div class="modal" style="max-width:380px;">

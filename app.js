@@ -4395,7 +4395,7 @@ document.getElementById("form-visita").addEventListener("submit", e => {
     document.getElementById("report-visitas").classList.add("active");
     currentReportView = "visitas";
     initVisitasReportTab();
-    setTimeout(() => window.print(), 200);
+    setTimeout(() => abrirPreviewImpressao("visita-documento-conteudo", { outroContainerId: "visitas-gerencial-conteudo" }), 200);
   }
 });
 
@@ -4528,8 +4528,7 @@ function renderVisitasTabela() {
 }
 ["visitas-busca", "visitas-filtro-data", "visitas-filtro-objetivo"].forEach(id => document.getElementById(id).addEventListener("input", renderVisitasTabela));
 document.getElementById("btn-imprimir-visita").addEventListener("click", () => {
-  document.getElementById("visitas-gerencial-conteudo").classList.add("hidden-for-print");
-  window.print();
+  abrirPreviewImpressao("visita-documento-conteudo", { outroContainerId: "visitas-gerencial-conteudo" });
 });
 
 // Junta-se ao mesmo sistema de capa/cabeçalho-rodapé/encerramento dos demais relatórios —
@@ -4586,12 +4585,12 @@ document.getElementById("visitas-gerencial-mes").addEventListener("change", e =>
 // isolar um do outro na hora de imprimir, os dois vazavam juntos no PDF de qualquer um dos
 // botões, já que window.print() imprime tudo que está visível na página.
 document.getElementById("btn-imprimir-visitas-gerencial").addEventListener("click", () => {
-  document.getElementById("visita-documento-conteudo").classList.add("hidden-for-print");
-  window.print();
+  abrirPreviewImpressao("visitas-gerencial-conteudo", { outroContainerId: "visita-documento-conteudo" });
 });
 window.addEventListener("afterprint", () => {
   document.getElementById("visita-documento-conteudo").classList.remove("hidden-for-print");
   document.getElementById("visitas-gerencial-conteudo").classList.remove("hidden-for-print");
+  fecharPreviewImpressao();
 });
 
 // ---------- Widget do Dashboard ----------
@@ -4676,7 +4675,37 @@ document.querySelectorAll(".report-switch-btn").forEach(btn => {
     }
   });
 });
-document.getElementById("btn-imprimir-relatorio-funil").addEventListener("click", () => window.print());
+// ---------- Preview de impressão ----------
+// Clona o HTML já renderizado do container do relatório pra dentro do modal de preview, em vez
+// de chamar window.print() direto — assim dá pra conferir capa/cabeçalho/rodapé/encerramento
+// (que só aparecem em @media print) antes de abrir a caixa de impressão de verdade.
+let previewImpressaoOutroContainerId = null;
+function abrirPreviewImpressao(containerId, opcoes) {
+  opcoes = opcoes || {};
+  const origem = document.getElementById(containerId);
+  if (!origem) return;
+  previewImpressaoOutroContainerId = opcoes.outroContainerId || null;
+  document.getElementById("print-preview-content").innerHTML = origem.innerHTML;
+  const modal = document.getElementById("modal-print-preview");
+  modal.classList.remove("hidden");
+  modal.classList.add("print-preview-mode");
+}
+function fecharPreviewImpressao() {
+  const modal = document.getElementById("modal-print-preview");
+  modal.classList.add("hidden");
+  modal.classList.remove("print-preview-mode");
+  document.getElementById("print-preview-content").innerHTML = "";
+}
+document.getElementById("btn-print-preview-fechar").addEventListener("click", fecharPreviewImpressao);
+document.getElementById("btn-print-preview-imprimir").addEventListener("click", () => {
+  if (previewImpressaoOutroContainerId) {
+    const outro = document.getElementById(previewImpressaoOutroContainerId);
+    if (outro) outro.classList.add("hidden-for-print");
+  }
+  window.print();
+});
+
+document.getElementById("btn-imprimir-relatorio-funil").addEventListener("click", () => abrirPreviewImpressao("relatorio-funil-conteudo"));
 
 function initRelatoriosTab() {
   refreshClientSelects();
@@ -4689,11 +4718,11 @@ function initRelatoriosTab() {
 }
 document.getElementById("relatorio-cliente-select").addEventListener("change", e => renderRelatorioCliente(e.target.value));
 document.getElementById("relatorio-mes-select").addEventListener("change", e => renderRelatorioMensal(e.target.value));
-document.getElementById("btn-imprimir-relatorio-cliente").addEventListener("click", () => window.print());
-document.getElementById("btn-imprimir-relatorio-mensal").addEventListener("click", () => window.print());
+document.getElementById("btn-imprimir-relatorio-cliente").addEventListener("click", () => abrirPreviewImpressao("relatorio-cliente-conteudo"));
+document.getElementById("btn-imprimir-relatorio-mensal").addEventListener("click", () => abrirPreviewImpressao("relatorio-mensal-conteudo"));
 document.getElementById("relatorio-cliente-periodo-select").addEventListener("change", e => renderRelatorioClientePeriodo(e.target.value, document.getElementById("relatorio-cliente-periodo-mes").value));
 document.getElementById("relatorio-cliente-periodo-mes").addEventListener("change", e => renderRelatorioClientePeriodo(document.getElementById("relatorio-cliente-periodo-select").value, e.target.value));
-document.getElementById("btn-imprimir-relatorio-cliente-periodo").addEventListener("click", () => window.print());
+document.getElementById("btn-imprimir-relatorio-cliente-periodo").addEventListener("click", () => abrirPreviewImpressao("relatorio-cliente-periodo-conteudo"));
 
 // ---------- Sistema visual dos relatórios (cabeçalho, KPIs com ícone, seção em cartão) ----------
 // Usado por TODOS os tipos de relatório (cliente, período, mensal, funil, visita) — é isso que
