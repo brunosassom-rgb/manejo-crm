@@ -551,7 +551,8 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 }
 .nine-box-row-header {
   font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-  display: flex; align-items: center; padding: 10px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 10px; border-radius: 10px;
 }
 .nine-box-row-header.tone-late { background: var(--late-bg); color: var(--late-text); }
 .nine-box-row-header.tone-warn { background: var(--warn-bg); color: var(--warn-text); }
