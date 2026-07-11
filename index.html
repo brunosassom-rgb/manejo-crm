@@ -23,18 +23,26 @@
   <datalist id="fornecedores-datalist"></datalist>
 
   <div class="app-shell">
+  <nav class="rail-side">
+    <div class="rail-side-nav">
+      <button class="tab-btn active" data-tab="dashboard" title="Dashboard"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span></button>
+      <button class="tab-btn" data-tab="pipeline" title="Pipeline"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span></button>
+      <button class="tab-btn" data-tab="clientes" title="Clientes"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></button>
+      <button class="tab-btn" data-tab="leads" title="Leads"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c0-4 2-6 2-10"/><path d="M9.5 9.4c-3-1-3.5-3.4-3.5-5.4 4 0 6 2 6.5 4"/><path d="M14.5 9.4c3-1 3.5-3.4 3.5-5.4-4 0-6 2-6.5 4"/></svg></span></button>
+      <button class="tab-btn" data-tab="agenda" title="Agenda"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span></button>
+      <button class="tab-btn" data-tab="competitiva" title="Intel. Competitiva"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span></button>
+      <button class="tab-btn" data-tab="relatorios" title="Relatórios"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span></button>
+    </div>
+    <div class="rail-side-profile">
+      <button type="button" class="rail-user" id="btn-rail-user" title="Meus dados">
+        <div class="avatar" id="rail-user-avatar">BS</div>
+      </button>
+    </div>
+  </nav>
+
+  <div class="app-main-col">
   <nav class="rail">
     <div class="rail-brand"><img class="rail-logo" src="assets/brand-mark.png" alt="Manejo CRM"><div class="rail-brand-text"><span class="brand-name" id="rail-brand-name">Manejo</span><span class="brand-sub">CRM</span></div></div>
-    <div class="rail-sep"></div>
-    <div class="rail-nav">
-      <button class="tab-btn active" data-tab="dashboard"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span><span class="label-text">Dashboard</span></button>
-      <button class="tab-btn" data-tab="pipeline"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span><span class="label-text">Pipeline</span></button>
-      <button class="tab-btn" data-tab="clientes"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label-text">Clientes</span></button>
-      <button class="tab-btn" data-tab="leads"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c0-4 2-6 2-10"/><path d="M9.5 9.4c-3-1-3.5-3.4-3.5-5.4 4 0 6 2 6.5 4"/><path d="M14.5 9.4c3-1 3.5-3.4 3.5-5.4-4 0-6 2-6.5 4"/></svg></span><span class="label-text">Leads</span></button>
-      <button class="tab-btn" data-tab="agenda"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span><span class="label-text">Agenda</span></button>
-      <button class="tab-btn" data-tab="competitiva"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span class="label-text">Intel. Competitiva</span></button>
-      <button class="tab-btn" data-tab="relatorios"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span><span class="label-text">Relatórios</span></button>
-    </div>
     <div class="appbar-search">
       <input type="text" id="global-search" placeholder="Buscar cliente, fazenda, cidade...">
     </div>
@@ -53,15 +61,6 @@
       <span class="bell-badge" id="bell-badge" style="display:none">0</span>
     </button>
     <button class="theme-toggle" id="theme-toggle" title="Alternar modo escuro">Dark</button>
-    <div class="rail-user-menu">
-      <button type="button" class="rail-user" id="btn-rail-user">
-        <div class="avatar" id="rail-user-avatar">BS</div>
-        <div>
-          <div class="who" id="rail-user-nome">Bruno Sasso</div>
-          <div class="role" id="rail-user-cargo">Gerente de território</div>
-        </div>
-      </button>
-    </div>
   </nav>
 
   <main>
@@ -426,6 +425,7 @@
       </div>
     </section>
   </main>
+  </div>
   </div>
 
   <div class="toast-stack" id="toast-stack"></div>

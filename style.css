@@ -11,6 +11,13 @@
   --sidebar-hover-bg: #555F4A; /* meio-termo entre --sidebar-bg e Alcaparra */
   --sidebar-sub: #BFC4BA; /* Rede de Dormir clareada — 4.5:1 sobre --sidebar-bg */
 
+  /* Barra lateral de ícones (Dashboard...Relatórios + perfil) — cor "Mata fechada",
+     deliberadamente diferente do oliva da topbar (--sidebar-bg) pra separar as duas
+     barras visualmente. Contraste com ícone branco: 12:1. */
+  --rail-side-bg: #2E3A26;
+  --rail-side-active: #7C8B5E;
+  --rail-side-hover: #3A4630;
+
   --bg: #F9FAFB;
   --surface: #FFFFFF;
   --text: #111827;
@@ -1286,6 +1293,26 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
   flex-shrink: 0; margin: 0 0 0 8px; padding: 0 0 0 14px;
   border-left: 1px solid var(--sidebar-sep);
 }
+
+/* ---------- Barra lateral de ícones (Dashboard...Relatórios + perfil) ---------- */
+.app-shell { display: flex; min-height: 100vh; }
+.rail-side {
+  width: 58px; flex-shrink: 0; background: var(--rail-side-bg);
+  display: flex; flex-direction: column; align-items: center; padding: 14px 0;
+  position: sticky; top: 0; height: 100vh;
+}
+.rail-side-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 8px; }
+.rail-side .tab-btn { justify-content: center; padding: 11px; border-radius: 9px; }
+.rail-side .tab-btn .ico { width: 19px; height: 19px; }
+.rail-side .tab-btn:hover { background: var(--rail-side-hover); color: var(--sidebar-text-active); }
+.rail-side .tab-btn.active { background: var(--rail-side-active); color: var(--sidebar-text-active); }
+.rail-side-profile {
+  width: 100%; padding: 12px 8px 0; margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,.14); display: flex; justify-content: center;
+}
+.rail-side-profile .rail-user { padding: 0; }
+.rail-side-profile .avatar { width: 34px; height: 34px; border-radius: 50%; }
+.app-main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 /* ---------- Menu "+ Novo" (ações rápidas) na barra ---------- */
 .quick-actions-menu { position: relative; flex-shrink: 0; }
