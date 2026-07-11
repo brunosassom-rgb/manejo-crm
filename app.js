@@ -2290,6 +2290,40 @@ function capturarLocalizacao(latId, lngId, statusId) {
 document.getElementById("btn-capturar-gps").addEventListener("click", () => capturarLocalizacao("cliente-lat", "cliente-lng", "cliente-localizacao-status"));
 document.getElementById("btn-capturar-gps-ca").addEventListener("click", () => capturarLocalizacao("ca-lat", "ca-lng", "ca-localizacao-status"));
 
+// Igual capturarLocalizacao(), mas também resolve o endereço via reverse geocoding do
+// Nominatim/OpenStreetMap (gratuito, sem chave). O navegador não deixa JS customizar o cabeçalho
+// User-Agent numa requisição fetch (é um "forbidden header" da própria spec) — a identificação do
+// app pra política de uso deles acaba vindo do Referer, que o navegador já envia sozinho. Uma
+// requisição por clique aqui fica bem abaixo do limite de 1/segundo deles.
+function capturarLocalizacaoComEndereco(latId, lngId, enderecoId, statusId) {
+  const statusEl = document.getElementById(statusId);
+  if (!navigator.geolocation) { statusEl.textContent = "Geolocalização não suportada neste navegador."; return; }
+  statusEl.textContent = "Capturando localização...";
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
+      document.getElementById(latId).value = lat;
+      document.getElementById(lngId).value = lng;
+      statusEl.textContent = `Localização capturada: ${lat}, ${lng} — buscando endereço...`;
+      try {
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await resp.json();
+        const endereco = (data && data.display_name) || "";
+        document.getElementById(enderecoId).value = endereco;
+        statusEl.textContent = endereco
+          ? `Localização capturada: ${lat}, ${lng} — ${endereco}`
+          : `Localização capturada: ${lat}, ${lng} (endereço não encontrado).`;
+      } catch (err) {
+        document.getElementById(enderecoId).value = "";
+        statusEl.textContent = `Localização capturada: ${lat}, ${lng} (não foi possível buscar o endereço).`;
+      }
+    },
+    err => { statusEl.textContent = "Não foi possível obter a localização (" + err.message + ")."; },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+document.getElementById("btn-capturar-gps-visita").addEventListener("click", () => capturarLocalizacaoComEndereco("visita-localizacao-lat", "visita-localizacao-lng", "visita-localizacao-endereco", "visita-localizacao-status"));
+
 document.querySelectorAll(".cliente-tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".cliente-tab-btn").forEach(b => b.classList.remove("active"));
@@ -3214,12 +3248,28 @@ function reativarLead(leadId) {
 document.getElementById("inativar-motivo").addEventListener("change", e => {
   document.getElementById("inativar-concorrente-label").style.display = e.target.value === "Migrou para concorrente" ? "" : "none";
 });
-function openInativarClienteModal(clienteId) {
+// inativarAposVisitaPendente: true quando essa inativação foi disparada pelo checkbox "perdido pra
+// concorrência" dentro do relatório de visita — nesse caso, confirmar aqui deve retomar e salvar
+// aquela visita (com o estoque já zerado); cancelar aqui deve reabrir a visita, não descartá-la.
+let inativarAposVisitaPendente = false;
+function openInativarClienteModal(clienteId, motivoPreSelecionado, viaVisitaPendente) {
   document.getElementById("form-inativar-cliente").reset();
   document.getElementById("inativar-cliente-id").value = clienteId;
+  if (motivoPreSelecionado) document.getElementById("inativar-motivo").value = motivoPreSelecionado;
   document.getElementById("inativar-concorrente-label").style.display = "";
+  inativarAposVisitaPendente = !!viaVisitaPendente;
   document.getElementById("modal-inativar-cliente").classList.remove("hidden");
 }
+// Se o modal fechar sem confirmar (X ou Esc) enquanto uma visita está pendente, reabre a visita
+// em vez de deixar os dados digitados presos num modal invisível sem salvar.
+new MutationObserver(() => {
+  const modal = document.getElementById("modal-inativar-cliente");
+  if (modal.classList.contains("hidden") && inativarAposVisitaPendente) {
+    inativarAposVisitaPendente = false;
+    document.getElementById("modal-visita").classList.remove("hidden");
+    showToast("Inativação cancelada — relatório de visita não foi salvo.");
+  }
+}).observe(document.getElementById("modal-inativar-cliente"), { attributes: true, attributeFilter: ["class"] });
 document.getElementById("form-inativar-cliente").addEventListener("submit", e => {
   e.preventDefault();
   const clienteId = document.getElementById("inativar-cliente-id").value;
@@ -3231,10 +3281,13 @@ document.getElementById("form-inativar-cliente").addEventListener("submit", e =>
   cliente.concorrenteInativacao = motivo === "Migrou para concorrente" ? document.getElementById("inativar-concorrente").value.trim() : "";
   cliente.dataInativacao = todayStr();
   saveState();
+  const deveSalvarVisitaPendente = inativarAposVisitaPendente;
+  inativarAposVisitaPendente = false;
   closeModal("modal-inativar-cliente");
   refreshClientSelects(); renderClientList(); renderDashboard();
   if (currentFichaClientId === clienteId) { renderFichaLeft(); renderFichaTab(); }
   showToast(`Cliente inativado (${motivo}).`);
+  if (deveSalvarVisitaPendente) salvarVisitaAtual(clienteId);
 });
 function reativarCliente(clienteId) {
   const cliente = state.clientesAtivos.find(c => c.id === clienteId);
@@ -4359,8 +4412,14 @@ document.getElementById("visita-cliente-busca").addEventListener("input", e => {
 });
 
 function atualizarVisitaClienteInfo() {
-  const client = getEntidadeById(document.getElementById("visita-cliente").value);
+  const clientId = document.getElementById("visita-cliente").value;
+  const client = getEntidadeById(clientId);
   const box = document.getElementById("visita-cliente-info");
+  // Etapa de funil só existe pra lead — cliente ativo já converteu, então nesse caso o campo
+  // relevante é sinalizar perda pra concorrência, não avançar etapa.
+  const ehClienteAtivo = !!clientId && !isLeadId(clientId);
+  document.getElementById("visita-atualizar-etapa-label").classList.toggle("hidden", ehClienteAtivo);
+  document.getElementById("visita-perdido-concorrencia-wrap").classList.toggle("hidden", !ehClienteAtivo);
   if (!client) { box.classList.remove("visible"); renderVisitaEstoqueRows(); return; }
   box.innerHTML = `<strong>${escapeHtml(client.nome)}</strong>${client.fazenda ? " · " + escapeHtml(client.fazenda) : ""}${client.municipio ? " · " + escapeHtml(client.municipio) : ""}${client.nomeDecisor ? " · Decisor: " + escapeHtml(client.nomeDecisor) : ""}`;
   box.classList.add("visible");
@@ -4392,6 +4451,10 @@ function openVisitaModal(clientId, duplicarDeVisitaId) {
   document.getElementById("modal-visita-titulo").textContent = "Relatório de Visita Técnica";
   document.getElementById("visita-cliente-busca").value = "";
   document.querySelectorAll("#visita-cliente option").forEach(opt => opt.style.display = "");
+  // Aberto a partir da ficha de um cliente/lead específico: a busca/seleção não faz sentido (já
+  // se sabe de quem é a visita) — some os dois, deixando só o texto fixo de visita-cliente-info.
+  document.getElementById("visita-cliente-busca-wrap").classList.toggle("hidden", !!clientId);
+  document.getElementById("visita-localizacao-status").textContent = "";
   currentVisitaFotos = [];
   currentVisitaFotosRecomendacoes = [];
   currentVisitaProdutos = [];
@@ -4432,6 +4495,23 @@ document.getElementById("form-visita").addEventListener("submit", e => {
   e.preventDefault();
   const clientId = document.getElementById("visita-cliente").value;
   if (!clientId) { showToast("Selecione um cliente/lead."); return; }
+
+  // Cliente ativo marcado como perdido pra concorrência: zera o estoque reportado nesta visita
+  // (não faz sentido reportar estoque do nosso produto num cliente que já migrou) e pausa o
+  // salvamento até a inativação ser confirmada — salvarVisitaAtual() só roda depois, disparada
+  // pelo próprio submit de form-inativar-cliente logo abaixo.
+  const perdidoParaConcorrencia = !isLeadId(clientId) && document.getElementById("visita-perdido-concorrencia").checked;
+  if (perdidoParaConcorrencia) {
+    document.querySelectorAll("#visita-estoque-categorias-list .visita-estoque-quantidade").forEach(input => { input.value = "0"; });
+    closeModal("modal-visita");
+    openInativarClienteModal(clientId, "Migrou para concorrente", true);
+    return;
+  }
+  salvarVisitaAtual(clientId);
+});
+
+function salvarVisitaAtual(clientId) {
+  document.getElementById("modal-visita").classList.remove("hidden");
   const entidadeVisita = getEntidadeById(clientId);
   const estoqueCards = [...document.querySelectorAll("#visita-estoque-categorias-list .categoria-card")];
   const cardEstoqueFaltando = estoqueCards.find(card => !card.querySelector(".visita-estoque-quantidade").value || !card.querySelector(".visita-estoque-qtd-animais").value);
@@ -4452,6 +4532,9 @@ document.getElementById("form-visita").addEventListener("submit", e => {
     horaFim: document.getElementById("visita-hora-fim").value,
     responsavelVisita: document.getElementById("visita-responsavel").value.trim(),
     participantes: document.getElementById("visita-participantes").value.trim(),
+    localizacaoLat: document.getElementById("visita-localizacao-lat").value,
+    localizacaoLng: document.getElementById("visita-localizacao-lng").value,
+    localizacaoEndereco: document.getElementById("visita-localizacao-endereco").value,
     objetivos, objetivoDetalhe: document.getElementById("visita-objetivo-detalhe").value.trim(),
     situacaoAtual: document.getElementById("visita-situacao-atual").value.trim(),
     problemasIdentificados: document.getElementById("visita-problemas").value.trim(),
@@ -4532,7 +4615,7 @@ document.getElementById("form-visita").addEventListener("submit", e => {
     initVisitasReportTab();
     setTimeout(() => abrirPreviewImpressao("visita-documento-conteudo", { outroContainerId: "visitas-gerencial-conteudo" }), 200);
   }
-});
+}
 
 // ---------- Documento (PDF) ----------
 function renderVisitaDocumento(visita) {

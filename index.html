@@ -1450,7 +1450,7 @@
         <details class="visita-section" open>
           <summary>1 · Identificação</summary>
           <div class="visita-section-body">
-            <label>Cliente / lead
+            <label id="visita-cliente-busca-wrap">Cliente / lead
               <input type="text" id="visita-cliente-busca" placeholder="Buscar cliente...">
               <select id="visita-cliente" required style="margin-top:6px;"></select>
             </label>
@@ -1470,6 +1470,13 @@
             <label>Outros participantes (opcional)
               <input type="text" id="visita-participantes">
             </label>
+            <div class="actions-row" style="margin-top:6px;">
+              <button type="button" class="btn-secondary" id="btn-capturar-gps-visita">Registrar localização da visita</button>
+            </div>
+            <p class="hint" id="visita-localizacao-status"></p>
+            <input type="hidden" id="visita-localizacao-lat">
+            <input type="hidden" id="visita-localizacao-lng">
+            <input type="hidden" id="visita-localizacao-endereco">
           </div>
         </details>
 
@@ -1585,7 +1592,7 @@
             <label>Objeções identificadas
               <textarea id="visita-objecoes-internas" rows="2"></textarea>
             </label>
-            <label>Atualizar etapa no funil
+            <label id="visita-atualizar-etapa-label">Atualizar etapa no funil
               <select id="visita-atualizar-etapa">
                 <option value="">— Não alterar —</option>
                 <option>Prospecção</option>
@@ -1597,6 +1604,10 @@
                 <option>Inativo</option>
                 <option>Perdido</option>
               </select>
+            </label>
+            <label id="visita-perdido-concorrencia-wrap" class="hidden" style="flex-direction:row; align-items:center; gap:8px; text-transform:none; font-size:0.86rem; font-weight:500; color:var(--text);">
+              <input type="checkbox" id="visita-perdido-concorrencia" style="width:auto;">
+              Identifiquei que o cliente está comprando da concorrência
             </label>
           </div>
         </details>
