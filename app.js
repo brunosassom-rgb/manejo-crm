@@ -1095,7 +1095,9 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
 
 // ---------- Dropdown de perfil do usuário (avatar no topo) ----------
 document.getElementById("btn-rail-user").addEventListener("click", () => switchMainTab("meus-dados"));
-document.getElementById("btn-ir-configuracoes").addEventListener("click", () => switchMainTab("configuracoes"));
+document.querySelectorAll(".perfil-config-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => switchMainTab(btn.dataset.toptab));
+});
 document.getElementById("btn-salvar-perfil").addEventListener("click", () => {
   state.config.nomeUsuario = document.getElementById("perfil-nome-usuario").value.trim();
   state.config.cargoUsuario = document.getElementById("perfil-cargo-usuario").value.trim();

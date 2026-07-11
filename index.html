@@ -291,7 +291,10 @@
 
     <!-- ==================== MEUS DADOS ==================== -->
     <section id="meus-dados" class="tab-panel">
-      <h2>Meus dados</h2>
+      <div class="detalhe-tabs perfil-config-tabs">
+        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn active" data-toptab="meus-dados">Meus dados</button>
+        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn" data-toptab="configuracoes">Configurações</button>
+      </div>
       <div class="settings-grid">
         <div class="settings-card settings-card-wide">
           <div class="settings-card-title">Perfil</div>
@@ -320,18 +323,20 @@
             <div class="actions-row" style="margin-top:6px">
               <button type="button" class="btn-primary" id="btn-salvar-perfil">Salvar</button>
             </div>
+            <div class="actions-row" style="margin-top:6px">
+              <button type="button" class="btn-secondary" id="btn-logout">Sair</button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="actions-row" style="margin-top:20px">
-        <button type="button" class="btn-secondary" id="btn-ir-configuracoes">Ir para Configurações</button>
-        <button type="button" class="btn-secondary" id="btn-logout">Sair</button>
       </div>
     </section>
 
     <!-- ==================== CONFIGURAÇÕES ==================== -->
     <section id="configuracoes" class="tab-panel">
-      <h2>Configurações</h2>
+      <div class="detalhe-tabs perfil-config-tabs">
+        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn" data-toptab="meus-dados">Meus dados</button>
+        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn active" data-toptab="configuracoes">Configurações</button>
+      </div>
 
       <h3>Cadastros auxiliares</h3>
       <div class="section-header">
