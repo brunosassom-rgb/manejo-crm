@@ -701,6 +701,10 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .detalhe-section .detalhe-grid, .detalhe-section table.mini { margin-bottom: 0; }
 .detalhe-section table.mini + table.mini { margin-top: 14px; }
 .tip-box { background: var(--ok-bg); color: var(--ok-text); border-radius: 8px; padding: 12px 14px; font-size: 0.9rem; margin-bottom: 16px; }
+/* Diferencia tabelas relacionadas empilhadas (ex: rebanho / fornecimento atual / previsão de
+   estoque) — sem isso pareciam uma tabela só cortada ao meio. */
+.report-table-subtitle { font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.report-table-subtitle:first-child { margin-top: 0; }
 
 table.mini { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 16px; }
 table.mini th, table.mini td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
@@ -791,7 +795,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 @page { size: A4; margin: 0; }
 
 @media print {
-  .rail, .appbar, .report-switch, .no-print { display: none !important; }
+  .rail, .appbar, .report-switch, .no-print, .hidden-for-print { display: none !important; }
   .app-shell { display: block; min-height: 0; }
   main { max-width: 100%; padding: 0; margin: 0; }
   body { background: white; }
@@ -818,11 +822,21 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
     margin: 0; position: relative; overflow: hidden;
   }
   .report-capa-wm { position: absolute; left: 50%; bottom: 38mm; width: 175mm; transform: translateX(-50%); opacity: 0.16; filter: brightness(2.3) saturate(0); pointer-events: none; }
+  /* Selo "uso interno" — relatórios internos (Mensal, Funil, Visitas gerencial) usam a mesma
+     capa/encerramento dos client-facing; sem uma marca óbvia, dá pra confundir e mandar pro
+     cliente por engano. */
+  .report-capa-interno {
+    position: absolute; top: 16mm; right: 16mm; z-index: 2;
+    background: var(--gold); color: #2A2312; font-weight: 700; font-size: 0.66rem;
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 12px; border-radius: 999px;
+  }
   .report-capa-brand, .report-enc-brand { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
   .report-capa-brand img, .report-enc-brand img { width: 60px; height: 60px; object-fit: contain; }
   .report-capa-brand .rcb-main, .report-enc-brand .rcb-main { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: 0.03em; white-space: nowrap; text-transform: uppercase; line-height: 1; }
   .report-capa-brand .rcb-sub, .report-enc-brand .rcb-sub { display: block; font-size: 0.78rem; opacity: 0.65; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
-  .report-capa-mid { position: relative; z-index: 1; margin-top: 20mm; }
+  /* flex:1 + justify-content:center faz o bloco de título flutuar no meio do espaço livre entre
+     a marca (topo) e o rodapé, em vez de ficar colado no topo com um vão vazio grande embaixo. */
+  .report-capa-mid { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; }
   .report-capa-eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; color: #C9B77A; font-weight: 700; margin-bottom: 16px; }
   .report-capa-nome { font-family: var(--font-display); font-size: 2.7rem; line-height: 1.1; margin: 0 0 10px; }
   .report-capa-fazenda { font-size: 1.1rem; opacity: 0.85; }
@@ -838,6 +852,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
     font-size: 0.72rem; opacity: 0.75; border-top: 1px solid rgba(255,255,255,0.18); padding-top: 15px;
   }
   .report-capa-bottom b { display: block; opacity: 1; font-size: 0.84rem; }
+  .report-capa-credit { font-size: 0.64rem; opacity: 0.65; }
 
   .report-encerramento {
     justify-content: flex-start; padding: 18mm 16mm 14mm; min-height: 150mm; background: #fff; color: #1a1a1a;

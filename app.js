@@ -500,8 +500,17 @@ function daysBetween(d1, d2) { return Math.round((new Date(d2) - new Date(d1)) /
 function addDays(dateStr, days) { const d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
 function formatDate(iso) { if (!iso) return "-"; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; }
 function formatMoney(v) { const n = Number(v) || 0; return "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+// Volume/quantidade com separador de milhar pt-BR — "v.toFixed(1)" cru vira "67500.0" (sem
+// separador e com ponto em vez de vírgula) pra volumes grandes; toLocaleString formata igual
+// em qualquer tela ou relatório que mostre tonelagem.
+function formatVolume(v) { const n = Number(v) || 0; return n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+// Contagem inteira (cabeças de rebanho, etc.) com separador de milhar — sem casas decimais.
+function formatInt(v) { const n = Number(v) || 0; return n.toLocaleString("pt-BR"); }
 function escapeHtml(str) { if (str === null || str === undefined || str === "") return ""; return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function field(label, value) { return `<div><span>${label}</span>${escapeHtml(value) || "-"}</div>`; }
+// Variante pra relatórios exportados: campo some por completo se vazio, em vez de mostrar "-"
+// (ver ponto 7 da revisão de relatórios — excesso de "-" polui um documento que vai pro cliente).
+function reportField(label, value) { return escapeHtml(value) ? field(label, value) : ""; }
 function consultorNome(id) { const c = state.consultores.find(x => x.id === id); return c ? c.nome : ""; }
 function initials(name) { if (!name) return "?"; return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join(""); }
 function onlyDigits(str) { return (str || "").replace(/\D/g, ""); }
@@ -705,7 +714,7 @@ function computeClientInsight(client) {
           status, statusLabel, avgInterval: cicloDias, avgVolume: volumeUltimo, daysSinceLast,
           lastPedidoDate: last.dataPedido, nextExpectedDate, diasRestantes, progresso,
           ltv, favoriteProduct, lastContactDate, consumosPorProduto, cicloOrigem: "consumo",
-          tip: `${tip} Estimativa baseada no consumo declarado de ${last.produto} (${consumoDoProduto.toFixed(1)} t/mês), não em histórico de pedidos.`
+          tip: `${tip} Estimativa baseada no consumo declarado de ${last.produto} (${formatVolume(consumoDoProduto)} t/mês), não em histórico de pedidos.`
         };
       }
     }
@@ -1337,7 +1346,7 @@ function renderDashboard() {
     if (k.suffix) {
       let v = 0; const target = k.value;
       const t0 = performance.now();
-      (function step(now) { const p = Math.min((now - t0) / 500, 1); el.textContent = (target * p).toFixed(1) + k.suffix; if (p < 1) requestAnimationFrame(step); })(t0);
+      (function step(now) { const p = Math.min((now - t0) / 500, 1); el.textContent = formatVolume(target * p) + k.suffix; if (p < 1) requestAnimationFrame(step); })(t0);
     } else animateCounter(el, k.value, k.isMoney);
   });
 
@@ -1396,7 +1405,7 @@ function renderDashboard() {
     ? ranking.map((r, i) => `
         <div class="rank-row"><span class="rank-n">${i + 1}</span><span class="rank-name">${escapeHtml(r.client.nome)}</span>
           <div class="rank-track"><div class="rank-fill" style="width:${(r.volume / maxRank) * 100}%"></div></div>
-          <span class="rank-val">${r.volume.toFixed(1)}t</span></div>`).join("")
+          <span class="rank-val">${formatVolume(r.volume)}t</span></div>`).join("")
     : `<div class="empty-state">Nenhum pedido registrado ainda.</div>`;
 
   // ---- Roteiro do dia (worklist acionável) ----
@@ -1518,7 +1527,7 @@ function renderPipeline() {
     return `
       <div class="kanban-col" data-stage="${stage}">
         <div class="kanban-col-header">
-          <div><div class="stage-name">${stage}</div><div class="stage-meta">${volumeTotal.toFixed(1)}t potencial</div></div>
+          <div><div class="stage-name">${stage}</div><div class="stage-meta">${formatVolume(volumeTotal)}t potencial</div></div>
           <span class="kanban-count">${leadsNaEtapa.length}</span>
         </div>
         <div class="kanban-drop" data-stage="${stage}">${cards}</div>
@@ -1636,7 +1645,7 @@ function clienteAtivoCardHtml(cliente, query, classe) {
       </div>
       <div class="client-meta">
         <span class="cm"><span class="cm-l">Últ. pedido</span><span class="cm-v">${insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Vol. médio</span><span class="cm-v">${insight.avgVolume ? insight.avgVolume.toFixed(1) + "t" : "—"}</span></span>
+        <span class="cm"><span class="cm-l">Vol. médio</span><span class="cm-v">${insight.avgVolume ? formatVolume(insight.avgVolume) + "t" : "—"}</span></span>
         <span class="cm"><span class="cm-l">Recompra</span><span class="cm-v">${insight.diasRestantes != null ? "~" + insight.diasRestantes + "d" : "—"}</span></span>
         <span class="cm"><span class="cm-l">Favorito</span><span class="cm-v">${insight.favoriteProduct ? escapeHtml(insight.favoriteProduct) : "—"}</span></span>
       </div>
@@ -1893,7 +1902,7 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
           <input type="text" class="cat-produto" placeholder="Produto que usa hoje" value="${escapeHtml(row.produtoAtual || "")}">
           <div class="cat-consumo-wrap">
             <input type="number" class="cat-consumo-animal" min="0" step="any" placeholder="Consumo por animal (kg/dia)" value="${escapeHtml(row.consumoPorAnimalDia || "")}">
-            <span class="cat-volume-calc">${calcVolumeMensalEstimado(row.quantidade, row.consumoPorAnimalDia).toFixed(1)} t/mês estimado</span>
+            <span class="cat-volume-calc">${formatVolume(calcVolumeMensalEstimado(row.quantidade, row.consumoPorAnimalDia))} t/mês estimado</span>
           </div>
           <input type="text" class="cat-prazo" placeholder="Prazo de pagamento" value="${escapeHtml(row.prazoPagamento || "")}">
           <select class="cat-frete"><option value="FOB" ${row.tipoFrete === "FOB" ? "selected" : ""}>FOB</option><option value="CIF" ${row.tipoFrete === "CIF" ? "selected" : ""}>CIF</option></select>
@@ -1913,7 +1922,7 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
     const recalcularVolume = () => {
       list[idx].volumeMensalEstimado = calcVolumeMensalEstimado(list[idx].quantidade, list[idx].consumoPorAnimalDia);
       const calcEl = card.querySelector(".cat-volume-calc");
-      if (calcEl) calcEl.textContent = `${list[idx].volumeMensalEstimado.toFixed(1)} t/mês estimado`;
+      if (calcEl) calcEl.textContent = `${formatVolume(list[idx].volumeMensalEstimado)} t/mês estimado`;
     };
     card.querySelector(".cat-tipo").addEventListener("change", e => { list[idx].tipoAnimal = e.target.value; list[idx].faseProducao = ""; rerender(); });
     card.querySelector(".cat-fase").addEventListener("change", e => { list[idx].faseProducao = e.target.value; });
@@ -1961,18 +1970,23 @@ function categoriasTableHtml(categoriasAnimais, clientId) {
   const total = rows.reduce((s, r) => s + (Number(r.quantidade) || 0), 0);
   const situacaoRows = rows.filter(r => r.fornecedorAtual || r.produtoAtual || r.satisfacao || r.reclamacoes);
   const forecastRows = clientId ? rows.map(r => ({ r, forecast: computeEstoqueForecast(clientId, r) })).filter(x => x.forecast) : [];
-  return `<table class="mini"><thead><tr><th>Categoria</th><th>Sistema</th><th>Quantidade</th></tr></thead><tbody>
-    ${rows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.sistemaProducao || "-")}</td><td>${r.quantidade || 0}</td></tr>`).join("")}
-    <tr><td colspan="2"><strong>Total</strong></td><td><strong>${total}</strong></td></tr>
+  // As 3 tabelas mostram coisas bem diferentes (rebanho, fornecimento atual, previsão de
+  // estoque) — sem um subtítulo cada uma, ficavam empilhadas sem nada as diferenciando.
+  return `<h5 class="report-table-subtitle">Rebanho por categoria</h5>
+  <table class="mini"><thead><tr><th>Categoria</th><th>Sistema</th><th>Quantidade</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.sistemaProducao || "-")}</td><td>${formatInt(r.quantidade)}</td></tr>`).join("")}
+    <tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatInt(total)}</strong></td></tr>
   </tbody></table>
-  ${situacaoRows.length ? `<table class="mini"><thead><tr><th>Categoria</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Satisfação</th></tr></thead><tbody>
-    ${situacaoRows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.fornecedorAtual || "-")}</td><td>${escapeHtml(r.produtoAtual || "-")}</td><td>${escapeHtml(r.volumeMensalEstimado || "-")}</td><td>${escapeHtml(r.satisfacao || "-")}</td></tr>`).join("")}
+  ${situacaoRows.length ? `<h5 class="report-table-subtitle">Fornecimento atual por categoria</h5>
+  <table class="mini"><thead><tr><th>Categoria</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Satisfação</th></tr></thead><tbody>
+    ${situacaoRows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.fornecedorAtual || "-")}</td><td>${escapeHtml(r.produtoAtual || "-")}</td><td>${r.volumeMensalEstimado ? formatVolume(r.volumeMensalEstimado) + " t/mês" : "-"}</td><td>${escapeHtml(r.satisfacao || "-")}</td></tr>`).join("")}
   </tbody></table>` : ""}
-  ${forecastRows.length ? `<table class="mini"><thead><tr><th>Categoria</th><th>Último estoque registrado</th><th>Consumo mensal</th><th>Previsão de esgotamento</th></tr></thead><tbody>
+  ${forecastRows.length ? `<h5 class="report-table-subtitle">Previsão de estoque por categoria</h5>
+  <table class="mini"><thead><tr><th>Categoria</th><th>Último estoque registrado</th><th>Consumo mensal</th><th>Previsão de esgotamento</th></tr></thead><tbody>
     ${forecastRows.map(({ r, forecast }) => {
       const urgente = forecast.diasRestantes <= 20;
       const diasLabel = forecast.diasRestantes >= 0 ? `${forecast.diasRestantes} dias` : "esgotado";
-      return `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${forecast.ultima.quantidadeEstoque} t (${formatDate(forecast.ultima.data)})</td><td>${Number(r.volumeMensalEstimado).toFixed(1)} t/mês</td><td><span class="badge ${urgente ? "badge-late" : "badge-ok"}">${diasLabel} — ${formatDate(forecast.dataPrevistaEsgotamento)}</span></td></tr>`;
+      return `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${formatVolume(forecast.ultima.quantidadeEstoque)} t (${formatDate(forecast.ultima.data)})</td><td>${formatVolume(r.volumeMensalEstimado)} t/mês</td><td><span class="badge ${urgente ? "badge-late" : "badge-ok"}">${diasLabel} — ${formatDate(forecast.dataPrevistaEsgotamento)}</span></td></tr>`;
     }).join("")}
   </tbody></table>` : ""}`;
 }
@@ -2761,9 +2775,9 @@ function renderMetricasTab(cliente) {
   const positivas = avals.filter(a => a === "Ótima" || a === "Boa").length;
 
   const cards = [
-    { v: volumeTotal.toFixed(1) + " t", l: "Volume total comprado" },
+    { v: formatVolume(volumeTotal) + " t", l: "Volume total comprado" },
     { v: formatMoney(valorTotal), l: "Valor total comprado" },
-    { v: ticketMedioTon.toFixed(1) + " t / " + formatMoney(ticketMedioReais), l: "Ticket médio (volume / valor)" },
+    { v: formatVolume(ticketMedioTon) + " t / " + formatMoney(ticketMedioReais), l: "Ticket médio (volume / valor)" },
     { v: insight.avgInterval ? insight.avgInterval + " dias" : "-", l: "Frequência média de compra" },
     { v: nPedidos, l: "Número de pedidos" },
     { v: insight.statusLabel, l: "Recompra" },
@@ -2785,7 +2799,7 @@ function renderMetricasTab(cliente) {
     <div class="metrica-cards">${cards.map(c => `<div class="metrica-card"><div class="v">${c.v}</div><div class="l">${c.l}</div></div>`).join("")}</div>
     ${indicadosHtml}
     <h4>Evolução do volume (últimos 12 meses)</h4>
-    <div class="sparkline-bars">${monthlyVolumeBarsHtml(pedidos)}</div>
+    ${monthlyVolumeBarsHtml(pedidos)}
   `;
 }
 // Navegação para a ficha de um cliente/lead indicado (delegado, funciona após qualquer render)
@@ -3343,18 +3357,26 @@ function badgeClassForPedidoStatus(status) {
   return "badge-warn";
 }
 
+// Retorna o HTML completo (com o wrapper .sparkline-bars OU uma mensagem de "sem dados
+// suficientes") — com menos da metade dos 12 meses tendo algum volume, um gráfico de barras só
+// mostra chão vazio com uma barrinha solta em algum canto, mais confuso do que informativo.
 function monthlyVolumeBarsHtml(pedidos) {
   const months = [];
   const now = new Date();
   for (let i = 11; i >= 0; i--) months.push(dateToStr(new Date(now.getFullYear(), now.getMonth() - i, 1)).slice(0, 7));
   const volumesPorMes = months.map(m => pedidos.filter(p => p.dataPedido && p.dataPedido.slice(0, 7) === m).reduce((s, p) => s + (Number(p.volume) || 0), 0));
+  const mesesComVolume = volumesPorMes.filter(v => v > 0).length;
+  if (mesesComVolume < Math.ceil(months.length / 2)) {
+    return `<p class="hint">Ainda não há histórico de pedidos suficiente para visualizar a tendência de volume mensal.</p>`;
+  }
   const maxVol = Math.max(1, ...volumesPorMes);
-  return months.map((m, i) => {
+  const barsHtml = months.map((m, i) => {
     const [y, mm] = m.split("-");
     const label = new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
     const h = Math.round((volumesPorMes[i] / maxVol) * 100);
-    return `<div class="bar" style="height:${volumesPorMes[i] ? Math.max(h, 3) : 2}%;" title="${label}: ${volumesPorMes[i].toFixed(1)} t"><span class="bar-label">${label}</span></div>`;
+    return `<div class="bar" style="height:${volumesPorMes[i] ? Math.max(h, 3) : 2}%;" title="${label}: ${formatVolume(volumesPorMes[i])} t"><span class="bar-label">${label}</span></div>`;
   }).join("");
+  return `<div class="sparkline-bars">${barsHtml}</div>`;
 }
 
 let vendasFiltro = { periodo: "", produto: "", status: "" };
@@ -3374,7 +3396,7 @@ function renderVendasTab(cliente) {
   const statusOpcoes = ["Em processamento", "Carregado", "Em trânsito", "Entregue", "Com ocorrência", "Cancelado"];
   const rows = filtrados.map(p => `<tr data-pedido-id="${p.id}" style="cursor:pointer">
     <td>${escapeHtml(p.numeroPedidoADM || "-")}</td><td>${formatDate(p.dataPedido)}</td>
-    <td>${escapeHtml(p.produto || "-")}</td><td>${p.volume ? Number(p.volume).toFixed(1) : "-"}</td>
+    <td>${escapeHtml(p.produto || "-")}</td><td>${p.volume ? formatVolume(p.volume) : "-"}</td>
     <td>${p.valorComFrete ? formatMoney(p.valorComFrete) : "-"}</td>
     <td>${p.dataEntregaRealizada ? formatDate(p.dataEntregaRealizada) : (p.dataEntregaPrevista ? "prev. " + formatDate(p.dataEntregaPrevista) : "-")}</td>
     <td><span class="badge ${badgeClassForPedidoStatus(p.status)}">${escapeHtml(p.status || "-")}</span></td>
@@ -3382,14 +3404,14 @@ function renderVendasTab(cliente) {
 
   return `
     <h4>Volume mensal (últimos 12 meses)</h4>
-    <div class="sparkline-bars">${barsHtml}</div>
+    ${barsHtml}
     <div class="actions-row no-print" style="margin-bottom:10px;">
       <input type="month" id="vendas-filtro-periodo" value="${vendasFiltro.periodo}">
       <select id="vendas-filtro-produto"><option value="">Produto (todos)</option>${produtosUnicos.map(p => `<option ${vendasFiltro.produto === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select>
       <select id="vendas-filtro-status"><option value="">Status (todos)</option>${statusOpcoes.map(s => `<option ${vendasFiltro.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
     </div>
     <div style="overflow-x:auto;">
-    <table class="mini"><thead><tr><th>Nº ${escapeHtml((state.config && state.config.nomeEmpresa) || "Empresa")}</th><th>Data</th><th>Produtos</th><th>Volume (t)</th><th>Valor c/ frete</th><th>Entrega</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+    <table class="mini"><thead><tr><th>Nº do pedido</th><th>Data</th><th>Produtos</th><th>Volume (t)</th><th>Valor c/ frete</th><th>Entrega</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
     </div>
     <div class="detalhe-section no-print">
       <h4>Condições padrão deste cliente</h4>
@@ -3435,19 +3457,19 @@ function renderRecompraTab(client) {
     <p class="hint">${insight.diasRestantes >= 0 ? `Faltam ~${insight.diasRestantes} dias para o próximo pedido previsto.` : `${Math.abs(insight.diasRestantes)} dias além do previsto.`}</p>` : "";
   const origemLabel = insight.cicloOrigem === "consumo" ? "estimado pelo consumo declarado" : insight.cicloOrigem === "historico" ? "calculado pelo histórico de pedidos" : "";
   const consumosHtml = (insight.consumosPorProduto || []).length
-    ? `<div class="detalhe-grid">${insight.consumosPorProduto.map(c => field(c.produto, c.consumoMensal.toFixed(1) + " t/mês")).join("")}</div>`
+    ? `<div class="detalhe-grid">${insight.consumosPorProduto.map(c => field(c.produto, formatVolume(c.consumoMensal) + " t/mês")).join("")}</div>`
     : `<p class="hint">Sem consumo mensal declarado — em cada categoria animal, na aba Perfil Produtivo, informe "Produto que usa hoje" e "Volume mensal estimado" para o sistema estimar a recompra desse produto mesmo sem histórico de pedidos.</p>`;
   return `
     <div class="tip-box"><strong>${insight.statusLabel}.</strong> ${escapeHtml(insight.tip)}</div>
     ${barra}
     <div class="detalhe-grid">
-      ${field(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
-      ${field("Volume médio por pedido", insight.avgVolume ? insight.avgVolume.toFixed(1) + " t" : "")}
-      ${field("Data do último pedido", insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "")}
-      ${field("Dias desde o último pedido", insight.daysSinceLast !== null ? insight.daysSinceLast : "")}
-      ${field("Próximo pedido previsto", insight.nextExpectedDate ? formatDate(insight.nextExpectedDate) : "")}
-      ${field("Produto favorito", insight.favoriteProduct)}
-      ${field("Avisar (dias antes do previsto)", client.alertaRecompraDias)}
+      ${reportField(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
+      ${reportField("Volume médio por pedido", insight.avgVolume ? formatVolume(insight.avgVolume) + " t" : "")}
+      ${reportField("Data do último pedido", insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "")}
+      ${reportField("Dias desde o último pedido", insight.daysSinceLast !== null ? insight.daysSinceLast : "")}
+      ${reportField("Próximo pedido previsto", insight.nextExpectedDate ? formatDate(insight.nextExpectedDate) : "")}
+      ${reportField("Produto favorito", insight.favoriteProduct)}
+      ${reportField("Avisar (dias antes do previsto)", client.alertaRecompraDias)}
     </div>
     <div class="detalhe-section"><h4>Consumo mensal declarado por produto</h4>${consumosHtml}</div>
     ${client.cicloObs ? `<div class="detalhe-section"><h4>Observações sobre o ciclo</h4><p>${escapeHtml(client.cicloObs)}</p></div>` : ""}`;
@@ -3535,7 +3557,7 @@ function renderUpsellTab(client) {
   const upsells = upsellsForClient(client.id);
   const rows = upsells.map(u => `<tr data-upsell-id="${u.id}" style="cursor:pointer">
     <td>${escapeHtml(u.produto || "-")}</td><td>${escapeHtml(u.categoria || "-")}</td>
-    <td>${u.volumePotencial ? Number(u.volumePotencial).toFixed(1) + " t" : "-"}</td>
+    <td>${u.volumePotencial ? formatVolume(u.volumePotencial) + " t" : "-"}</td>
     <td>${formatDate(u.dataIdentificacao)}</td>
     <td><span class="badge ${badgeClassForUpsellStatus(u.status)}">${escapeHtml(u.status)}</span></td>
   </tr>`).join("") || `<tr><td colspan="5">Nenhuma oportunidade registrada.</td></tr>`;
@@ -3824,7 +3846,7 @@ function renderCarteiraFornecedor() {
     ? rankingConcorrentes.map(([nome, vol], i) => `
         <div class="rank-row"><span class="rank-n">${i + 1}</span><span class="rank-name">${escapeHtml(nome)}</span>
           <div class="rank-track"><div class="rank-fill" style="width:${(vol / maxVolConcorrente) * 100}%"></div></div>
-          <span class="rank-val">${vol.toFixed(1)}t</span></div>`).join("")
+          <span class="rank-val">${formatVolume(vol)}t</span></div>`).join("")
     : `<div class="empty-state">Nenhum concorrente com volume registrado ainda.</div>`;
 
   document.getElementById("carteira-fornecedor-tabela-body").innerHTML = linhasClassificadas.length
@@ -4381,8 +4403,8 @@ function renderVisitaDocumento(visita) {
     : `<p class="hint">Nenhum produto específico recomendado nesta visita.</p>`;
 
   const identificacaoHtml = `<div class="detalhe-grid">
-    ${field("Cliente", client.nome)}${field("Fazenda", client.fazenda)}${field("Município", client.municipio)}${field("Decisor visitado", client.nomeDecisor)}
-    ${field("Horário", [visita.horaInicio, visita.horaFim].filter(Boolean).join(" às "))}${field("Responsável técnico", visita.responsavelVisita)}${field("Participantes", visita.participantes)}
+    ${field("Cliente", client.nome)}${field("Fazenda", client.fazenda)}${field("Município", client.municipio)}${reportField("Decisor visitado", client.nomeDecisor)}
+    ${reportField("Horário", [visita.horaInicio, visita.horaFim].filter(Boolean).join(" às "))}${field("Responsável técnico", visita.responsavelVisita)}${reportField("Participantes", visita.participantes)}
   </div>`;
 
   const objetivoHtml = `
@@ -4487,19 +4509,28 @@ function renderVisitasTabela() {
   });
 }
 ["visitas-busca", "visitas-filtro-data", "visitas-filtro-objetivo"].forEach(id => document.getElementById(id).addEventListener("input", renderVisitasTabela));
-document.getElementById("btn-imprimir-visita").addEventListener("click", () => window.print());
+document.getElementById("btn-imprimir-visita").addEventListener("click", () => {
+  document.getElementById("visitas-gerencial-conteudo").classList.add("hidden-for-print");
+  window.print();
+});
 
+// Junta-se ao mesmo sistema de capa/cabeçalho-rodapé/encerramento dos demais relatórios —
+// antes era só um painel .no-print sem nenhuma marca, sem botão de imprimir próprio e sem
+// como sair como PDF de verdade.
 function renderVisitasGerencial(yyyyMM) {
+  const container = document.getElementById("visitas-gerencial-conteudo");
+  if (!yyyyMM) { container.innerHTML = `<div class="empty-state">Selecione um mês.</div>`; return; }
   const inMonth = v => v.dataVisita && v.dataVisita.slice(0, 7) === yyyyMM;
   const visitasMes = state.visitas.filter(inMonth);
   const criticas = visitasMes.filter(v => v.condicaoGeral === "Crítica").length;
+  const [y, m] = yyyyMM.split("-");
+  const mesLabel = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const tiles = [
     { icon: ICONS.truck, label: "Visitas no período", value: visitasMes.length },
     { icon: ICONS.target, label: "Meta do mês", value: state.metaVisitasMes || 0 },
     { icon: ICONS.alertTriangle, label: "Condições críticas", value: criticas },
     { icon: ICONS.users, label: "Clientes distintos visitados", value: new Set(visitasMes.map(v => v.clientId)).size }
   ];
-  document.getElementById("visitas-gerencial-kpis").innerHTML = reportStatTileItems(tiles);
 
   const porMunicipio = {};
   visitasMes.forEach(v => {
@@ -4509,14 +4540,41 @@ function renderVisitasGerencial(yyyyMM) {
   });
   const entries = Object.entries(porMunicipio);
   const maxCount = Math.max(...entries.map(([, n]) => n), 1);
-  document.getElementById("visitas-heatmap").innerHTML = entries.length
-    ? entries.map(([mun, n]) => {
+  const heatmapHtml = entries.length
+    ? `<div class="heatmap-grid">${entries.map(([mun, n]) => {
         const intensity = n / maxCount;
         return `<div class="heatmap-cell" style="background: rgba(147,160,106,${0.25 + intensity * 0.65}); color:${intensity > 0.5 ? "#fff" : "#1a1a1a"}"><div class="hm-n">${n}</div>${escapeHtml(mun)}</div>`;
-      }).join("")
-    : `<div class="empty-state">Nenhuma visita registrada no período.</div>`;
+      }).join("")}</div>`
+    : `<p class="hint">Nenhuma visita registrada no período — sem cidade suficiente pra desenhar o mapa de calor ainda.</p>`;
+
+  const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
+  container.innerHTML = `
+    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Visitas Técnicas", subtitulo: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1), metaLinha, topicos: ["Visitas no período", "Por município"], interno: true })}
+    <div class="report-content-scope">
+      ${reportRunningHeadHtml("Visitas Técnicas — Gerencial", metaLinha)}
+      <div class="report-doc">
+        ${reportDocHead("Gerencial de visitas técnicas", mesLabel)}
+        ${reportStatTilesHtml(tiles)}
+        <div class="report-sections">
+          ${reportSectionHtml(ICONS.mapPin, "Visitas por município", heatmapHtml, 0)}
+        </div>
+      </div>
+      ${reportRunningFootHtml()}
+    </div>
+    ${reportEncerramentoHtml(null)}`;
 }
 document.getElementById("visitas-gerencial-mes").addEventListener("change", e => renderVisitasGerencial(e.target.value));
+// Os dois documentos (visita individual e gerencial do período) convivem na mesma aba — sem
+// isolar um do outro na hora de imprimir, os dois vazavam juntos no PDF de qualquer um dos
+// botões, já que window.print() imprime tudo que está visível na página.
+document.getElementById("btn-imprimir-visitas-gerencial").addEventListener("click", () => {
+  document.getElementById("visita-documento-conteudo").classList.add("hidden-for-print");
+  window.print();
+});
+window.addEventListener("afterprint", () => {
+  document.getElementById("visita-documento-conteudo").classList.remove("hidden-for-print");
+  document.getElementById("visitas-gerencial-conteudo").classList.remove("hidden-for-print");
+});
 
 // ---------- Widget do Dashboard ----------
 function renderVisitasWidget() {
@@ -4643,7 +4701,7 @@ function reportSectionHtml(icon, titulo, innerHtml, idx) {
 function reportRecordCardsHtml(colunas, linhas) {
   if (!linhas.length) return `<p class="hint" style="margin:4px 0 0;">Nenhum registro no período.</p>`;
   return `<div class="rs-records">${linhas.map(linha => `
-    <div class="rs-record">${colunas.map((col, i) => linha[i] ? `<div class="rs-record-field"><span>${escapeHtml(col)}</span>${linha[i]}</div>` : "").join("")}</div>
+    <div class="rs-record">${colunas.map((col, i) => (linha[i] && linha[i] !== "-") ? `<div class="rs-record-field"><span>${escapeHtml(col)}</span>${linha[i]}</div>` : "").join("")}</div>
   `).join("")}</div>`;
 }
 // Nome curto e pessoal pra saudação de encerramento — evita usar a razão social inteira
@@ -4674,9 +4732,13 @@ function reportContatoUsuarioLinha(cfg) {
 }
 
 // ---------- Capa, encerramento e cabeçalho/rodapé fixo — comuns a todos os relatórios ----------
-function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
+// A empresa representante (Configurações → Empresa e marca) é a identidade que o cliente
+// reconhece — precisa ser a protagonista visual. "Manejo CRM" vira crédito discreto (é a
+// ferramenta que gerou o documento, não quem o cliente faz negócio com).
+function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos, interno }) {
   const cfg = state.config || {};
-  const empresaRep = cfg.empresaRepresentante || "Manejo";
+  const temMarcaPropria = !!cfg.empresaRepresentante;
+  const empresaRep = cfg.empresaRepresentante || "Manejo CRM";
   const logoHtml = cfg.logoRepresentanteDataUrl
     ? `<img src="${cfg.logoRepresentanteDataUrl}" alt="${escapeHtml(empresaRep)}">`
     : `<img src="assets/brand-mark.png" alt="Manejo CRM">`;
@@ -4685,9 +4747,10 @@ function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
   return `
     <div class="report-capa">
       <img class="report-capa-wm" src="assets/touro-corpo.png" alt="">
+      ${interno ? `<div class="report-capa-interno">Uso interno — não enviar ao cliente</div>` : ""}
       <div class="report-capa-brand">
         ${logoHtml}
-        <div><div class="rcb-main">Manejo CRM</div><div class="rcb-sub">Nutrição Animal</div></div>
+        <div><div class="rcb-main">${escapeHtml(empresaRep)}</div><div class="rcb-sub">Nutrição Animal</div></div>
       </div>
       <div class="report-capa-mid">
         <div class="report-capa-eyebrow">${escapeHtml(eyebrow)}</div>
@@ -4699,7 +4762,7 @@ function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
       </div>
       <div class="report-capa-bottom">
         <div>Preparado por<br><b>${escapeHtml(cfg.nomeUsuario || "-")}</b>${cfg.cargoUsuario ? " — " + escapeHtml(cfg.cargoUsuario) : ""}${contatoLinha ? `<br><span style="opacity:0.75;">${escapeHtml(contatoLinha)}</span>` : ""}</div>
-        <div style="text-align:right;">${escapeHtml(empresaRep)}<br><b>Documento confidencial</b></div>
+        <div style="text-align:right;"><b>Documento confidencial</b>${temMarcaPropria ? `<br><span class="report-capa-credit">via Manejo CRM</span>` : ""}</div>
       </div>
     </div>`;
 }
@@ -4707,7 +4770,8 @@ function reportCapaHtml({ eyebrow, titulo, subtitulo, metaLinha, topicos }) {
 // ausente = relatório interno (Mensal/Funil), fecha de forma neutra, sem fingir se dirigir a um cliente.
 function reportEncerramentoHtml(nomeSaudacao) {
   const cfg = state.config || {};
-  const empresaRep = cfg.empresaRepresentante || "Manejo";
+  const temMarcaPropria = !!cfg.empresaRepresentante;
+  const empresaRep = cfg.empresaRepresentante || "Manejo CRM";
   const logoHtml = cfg.logoRepresentanteDataUrl
     ? `<img src="${cfg.logoRepresentanteDataUrl}" alt="${escapeHtml(empresaRep)}">`
     : `<img src="assets/brand-mark.png" alt="Manejo CRM">`;
@@ -4718,9 +4782,10 @@ function reportEncerramentoHtml(nomeSaudacao) {
   return `
     <div class="report-encerramento">
       <img class="report-enc-wm" src="assets/touro-corpo.png" alt="">
+      ${!nomeSaudacao ? `<div class="report-capa-interno report-enc-interno">Uso interno — não enviar ao cliente</div>` : ""}
       <div class="report-enc-brand">
         ${logoHtml}
-        <div><div class="rcb-main">Manejo CRM</div><div class="rcb-sub">Nutrição Animal</div></div>
+        <div><div class="rcb-main">${escapeHtml(empresaRep)}</div><div class="rcb-sub">Nutrição Animal</div></div>
       </div>
       <div class="report-enc-mid">
         <div class="report-enc-eyebrow">Relatório concluído</div>
@@ -4735,7 +4800,7 @@ function reportEncerramentoHtml(nomeSaudacao) {
       </div>
       <div class="report-enc-bottom">
         <div class="report-enc-linha"></div>
-        <div class="report-enc-foot-brand">Manejo CRM — Documento confidencial</div>
+        <div class="report-enc-foot-brand">Documento confidencial${temMarcaPropria ? " · via Manejo CRM" : ""}</div>
       </div>
     </div>`;
 }
@@ -4745,7 +4810,7 @@ function reportRunningHeadHtml(tituloEsquerda, subtitulo) {
 function reportRunningFootHtml() {
   const cfg = state.config || {};
   const empresaRep = cfg.empresaRepresentante || "Manejo CRM";
-  return `<div class="report-running-foot"><span class="rf-mark"><img src="assets/brand-mark.png" alt="">Manejo CRM — ${escapeHtml(empresaRep)}</span></div>`;
+  return `<div class="report-running-foot"><span class="rf-mark"><img src="assets/brand-mark.png" alt="">${escapeHtml(empresaRep)}</span></div>`;
 }
 
 // Cartões de contato-chave (em vez da table.mini de 5 colunas) — legível também espremido
@@ -4762,18 +4827,32 @@ function reportContatosPessoasCardsHtml(client) {
 }
 function reportUpsellCardsHtml(client) {
   const linhas = upsellsForClient(client.id).map(u => [
-    escapeHtml(u.produto || "-"), escapeHtml(u.categoria || "-"),
-    u.volumePotencial ? Number(u.volumePotencial).toFixed(1) + " t potenciais" : "-",
+    escapeHtml(u.produto || ""), escapeHtml(u.categoria || ""),
+    u.volumePotencial ? formatVolume(u.volumePotencial) + " t potenciais" : "",
     `<span class="badge ${badgeClassForUpsellStatus(u.status)}">${escapeHtml(u.status)}</span> · identificado em ${formatDate(u.dataIdentificacao)}`
   ]);
   return reportRecordCardsHtml(["Produto", "Categoria", "Volume", "Status"], linhas);
 }
 function reportSacCardsHtml(client) {
   const linhas = sacsForClient(client.id).map(s => [
-    escapeHtml(s.numero) + " · " + escapeHtml(s.tipo), escapeHtml(s.produto || "-"),
+    escapeHtml(s.numero) + " · " + escapeHtml(s.tipo), escapeHtml(s.produto || ""),
     `<span class="badge ${badgeClassForSacStatus(s.status)}">${escapeHtml(s.status)}</span> · aberto em ${formatDate(s.data)}`
   ]);
   return reportRecordCardsHtml(["Ocorrência", "Produto", "Status"], linhas);
+}
+// Versão do cadastro segura pra sair no PDF do cliente: sem status de cadastro interno,
+// CPF/CNPJ, "como chegou até mim" nem "indicado por" — informação nossa sobre como/por que
+// prospectamos o cliente, não algo que deveria aparecer no documento que ele recebe.
+function reportCadastroClienteHtml(cliente) {
+  return `<div class="detalhe-grid">
+    ${reportField("Nome fantasia", cliente.nomeFantasia)}
+    ${reportField("Fazenda/empresa", cliente.fazenda)}
+    ${reportField("Endereço", [cliente.enderecoRua, cliente.enderecoNumero, cliente.enderecoBairro].filter(Boolean).join(", "))}
+    ${reportField("Complemento", cliente.enderecoComplemento)}
+    ${reportField("Município", cliente.municipio)}
+    ${reportField("Estado", cliente.estado)}
+    ${reportField("CEP", cliente.cep)}
+  </div>`;
 }
 
 function renderRelatorioCliente(clientId) {
@@ -4787,14 +4866,16 @@ function renderRelatorioCliente(clientId) {
     [ICONS.leaf, "Perfil produtivo", renderProdutivoTab(client)],
     [ICONS.box, "Histórico de vendas", stripActionsRow(renderVendasTab(client))]
   ];
+  // SAC e Upsell só entram se houver pelo menos um registro — uma seção "SAC: nenhum registro"
+  // não agrega nada ao cliente, só ocupa espaço e levanta a pergunta de por que existe.
   const secoesCompactas = [
     [ICONS.refreshCw, "Ciclo de recompra", stripActionsRow(renderRecompraTab(client))],
-    [ICONS.folder, "Cadastro", stripActionsRow(renderCadastroIdentificacaoTab(client))],
+    [ICONS.folder, "Dados cadastrais", reportCadastroClienteHtml(client)],
     [ICONS.users, "Contatos-chave", reportContatosPessoasCardsHtml(client)],
-    [ICONS.trendingUp, "Oportunidades de upsell", reportUpsellCardsHtml(client)],
     [ICONS.messageCircle, "Histórico de contatos", stripActionsRow(renderContatosTimelineTab(client, { showContatosPessoas: false }))],
-    [ICONS.ticket, "SAC", reportSacCardsHtml(client)]
-  ];
+    upsellsForClient(client.id).length ? [ICONS.trendingUp, "Oportunidades de upsell", reportUpsellCardsHtml(client)] : null,
+    sacsForClient(client.id).length ? [ICONS.ticket, "SAC", reportSacCardsHtml(client)] : null
+  ].filter(Boolean);
   const todosTopicos = [...secoesLargas, ...secoesCompactas].map(s => s[1]);
   const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
   container.innerHTML = `
@@ -4827,14 +4908,14 @@ function renderRelatorioClientePeriodo(clientId, yyyyMM) {
   const mesLabel = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const tiles = [
     { icon: ICONS.box, label: "Pedidos no período", value: pedidosMes.length },
-    { icon: ICONS.scale, label: "Volume vendido (ton)", value: volumeMes.toFixed(1) },
+    { icon: ICONS.scale, label: "Volume vendido (ton)", value: formatVolume(volumeMes) },
     { icon: ICONS.money, label: "Valor vendido", value: formatMoney(valorMes) },
     { icon: ICONS.messageCircle, label: "Contatos realizados", value: contatosMes.length },
     { icon: ICONS.truck, label: "Visitas técnicas", value: visitasMes.length },
     { icon: ICONS.ticket, label: "SAC aberto no período", value: sacsMes.length }
   ];
   const pedidosCards = reportRecordCardsHtml(["Data", "Produto", "Volume", "Valor"],
-    pedidosMes.map(p => [formatDate(p.dataPedido), escapeHtml(p.produto), p.volume ? p.volume + " t" : "-", p.valor ? formatMoney(p.valor) : "-"]));
+    pedidosMes.map(p => [formatDate(p.dataPedido), escapeHtml(p.produto), p.volume ? formatVolume(p.volume) + " t" : "-", p.valor ? formatMoney(p.valor) : "-"]));
   const contatosCards = reportRecordCardsHtml(["Data", "Tipo", "Resumo"],
     contatosMes.map(c => [formatDate(c.data), escapeHtml(c.tipo), escapeHtml(c.resumo || "-")]));
   const visitasCards = reportRecordCardsHtml(["Data", "Objetivos"],
@@ -4843,6 +4924,13 @@ function renderRelatorioClientePeriodo(clientId, yyyyMM) {
     sacsMes.map(s => [escapeHtml(s.numero), formatDate(s.data), escapeHtml(s.tipo), escapeHtml(s.status)]));
   const metaLinha = `Atividades de ${mesLabel}`;
   const topicos = ["Pedidos", "Contatos", "Visitas técnicas", "SAC"];
+  // SAC do período só entra se teve algum registro nesse mês — mesmo raciocínio do relatório
+  // completo: uma seção "SAC: nenhum registro" não soma nada pro cliente.
+  const secoesCompactasPeriodo = [
+    [ICONS.messageCircle, "Contatos do período", contatosCards, 1],
+    [ICONS.truck, "Visitas técnicas do período", visitasCards, 2],
+    sacsMes.length ? [ICONS.ticket, "SAC do período", sacsCards, 3] : null
+  ].filter(Boolean);
   container.innerHTML = `
     ${reportCapaHtml({ eyebrow: "Relatório do Cliente · Período", titulo: client.nome, subtitulo: reportLocalLinha(client), metaLinha, topicos })}
     <div class="report-content-scope">
@@ -4854,9 +4942,7 @@ function renderRelatorioClientePeriodo(clientId, yyyyMM) {
           ${reportSectionHtml(ICONS.box, "Pedidos do período", pedidosCards, 0)}
         </div>
         <div class="report-sections-compact">
-          ${reportSectionHtml(ICONS.messageCircle, "Contatos do período", contatosCards, 1)}
-          ${reportSectionHtml(ICONS.truck, "Visitas técnicas do período", visitasCards, 2)}
-          ${reportSectionHtml(ICONS.ticket, "SAC do período", sacsCards, 3)}
+          ${secoesCompactasPeriodo.map(([icon, titulo, html, idx]) => reportSectionHtml(icon, titulo, html, idx)).join("")}
         </div>
       </div>
       ${reportRunningFootHtml()}
@@ -4880,7 +4966,7 @@ function renderRelatorioMensal(yyyyMM) {
   contatosMes.forEach(c => { contatosPorTipo[c.tipo] = (contatosPorTipo[c.tipo] || 0) + 1; });
   const tiles = [
     { icon: ICONS.users, label: "Novos clientes", value: novosClientes.length }, { icon: ICONS.box, label: "Pedidos no mês", value: pedidosMes.length },
-    { icon: ICONS.scale, label: "Volume vendido (ton)", value: volumeMes.toFixed(1) }, { icon: ICONS.money, label: "Valor vendido", value: formatMoney(valorMes) },
+    { icon: ICONS.scale, label: "Volume vendido (ton)", value: formatVolume(volumeMes) }, { icon: ICONS.money, label: "Valor vendido", value: formatMoney(valorMes) },
     { icon: ICONS.messageCircle, label: "Contatos realizados", value: contatosMes.length }, { icon: ICONS.fileText, label: "Propostas enviadas", value: propostasMes.length }
   ];
   const [y, m] = yyyyMM.split("-");
@@ -4892,7 +4978,7 @@ function renderRelatorioMensal(yyyyMM) {
   const contatosTipoGrid = Object.entries(contatosPorTipo).map(([tipo, count]) => field(tipo, String(count))).join("") || `<p class="hint">Nenhum contato no período.</p>`;
   const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
   container.innerHTML = `
-    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Atividades do mês", subtitulo: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1), metaLinha, topicos: ["Contatos", "Novos clientes", "Pedidos"] })}
+    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Atividades do mês", subtitulo: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1), metaLinha, topicos: ["Contatos", "Novos clientes", "Pedidos"], interno: true })}
     <div class="report-content-scope">
       ${reportRunningHeadHtml("Atividades do mês", mesLabel)}
       <div class="report-doc">
@@ -4928,7 +5014,14 @@ function renderRelatorioFunil() {
     const taxa = novosDoMes.length ? Math.round((convertidosDessaCoorte / novosDoMes.length) * 100) : 0;
     return { labelCurto, labelLongo, novos: novosDoMes.length, convertidos: convertidosDessaCoorte, taxa };
   });
-  const conversaoBarsHtml = reportBarsHtml(conversaoPorMes.map(c => ({ label: c.labelCurto, value: c.taxa, display: c.novos ? c.taxa + "%" : "sem leads novos" })));
+  // Com menos da metade dos meses tendo algum lead novo, um gráfico de barras só mostra chão
+  // vazio — a tabela abaixo já traz os números reais, o gráfico só entra quando há histórico
+  // de verdade pra desenhar uma tendência.
+  const mesesComLeads = conversaoPorMes.filter(c => c.novos > 0).length;
+  const temConversao = conversaoPorMes.some(c => c.taxa > 0);
+  const conversaoBarsHtml = mesesComLeads >= Math.ceil(meses.length / 2) && temConversao
+    ? reportBarsHtml(conversaoPorMes.map(c => ({ label: c.labelCurto, value: c.taxa, display: c.novos ? c.taxa + "%" : "sem leads novos" })))
+    : `<p class="hint">Ainda não há conversões suficientes nos últimos 6 meses para visualizar a tendência — os números por mês estão na tabela abaixo.</p>`;
   const conversaoRows = conversaoPorMes.map(c => `<tr><td>${c.labelLongo}</td><td>${c.novos}</td><td>${c.convertidos}</td><td>${c.novos ? c.taxa + "%" : "-"}</td></tr>`).join("");
 
   const somaPorEtapa = {}, contPorEtapa = {};
@@ -4976,7 +5069,7 @@ function renderRelatorioFunil() {
   const metaLinha = `Relatório gerado em ${formatDate(todayStr())}`;
 
   container.innerHTML = `
-    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Funil & Carteira", subtitulo: "Conversão, ritmo de etapas e alertas de carteira", metaLinha, topicos: ["Conversão", "Tempo por etapa", "Atrasados", "Sem contato"] })}
+    ${reportCapaHtml({ eyebrow: "Relatório Interno", titulo: "Funil & Carteira", subtitulo: "Conversão, ritmo de etapas e alertas de carteira", metaLinha, topicos: ["Conversão", "Tempo por etapa", "Atrasados", "Sem contato"], interno: true })}
     <div class="report-content-scope">
       ${reportRunningHeadHtml("Funil & Carteira", metaLinha)}
       <div class="report-doc">
