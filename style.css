@@ -664,8 +664,8 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   background: linear-gradient(135deg, #3D4438, #4B5347 55%, #5B6746); color: #F3F1E8;
   border-radius: 14px; padding: 20px 26px; margin-bottom: 20px; box-shadow: var(--shadow-md);
 }
-.report-doc-head .rdh-title { font-family: var(--font-display); font-size: 1.25rem; margin: 0; font-weight: 700; }
-.report-doc-head .rdh-sub { font-size: 0.82rem; opacity: 0.82; margin-top: 3px; }
+.report-doc-head .rdh-title { font-family: var(--font-display); font-size: 1.25rem; margin: 0; font-weight: 700; color: #F3F1E8; }
+.report-doc-head .rdh-sub { font-size: 0.82rem; opacity: 0.82; margin-top: 3px; color: #F3F1E8; }
 
 /* Cada seção do relatório vira um cartão com ícone e cor de identificação */
 .report-sections { display: flex; flex-direction: column; gap: 16px; }
@@ -840,7 +840,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
      a marca (topo) e o rodapé, em vez de ficar colado no topo com um vão vazio grande embaixo. */
   .report-capa-mid { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; }
   .report-capa-eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; color: #C9B77A; font-weight: 700; margin-bottom: 16px; }
-  .report-capa-nome { font-family: var(--font-display); font-size: 2.7rem; line-height: 1.1; margin: 0 0 10px; }
+  .report-capa-nome { font-family: var(--font-display); font-size: 2.7rem; line-height: 1.1; margin: 0 0 10px; color: #F3F1E8; }
   .report-capa-fazenda { font-size: 1.1rem; opacity: 0.85; }
   .report-capa-linha { width: 60px; height: 3px; background: var(--gold); margin: 24px 0; }
   .report-capa-meta { font-size: 0.84rem; opacity: 0.8; }
@@ -865,7 +865,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
   .report-enc-brand .rcb-sub { color: #6C7A52; opacity: 0.8; }
   .report-enc-mid { position: relative; z-index: 1; text-align: center; margin: 26mm 0 30mm; padding: 0 10mm; }
   .report-enc-eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--gold); font-weight: 700; margin-bottom: 14px; }
-  .report-enc-title { font-family: var(--font-display); font-size: 1.9rem; margin: 0 0 14px; line-height: 1.15; }
+  .report-enc-title { font-family: var(--font-display); font-size: 1.9rem; margin: 0 0 14px; line-height: 1.15; color: #1a1a1a; }
   .report-enc-texto { font-size: 0.94rem; color: #5B6154; max-width: 46ch; line-height: 1.65; margin: 0 auto 28px; }
   .report-enc-card { background: #F4F5EE; border: 1px solid #D9DECB; border-radius: 14px; padding: 20px 30px; display: inline-flex; flex-direction: column; gap: 4px; }
   .report-enc-card .nome { font-weight: 700; font-size: 1.05rem; }
