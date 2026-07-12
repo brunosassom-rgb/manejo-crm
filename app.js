@@ -728,6 +728,15 @@ function classificacaoABCClientes() {
   ranking.forEach((r, i) => { mapa[r.id] = i < corteA ? "A" : i < corteB ? "B" : "C"; });
   return mapa;
 }
+// Se a data cair em sábado ou domingo, empurra pra segunda-feira seguinte.
+function ajustarParaDiaUtil(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const diaSemana = d.getDay(); // 0 = domingo, 6 = sábado
+  if (diaSemana === 6) return addDays(dateStr, 2);
+  if (diaSemana === 0) return addDays(dateStr, 1);
+  return dateStr;
+}
+
 // Agenda automaticamente a próxima visita técnica na cadência da classificação A/B/C do cliente,
 // disparado ao registrar uma visita ou pedido novo (nunca edição). Não duplica se já houver um
 // compromisso de visita pendente — o vendedor decide se reagenda, não sobrescrevemos a escolha dele.
@@ -739,7 +748,7 @@ function agendarProximaVisitaAutomatica(clientId) {
   if (!classe) return;
   const cadencia = CLASSIFICACAO_CADENCIA_DIAS[classe];
   const cliente = state.clientesAtivos.find(c => c.id === clientId);
-  state.compromissos.push({ id: uid(), clientId, tipo: "visita", data: addDays(todayStr(), cadencia), hora: "", descricao: `Visita técnica — ${cliente ? cliente.nome : ""}` });
+  state.compromissos.push({ id: uid(), clientId, tipo: "visita", data: ajustarParaDiaUtil(addDays(todayStr(), cadencia)), hora: "", descricao: `Visita técnica — ${cliente ? cliente.nome : ""}` });
 }
 
 function classificacaoBadgeHtml(classe) {
@@ -2293,9 +2302,9 @@ document.getElementById("form-cliente").addEventListener("submit", e => {
   // adiciona compromissos na Agenda pra garantir que o primeiro contato realmente aconteça.
   if (!anterior) {
     state.compromissos.push(
-      { id: uid(), clientId: data.id, tipo: "ligacao", data: addDays(todayStr(), 2), hora: "", descricao: `Primeiro contato — ${data.nome}` },
-      { id: uid(), clientId: data.id, tipo: "followup", data: addDays(todayStr(), 7), hora: "", descricao: `Follow-up — ${data.nome}` },
-      { id: uid(), clientId: data.id, tipo: "visita", data: addDays(todayStr(), 14), hora: "", descricao: `Avaliar visita técnica — ${data.nome}` }
+      { id: uid(), clientId: data.id, tipo: "ligacao", data: ajustarParaDiaUtil(addDays(todayStr(), 2)), hora: "", descricao: `Primeiro contato — ${data.nome}` },
+      { id: uid(), clientId: data.id, tipo: "followup", data: ajustarParaDiaUtil(addDays(todayStr(), 7)), hora: "", descricao: `Follow-up — ${data.nome}` },
+      { id: uid(), clientId: data.id, tipo: "visita", data: ajustarParaDiaUtil(addDays(todayStr(), 14)), hora: "", descricao: `Avaliar visita técnica — ${data.nome}` }
     );
   }
   saveState();
