@@ -471,6 +471,12 @@ function aplicarConfigMarca() {
   if (railAvatar) railAvatar.innerHTML = avatarHtml;
   const perfilFotoPreview = document.getElementById("perfil-foto-preview");
   if (perfilFotoPreview) perfilFotoPreview.innerHTML = avatarHtml;
+  const perfilSidebarAvatar = document.getElementById("perfil-sidebar-avatar");
+  if (perfilSidebarAvatar) perfilSidebarAvatar.innerHTML = avatarHtml;
+  const perfilSidebarNome = document.getElementById("perfil-sidebar-nome");
+  if (perfilSidebarNome) perfilSidebarNome.textContent = cfg.nomeUsuario || "Usuário";
+  const perfilSidebarCargo = document.getElementById("perfil-sidebar-cargo");
+  if (perfilSidebarCargo) perfilSidebarCargo.textContent = cfg.cargoUsuario || "";
   const btnRemoverFotoPerfil = document.getElementById("btn-remover-foto-perfil");
   if (btnRemoverFotoPerfil) btnRemoverFotoPerfil.style.display = cfg.fotoUsuarioDataUrl ? "" : "none";
   const perfilNome = document.getElementById("perfil-nome-usuario");
@@ -1055,14 +1061,7 @@ function switchMainTab(tabName, preselectClientId) {
   if (tabName === "agenda") renderAgenda();
   if (tabName === "competitiva") renderCompetitivaPage();
   if (tabName === "relatorios") initRelatoriosTab();
-  if (tabName === "configuracoes") {
-    renderConsultorList();
-    renderFornecedoresList();
-    document.getElementById("input-meta-visitas").value = state.metaVisitasMes || 0;
-    document.getElementById("config-nome-empresa").value = state.config.nomeEmpresa || "";
-    document.getElementById("config-empresa-representante").value = state.config.empresaRepresentante || "";
-    renderLogoRepresentantePreview();
-  }
+  if (tabName === "meus-dados") mostrarPerfilView("dados");
   if (preselectClientId) { /* reserved for future preselect needs */ }
 }
 document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => switchMainTab(btn.dataset.tab)));
@@ -1094,11 +1093,24 @@ document.getElementById("input-meta-visitas").addEventListener("change", e => {
     });
   });
 
-// ---------- Dropdown de perfil do usuário (avatar no topo) ----------
+// ---------- Meus dados / Configurações (sidebar no mesmo padrão da ficha) ----------
 document.getElementById("btn-rail-user").addEventListener("click", () => switchMainTab("meus-dados"));
-document.querySelectorAll(".perfil-config-tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => switchMainTab(btn.dataset.toptab));
-});
+function initConfiguracoesView() {
+  renderConsultorList();
+  renderFornecedoresList();
+  document.getElementById("input-meta-visitas").value = state.metaVisitasMes || 0;
+  document.getElementById("config-nome-empresa").value = state.config.nomeEmpresa || "";
+  document.getElementById("config-empresa-representante").value = state.config.empresaRepresentante || "";
+  renderLogoRepresentantePreview();
+}
+function mostrarPerfilView(view) {
+  document.querySelectorAll("#perfil-sidebar .ficha-secao-btn").forEach(b => b.classList.toggle("active", b.dataset.secao === view));
+  document.getElementById("perfil-view-dados").classList.toggle("hidden", view !== "dados");
+  document.getElementById("perfil-view-config").classList.toggle("hidden", view !== "config");
+  if (view === "config") initConfiguracoesView();
+}
+document.getElementById("btn-perfil-secao-dados").addEventListener("click", () => mostrarPerfilView("dados"));
+document.getElementById("btn-perfil-secao-config").addEventListener("click", () => mostrarPerfilView("config"));
 document.getElementById("btn-salvar-perfil").addEventListener("click", () => {
   state.config.nomeUsuario = document.getElementById("perfil-nome-usuario").value.trim();
   state.config.cargoUsuario = document.getElementById("perfil-cargo-usuario").value.trim();

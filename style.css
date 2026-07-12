@@ -489,6 +489,11 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .ficha-contact-circle:hover { border-color: var(--primary); transform: translateY(-1px); }
 .ficha-contact-circle.wa { background: #25D366; border-color: #25D366; color: #fff; }
 .ficha-contact-circle.wa:hover { border-color: #1EBE5A; }
+
+/* ============ Meus dados / Configurações (mesmo padrão de sidebar da ficha) ============ */
+.perfil-grid { display: grid; grid-template-columns: 210px 1fr; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.perfil-sair-wrap { width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--sidebar-sep); }
+.perfil-sair-wrap .btn-secondary { width: 100%; color: var(--late-text); border-color: var(--late-text); }
 .ficha-potencial { margin-top: 16px; background: var(--surface); border-radius: 8px; padding: 12px; width: 100%; }
 .ficha-potencial .v { font-size: 1.3rem; font-weight: 800; overflow-wrap: break-word; word-break: break-word; }
 .ficha-potencial .l { font-size: 0.72rem; color: var(--text-muted); }
@@ -1727,11 +1732,11 @@ h2 { font-size: 22px; }
 }
 
 /* ---------- Configurações: layout em cartões ---------- */
-#configuracoes .settings-grid {
+#perfil-view-config .settings-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px; align-items: start; margin-top: 4px;
 }
-@media (max-width: 820px) { #configuracoes .settings-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 820px) { #perfil-view-config .settings-grid { grid-template-columns: minmax(0, 1fr); } }
 .settings-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 18px 20px; box-shadow: var(--shadow-sm);
@@ -1749,8 +1754,8 @@ h2 { font-size: 22px; }
   border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; margin-right: 9px;
 }
 /* cadastros auxiliares: cabeçalho de seção mais alinhado */
-#configuracoes .section-header { margin-bottom: 10px; }
-#configuracoes .section-header h4 { margin: 0; font-size: 0.85rem; font-family: var(--font-display); }
+#perfil-view-config .section-header { margin-bottom: 10px; }
+#perfil-view-config .section-header h4 { margin: 0; font-size: 0.85rem; font-family: var(--font-display); }
 
 /* ---------- Dashboard: preencher os vãos entre widgets ---------- */
 .dash-canvas { grid-auto-flow: row dense; }

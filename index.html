@@ -344,125 +344,129 @@
       </div>
     </section>
 
-    <!-- ==================== MEUS DADOS ==================== -->
+    <!-- ==================== MEUS DADOS / CONFIGURAÇÕES ==================== -->
     <section id="meus-dados" class="tab-panel">
-      <div class="detalhe-tabs perfil-config-tabs">
-        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn active" data-toptab="meus-dados">Meus dados</button>
-        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn" data-toptab="configuracoes">Configurações</button>
-      </div>
-      <div class="settings-grid">
-        <div class="settings-card settings-card-wide">
-          <div class="settings-card-title">Perfil</div>
-          <div class="form">
-            <div class="perfil-foto-row">
-              <div class="perfil-foto-preview" id="perfil-foto-preview">BS</div>
-              <div class="perfil-foto-actions">
-                <label class="btn-secondary perfil-foto-upload-label">Alterar foto
-                  <input type="file" id="perfil-foto-input" accept="image/*" style="display:none">
-                </label>
-                <button type="button" class="btn-mini" id="btn-remover-foto-perfil" style="display:none">Remover foto</button>
-              </div>
-            </div>
-            <label>Nome
-              <input type="text" id="perfil-nome-usuario" placeholder="Ex: Bruno Sasso">
-            </label>
-            <label>Cargo
-              <input type="text" id="perfil-cargo-usuario" placeholder="Ex: Gerente de Território">
-            </label>
-            <label>Celular
-              <input type="text" id="perfil-whatsapp-usuario" placeholder="Ex: (66) 99999-0000">
-            </label>
-            <label>E-mail
-              <input type="email" id="perfil-email-usuario" placeholder="Ex: voce@empresa.com">
-            </label>
-            <div class="actions-row" style="margin-top:6px">
-              <button type="button" class="btn-primary" id="btn-salvar-perfil">Salvar</button>
-            </div>
-            <div class="actions-row" style="margin-top:6px">
+      <div class="perfil-grid">
+        <div class="ficha-left" id="perfil-sidebar">
+          <div class="ficha-avatar" id="perfil-sidebar-avatar">BS</div>
+          <div class="fnome" id="perfil-sidebar-nome">Usuário</div>
+          <div class="card-sub" id="perfil-sidebar-cargo"></div>
+          <div class="ficha-actions">
+            <button type="button" class="btn-secondary ficha-secao-btn active" id="btn-perfil-secao-dados" data-secao="dados">Meus dados</button>
+            <button type="button" class="btn-secondary ficha-secao-btn" id="btn-perfil-secao-config" data-secao="config">Configurações</button>
+            <div class="perfil-sair-wrap">
               <button type="button" class="btn-secondary" id="btn-logout">Sair</button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="ficha-right">
+          <div class="perfil-view" id="perfil-view-dados">
+            <div class="settings-grid">
+              <div class="settings-card settings-card-wide">
+                <div class="settings-card-title">Perfil</div>
+                <div class="form">
+                  <div class="perfil-foto-row">
+                    <div class="perfil-foto-preview" id="perfil-foto-preview">BS</div>
+                    <div class="perfil-foto-actions">
+                      <label class="btn-secondary perfil-foto-upload-label">Alterar foto
+                        <input type="file" id="perfil-foto-input" accept="image/*" style="display:none">
+                      </label>
+                      <button type="button" class="btn-mini" id="btn-remover-foto-perfil" style="display:none">Remover foto</button>
+                    </div>
+                  </div>
+                  <label>Nome
+                    <input type="text" id="perfil-nome-usuario" placeholder="Ex: Bruno Sasso">
+                  </label>
+                  <label>Cargo
+                    <input type="text" id="perfil-cargo-usuario" placeholder="Ex: Gerente de Território">
+                  </label>
+                  <label>Celular
+                    <input type="text" id="perfil-whatsapp-usuario" placeholder="Ex: (66) 99999-0000">
+                  </label>
+                  <label>E-mail
+                    <input type="email" id="perfil-email-usuario" placeholder="Ex: voce@empresa.com">
+                  </label>
+                  <div class="actions-row" style="margin-top:6px">
+                    <button type="button" class="btn-primary" id="btn-salvar-perfil">Salvar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-    <!-- ==================== CONFIGURAÇÕES ==================== -->
-    <section id="configuracoes" class="tab-panel">
-      <div class="detalhe-tabs perfil-config-tabs">
-        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn" data-toptab="meus-dados">Meus dados</button>
-        <button type="button" class="detalhe-tab-btn perfil-config-tab-btn active" data-toptab="configuracoes">Configurações</button>
-      </div>
+          <div class="perfil-view hidden" id="perfil-view-config">
+            <h3>Cadastros auxiliares</h3>
+            <div class="section-header">
+              <h4>Consultores / Nutricionistas</h4>
+            </div>
+            <div id="consultores-list" class="cards" style="margin-bottom:26px"></div>
 
-      <h3>Cadastros auxiliares</h3>
-      <div class="section-header">
-        <h4>Consultores / Nutricionistas</h4>
-      </div>
-      <div id="consultores-list" class="cards" style="margin-bottom:26px"></div>
+            <div class="section-header">
+              <h4>Fornecedores</h4>
+            </div>
+            <p class="hint" id="hint-fornecedores-casa">Fornecedores (ADM ou concorrentes) são cadastrados aqui — nunca como cliente.</p>
+            <div id="fornecedores-list" class="cards" style="margin-bottom:26px"></div>
 
-      <div class="section-header">
-        <h4>Fornecedores</h4>
-      </div>
-      <p class="hint" id="hint-fornecedores-casa">Fornecedores (ADM ou concorrentes) são cadastrados aqui — nunca como cliente.</p>
-      <div id="fornecedores-list" class="cards" style="margin-bottom:26px"></div>
-
-      <h3>Preferências</h3>
-      <div class="settings-grid">
-        <div class="settings-card settings-card-wide">
-          <div class="settings-card-title">Empresa e marca</div>
-          <div class="form">
-            <label>Empresa do representante/vendedor
-              <input type="text" id="config-empresa-representante" placeholder="Ex: Bruno Sasso Nutrição Animal">
-            </label>
-            <label>Logo do representante
-              <input type="file" id="config-logo-representante-input" accept="image/*">
-            </label>
-            <div id="config-logo-representante-preview" class="logo-representante-preview"></div>
-            <label>Fornecedor (usado para identificar carteira/concorrência)
-              <input type="text" id="config-nome-empresa" placeholder="Ex: ADM, Cargill, Minha Empresa">
-            </label>
+            <h3>Preferências</h3>
+            <div class="settings-grid">
+              <div class="settings-card settings-card-wide">
+                <div class="settings-card-title">Empresa e marca</div>
+                <div class="form">
+                  <label>Empresa do representante/vendedor
+                    <input type="text" id="config-empresa-representante" placeholder="Ex: Bruno Sasso Nutrição Animal">
+                  </label>
+                  <label>Logo do representante
+                    <input type="file" id="config-logo-representante-input" accept="image/*">
+                  </label>
+                  <div id="config-logo-representante-preview" class="logo-representante-preview"></div>
+                  <label>Fornecedor (usado para identificar carteira/concorrência)
+                    <input type="text" id="config-nome-empresa" placeholder="Ex: ADM, Cargill, Minha Empresa">
+                  </label>
+                </div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Metas</div>
+                <label class="settings-inline">
+                  Meta de visitas técnicas por mês
+                  <input type="number" id="input-meta-visitas" min="0" style="width:90px; margin-top:0;">
+                </label>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Aparência</div>
+                <label class="settings-inline">
+                  Modo escuro
+                  <button class="btn-secondary" id="btn-toggle-dark-settings">Alternar</button>
+                </label>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Atalhos de teclado</div>
+                <div class="settings-shortcuts">
+                  <div><span class="kbd">Ctrl+K</span> busca global</div>
+                  <div><span class="kbd">N</span> novo registro</div>
+                  <div><span class="kbd">Esc</span> fechar modal</div>
+                </div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Importar dados</div>
+                <p class="hint" style="margin-top:0">Selecione o JSON exportado (clientes ativos + leads) para mapear e importar automaticamente.</p>
+                <input type="file" id="import-json-file" accept="application/json">
+                <div id="import-json-status" class="hint" style="margin-top:8px"></div>
+              </div>
+              <div class="settings-card">
+                <div class="settings-card-title">Backup dos dados</div>
+                <p class="hint" style="margin-top:0">Exporte um backup completo para levar seus dados a outra máquina (ou guardar). Restaure quando precisar.</p>
+                <div class="actions-row" style="margin-top:10px">
+                  <button type="button" class="btn-primary" id="btn-export-backup">Exportar backup (.json)</button>
+                  <label class="btn-secondary" style="cursor:pointer; margin:0;">Restaurar backup
+                    <input type="file" id="restore-backup-file" accept="application/json" style="display:none">
+                  </label>
+                </div>
+                <div id="restore-backup-status" class="hint" style="margin-top:8px"></div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="settings-card">
-          <div class="settings-card-title">Metas</div>
-          <label class="settings-inline">
-            Meta de visitas técnicas por mês
-            <input type="number" id="input-meta-visitas" min="0" style="width:90px; margin-top:0;">
-          </label>
-        </div>
-        <div class="settings-card">
-          <div class="settings-card-title">Aparência</div>
-          <label class="settings-inline">
-            Modo escuro
-            <button class="btn-secondary" id="btn-toggle-dark-settings">Alternar</button>
-          </label>
-        </div>
-        <div class="settings-card">
-          <div class="settings-card-title">Atalhos de teclado</div>
-          <div class="settings-shortcuts">
-            <div><span class="kbd">Ctrl+K</span> busca global</div>
-            <div><span class="kbd">N</span> novo registro</div>
-            <div><span class="kbd">Esc</span> fechar modal</div>
-          </div>
-        </div>
-        <div class="settings-card">
-          <div class="settings-card-title">Importar dados</div>
-          <p class="hint" style="margin-top:0">Selecione o JSON exportado (clientes ativos + leads) para mapear e importar automaticamente.</p>
-          <input type="file" id="import-json-file" accept="application/json">
-          <div id="import-json-status" class="hint" style="margin-top:8px"></div>
-        </div>
-        <div class="settings-card">
-          <div class="settings-card-title">Backup dos dados</div>
-          <p class="hint" style="margin-top:0">Exporte um backup completo para levar seus dados a outra máquina (ou guardar). Restaure quando precisar.</p>
-          <div class="actions-row" style="margin-top:10px">
-            <button type="button" class="btn-primary" id="btn-export-backup">Exportar backup (.json)</button>
-            <label class="btn-secondary" style="cursor:pointer; margin:0;">Restaurar backup
-              <input type="file" id="restore-backup-file" accept="application/json" style="display:none">
-            </label>
-          </div>
-          <div id="restore-backup-status" class="hint" style="margin-top:8px"></div>
-        </div>
       </div>
-
     </section>
 
     <!-- ==================== FICHA DO CLIENTE/LEAD ==================== -->
