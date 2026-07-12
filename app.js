@@ -2851,8 +2851,15 @@ function renderFichaLeft() {
       <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-acoes" data-secao="acoes">Registrar ação</button>
       <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-cadastro" data-secao="cadastro">Cadastro</button>
       <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-relatorio" data-secao="relatorio">Relatório Gerencial</button>` : ""}
-      ${!isLead ? (clienteInativo ? `<button class="btn-secondary" id="btn-reativar-cliente">Reativar cliente</button>` : `<button class="btn-secondary" id="btn-inativar-cliente" style="color:var(--late-text); border-color:var(--late-text);">Inativar cliente</button>`) : ""}
-      <button class="btn-secondary" id="btn-ficha-excluir" style="color:var(--late-text); border-color:var(--late-text);">Excluir ${isLead ? "lead" : "cliente"}</button>
+      ${!isLead && clienteInativo ? `<button class="btn-secondary" id="btn-reativar-cliente">Reativar cliente</button>` : ""}
+      ${!isLead ? `<div class="ficha-action-menu">
+        <button class="btn-secondary" id="btn-ficha-mais-opcoes">⋯ Mais opções</button>
+        <div class="ficha-action-dropdown hidden" id="ficha-mais-opcoes-dropdown">
+          ${!clienteInativo ? `<button type="button" class="ficha-action-item" id="btn-inativar-cliente" style="color:var(--late-text);">Inativar cliente</button>` : ""}
+          <button type="button" class="ficha-action-item" id="btn-cliente-excluir" style="color:var(--late-text);">Excluir cliente</button>
+        </div>
+      </div>` : ""}
+      ${isLead ? `<button class="btn-secondary" id="btn-ficha-excluir" style="color:var(--late-text); border-color:var(--late-text);">Excluir lead</button>` : ""}
     </div>
   `;
   const abrirContatoComTipo = tipo => { openContatoModal(entidade.id); document.getElementById("contato-tipo").value = tipo; };
@@ -2896,12 +2903,23 @@ function renderFichaLeft() {
         renderFichaTab();
       });
     });
+    const btnMaisOpcoes = document.getElementById("btn-ficha-mais-opcoes");
+    btnMaisOpcoes.addEventListener("click", e => {
+      e.stopPropagation();
+      document.getElementById("ficha-mais-opcoes-dropdown").classList.toggle("hidden");
+    });
+    document.querySelectorAll("#ficha-mais-opcoes-dropdown .ficha-action-item").forEach(btn => {
+      btn.addEventListener("click", () => document.getElementById("ficha-mais-opcoes-dropdown").classList.add("hidden"));
+    });
   }
   const btnInativar = document.getElementById("btn-inativar-cliente");
   if (btnInativar) btnInativar.addEventListener("click", () => openInativarClienteModal(entidade.id));
   const btnReativar = document.getElementById("btn-reativar-cliente");
   if (btnReativar) btnReativar.addEventListener("click", () => reativarCliente(entidade.id));
-  document.getElementById("btn-ficha-excluir").addEventListener("click", () => excluirCliente(entidade));
+  const btnClienteExcluir = document.getElementById("btn-cliente-excluir");
+  if (btnClienteExcluir) btnClienteExcluir.addEventListener("click", () => excluirCliente(entidade));
+  const btnFichaExcluir = document.getElementById("btn-ficha-excluir");
+  if (btnFichaExcluir) btnFichaExcluir.addEventListener("click", () => excluirCliente(entidade));
 }
 
 document.addEventListener("click", e => {
