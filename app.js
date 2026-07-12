@@ -878,6 +878,13 @@ function aniversarioInfo(dateStr) {
   return { dias: Math.round((alvo - h0) / 86400000), anos: year - ys, label: alvo.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
 }
 
+// O card do alerta já mostra "Aniversário hoje" como título — a mensagem não repete isso, e só
+// nomeia a pessoa quando ela é diferente do cliente/lead (contato secundário, não o próprio).
+function mensagemAniversarioHoje(pessoa, nomeEntidade) {
+  const mesmoNome = (pessoa.nome || "").trim().toLowerCase() === (nomeEntidade || "").trim().toLowerCase();
+  return mesmoNome ? "Ligar para parabenizar." : `Ligar para parabenizar ${pessoa.nome}.`;
+}
+
 function computeAlerts() {
   const alerts = [];
   const today = todayStr();
@@ -928,7 +935,7 @@ function computeAlerts() {
       const info = aniversarioInfo(pessoa.dataNascimento);
       if (info && info.dias === 0) {
         alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Aniversário hoje", severidade: "today",
-          mensagem: `Ligar para parabenizar ${pessoa.nome || "o contato"} — aniversário hoje.` });
+          mensagem: mensagemAniversarioHoje(pessoa, l.nome) });
       } else if (info && info.dias <= 7) {
         alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Aniversário próximo", severidade: "info",
           mensagem: `Aniversário de ${pessoa.nome || "contato"} em ${info.label}.` });
@@ -1012,7 +1019,7 @@ function computeAlerts() {
       const info = aniversarioInfo(pessoa.dataNascimento);
       if (info && info.dias === 0) {
         alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Aniversário hoje", severidade: "today",
-          mensagem: `Ligar para parabenizar ${pessoa.nome || "o contato"} — aniversário hoje.` });
+          mensagem: mensagemAniversarioHoje(pessoa, c.nome) });
       } else if (info && info.dias <= 7) {
         alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Aniversário próximo", severidade: "info",
           mensagem: `Aniversário de ${pessoa.nome || "contato"} em ${info.label}.` });
