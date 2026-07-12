@@ -4438,6 +4438,48 @@ function renderVisitaEstoqueRows() {
     : `<p class="hint">Nenhuma categoria animal cadastrada ainda — cadastre no Perfil Produtivo antes da visita.</p>`;
 }
 
+// ---------- Wizard passo a passo ----------
+const VISITA_WIZARD_STEPS = ["Identificação", "Objetivo da Visita", "Situação Encontrada", "Recomendações Técnicas", "Próximos Passos", "Dados Internos"];
+let visitaWizardStep = 1;
+
+function renderVisitaWizardProgress() {
+  document.querySelectorAll(".wizard-bubble").forEach(b => {
+    const n = Number(b.dataset.bubble);
+    b.classList.toggle("concluido", n < visitaWizardStep);
+    b.classList.toggle("atual", n === visitaWizardStep);
+  });
+  document.getElementById("visita-wizard-label").textContent = `Etapa ${visitaWizardStep} de ${VISITA_WIZARD_STEPS.length} — ${VISITA_WIZARD_STEPS[visitaWizardStep - 1]}`;
+}
+
+function mostrarVisitaWizardStep(step) {
+  visitaWizardStep = step;
+  document.querySelectorAll(".wizard-step").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === step));
+  document.getElementById("btn-visita-voltar").classList.toggle("hidden", step === 1);
+  document.getElementById("btn-visita-proximo").textContent = step === VISITA_WIZARD_STEPS.length ? "Salvar relatório" : "Próximo →";
+  renderVisitaWizardProgress();
+  const modalBody = document.querySelector("#modal-visita .modal");
+  if (modalBody) modalBody.scrollTop = 0;
+}
+
+function validarVisitaWizardStepAtual() {
+  const stepEl = document.querySelector(`.wizard-step[data-step="${visitaWizardStep}"]`);
+  const campos = [...stepEl.querySelectorAll("input, select, textarea")];
+  for (const campo of campos) {
+    if (!campo.checkValidity()) { campo.reportValidity(); return false; }
+  }
+  return true;
+}
+
+document.getElementById("btn-visita-voltar").addEventListener("click", () => {
+  if (visitaWizardStep > 1) mostrarVisitaWizardStep(visitaWizardStep - 1);
+});
+document.getElementById("btn-visita-proximo").addEventListener("click", e => {
+  if (visitaWizardStep < VISITA_WIZARD_STEPS.length) {
+    e.preventDefault();
+    if (validarVisitaWizardStepAtual()) mostrarVisitaWizardStep(visitaWizardStep + 1);
+  }
+});
+
 function openVisitaModal(clientId, duplicarDeVisitaId) {
   const form = document.getElementById("form-visita");
   form.reset();
@@ -4482,6 +4524,7 @@ function openVisitaModal(clientId, duplicarDeVisitaId) {
   renderVisitaFotosPreview();
   renderVisitaFotosRecomendacoesPreview();
   renderVisitaProdutosRows();
+  mostrarVisitaWizardStep(1);
   document.getElementById("modal-visita").classList.remove("hidden");
 }
 
@@ -4511,7 +4554,7 @@ function salvarVisitaAtual(clientId) {
   const cardEstoqueFaltando = estoqueCards.find(card => !card.querySelector(".visita-estoque-quantidade").value || !card.querySelector(".visita-estoque-qtd-animais").value);
   if (cardEstoqueFaltando) {
     showToast("Informe a quantidade de animais e o estoque atual de todas as categorias animais antes de salvar a visita.");
-    document.getElementById("visita-section-situacao").open = true;
+    mostrarVisitaWizardStep(3);
     return;
   }
   const objetivos = [...document.querySelectorAll("#visita-objetivos-container input:checked")].map(i => i.value);
