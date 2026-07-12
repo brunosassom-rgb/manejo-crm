@@ -920,6 +920,20 @@ function computeAlerts() {
           mensagem: `Lead quente sem avanço de etapa há ${diasSemAvanco} dias.` });
       }
     }
+
+    // Datas importantes — aniversário de contato (mesmo critério já usado pra cliente ativo
+    // logo abaixo). Só o de contato se aplica aqui — "Aniversário de cliente" é sobre tempo como
+    // cliente convertido (dataConversao), não se aplica a quem ainda não converteu.
+    (l.contatosPessoas || []).forEach(pessoa => {
+      const info = aniversarioInfo(pessoa.dataNascimento);
+      if (info && info.dias === 0) {
+        alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Aniversário hoje", severidade: "today",
+          mensagem: `Ligar para parabenizar ${pessoa.nome || "o contato"} — aniversário hoje.` });
+      } else if (info && info.dias <= 7) {
+        alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Aniversário próximo", severidade: "info",
+          mensagem: `Aniversário de ${pessoa.nome || "contato"} em ${info.label}.` });
+      }
+    });
   });
 
   state.leads.filter(l => l.status === "Bloqueado").forEach(l => {

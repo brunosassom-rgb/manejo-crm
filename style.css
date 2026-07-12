@@ -1793,7 +1793,8 @@ h2 { font-size: 22px; }
 }
 .roteiro-lock-btn svg { width: 14px; height: 14px; }
 .roteiro-lock-btn:hover { opacity: 1; background: var(--surface-2); }
-.alert-item-destaque { border-left: 3px solid #d97b1e; background: color-mix(in srgb, #d97b1e 6%, transparent); padding-left: 9px; margin-left: -3px; border-radius: 4px; }
+.alert-item-destaque { border-left: 3px solid #d97b1e; background: color-mix(in srgb, #d97b1e 6%, transparent); padding-left: 9px; margin-left: -3px; margin-bottom: 6px; border-radius: 4px; }
+.alert-item-destaque:last-child { margin-bottom: 0; }
 .btn-mini {
   font-size: 0.72rem; font-weight: 600; padding: 4px 10px; border-radius: 7px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
