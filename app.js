@@ -2122,25 +2122,49 @@ function categoriasTableHtml(categoriasAnimais, clientId) {
   const total = rows.reduce((s, r) => s + (Number(r.quantidade) || 0), 0);
   const situacaoRows = rows.filter(r => r.fornecedorAtual || r.produtoAtual || r.satisfacao || r.reclamacoes);
   const forecastRows = clientId ? rows.map(r => ({ r, forecast: computeEstoqueForecast(clientId, r) })).filter(x => x.forecast) : [];
-  // As 3 tabelas mostram coisas bem diferentes (rebanho, fornecimento atual, previsão de
-  // estoque) — sem um subtítulo cada uma, ficavam empilhadas sem nada as diferenciando.
-  return `<h5 class="report-table-subtitle">Rebanho por categoria</h5>
-  <table class="mini"><thead><tr><th>Categoria</th><th>Sistema</th><th>Quantidade</th></tr></thead><tbody>
-    ${rows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.sistemaProducao || "-")}</td><td>${formatInt(r.quantidade)}</td></tr>`).join("")}
-    <tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatInt(total)}</strong></td></tr>
-  </tbody></table>
-  ${situacaoRows.length ? `<h5 class="report-table-subtitle">Fornecimento atual por categoria</h5>
-  <table class="mini"><thead><tr><th>Categoria</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Satisfação</th></tr></thead><tbody>
-    ${situacaoRows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.fornecedorAtual || "-")}</td><td>${escapeHtml(r.produtoAtual || "-")}</td><td>${r.volumeMensalEstimado ? formatVolume(r.volumeMensalEstimado) + " t/mês" : "-"}</td><td>${escapeHtml(r.satisfacao || "-")}</td></tr>`).join("")}
-  </tbody></table>` : ""}
-  ${forecastRows.length ? `<h5 class="report-table-subtitle">Previsão de estoque por categoria</h5>
-  <table class="mini"><thead><tr><th>Categoria</th><th>Último estoque registrado</th><th>Consumo mensal</th><th>Previsão de esgotamento</th></tr></thead><tbody>
+
+  // A previsão de esgotamento é a informação que mais pede ação — em vez de ficar só numa linha de
+  // tabela lá embaixo, as categorias urgentes viram um alerta em destaque no topo.
+  const criticos = forecastRows.filter(({ forecast }) => forecast.diasRestantes <= 20);
+  const atencao = forecastRows.filter(({ forecast }) => forecast.diasRestantes > 20 && forecast.diasRestantes <= 40);
+  const listaCategorias = lista => lista.map(({ r, forecast }) => `${escapeHtml(categoriaRowLabel(r))} (${forecast.diasRestantes >= 0 ? forecast.diasRestantes + " dias" : "esgotado"})`).join(", ");
+  const alertaHtml = [
+    criticos.length ? `<div class="info-alert info-alert-critico"><div><strong>Estoque crítico:</strong> ${listaCategorias(criticos)}.</div></div>` : "",
+    atencao.length ? `<div class="info-alert info-alert-atencao"><div><strong>Estoque de atenção:</strong> ${listaCategorias(atencao)}.</div></div>` : ""
+  ].join("");
+
+  const rebanhoHtml = `<div class="info-card"><h5>Rebanho por categoria</h5>
+    <table class="mini"><thead><tr><th>Categoria</th><th>Sistema</th><th>Quantidade</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.sistemaProducao || "-")}</td><td>${formatInt(r.quantidade)}</td></tr>`).join("")}
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatInt(total)}</strong></td></tr>
+    </tbody></table>
+  </div>`;
+
+  const fornecimentoHtml = situacaoRows.length ? `<div class="info-card"><h5>Fornecimento atual por categoria</h5>
+    <table class="mini"><thead><tr><th>Categoria</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Satisfação</th></tr></thead><tbody>
+      ${situacaoRows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.fornecedorAtual || "-")}</td><td>${escapeHtml(r.produtoAtual || "-")}</td><td>${r.volumeMensalEstimado ? formatVolume(r.volumeMensalEstimado) + " t/mês" : "-"}</td><td>${escapeHtml(r.satisfacao || "-")}</td></tr>`).join("")}
+    </tbody></table>
+  </div>` : "";
+
+  const forecastTabela = `<table class="mini"><thead><tr><th>Categoria</th><th>Último estoque registrado</th><th>Consumo mensal</th><th>Previsão de esgotamento</th></tr></thead><tbody>
     ${forecastRows.map(({ r, forecast }) => {
-      const urgente = forecast.diasRestantes <= 20;
+      const badgeClasse = forecast.diasRestantes <= 20 ? "badge-late" : forecast.diasRestantes <= 40 ? "badge-warn" : "badge-ok";
       const diasLabel = forecast.diasRestantes >= 0 ? `${forecast.diasRestantes} dias` : "esgotado";
-      return `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${formatVolume(forecast.ultima.quantidadeEstoque)} t (${formatDate(forecast.ultima.data)})</td><td>${formatVolume(r.volumeMensalEstimado)} t/mês</td><td><span class="badge ${urgente ? "badge-late" : "badge-ok"}">${diasLabel} — ${formatDate(forecast.dataPrevistaEsgotamento)}</span></td></tr>`;
+      return `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${formatVolume(forecast.ultima.quantidadeEstoque)} t (${formatDate(forecast.ultima.data)})</td><td>${formatVolume(r.volumeMensalEstimado)} t/mês</td><td><span class="badge ${badgeClasse}">${diasLabel} — ${formatDate(forecast.dataPrevistaEsgotamento)}</span></td></tr>`;
     }).join("")}
-  </tbody></table>` : ""}`;
+  </tbody></table>`;
+  // Com mais que umas poucas categorias, a tabela técnica completa fica atrás de um resumo —
+  // as urgentes já apareceram no alerta acima, aqui é só pra quem quer conferir todas.
+  const forecastResumo = resumoCardsHtml([
+    { v: forecastRows.length, l: "Categorias com previsão" },
+    { v: criticos.length, l: "Críticas (≤20 dias)" },
+    { v: atencao.length, l: "Atenção (21-40 dias)" }
+  ]);
+  const previsaoHtml = forecastRows.length ? `<div class="info-card"><h5>Previsão de estoque por categoria</h5>
+    ${forecastRows.length > 4 ? resumoDetalheHtml(forecastResumo, forecastTabela, `Ver previsão completa (${forecastRows.length} categorias)`) : forecastTabela}
+  </div>` : "";
+
+  return `${alertaHtml}${rebanhoHtml}${fornecimentoHtml}${previsaoHtml}`;
 }
 
 function describeCategorias(client) {
@@ -3019,6 +3043,30 @@ document.addEventListener("click", e => {
   if (link && link.dataset.goto) openFicha(link.dataset.goto);
 });
 
+// ---------- Padrão "resumo + ver detalhes" (reutilizável em qualquer tabela densa) ----------
+// resumoHtml: normalmente o retorno de resumoCardsHtml() abaixo. detalheHtml: a tabela completa,
+// que só some do fluxo (não é removida do DOM) atrás do link até o usuário pedir pra ver.
+function resumoDetalheHtml(resumoHtml, detalheHtml, labelExpandir, labelRecolher = "Ocultar detalhes") {
+  const id = "rd-" + Math.random().toString(36).slice(2, 9);
+  return `
+    <div class="resumo-cards">${resumoHtml}</div>
+    <button type="button" class="btn-link resumo-detalhe-toggle no-print" data-toggle-target="${id}" data-label-expandir="${escapeHtml(labelExpandir)}" data-label-recolher="${escapeHtml(labelRecolher)}">${labelExpandir}</button>
+    <div class="tabela-detalhe hidden" id="${id}">${detalheHtml}</div>
+  `;
+}
+function resumoCardsHtml(itens) {
+  return itens.map(({ v, l }) => `<div><div class="rc-v">${v}</div><div class="rc-l">${l}</div></div>`).join("");
+}
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".resumo-detalhe-toggle");
+  if (!btn) return;
+  const target = document.getElementById(btn.dataset.toggleTarget);
+  if (!target) return;
+  const vaiMostrar = target.classList.contains("hidden");
+  target.classList.toggle("hidden");
+  btn.textContent = vaiMostrar ? btn.dataset.labelRecolher : btn.dataset.labelExpandir;
+});
+
 // ---------- Conversão Lead → Cliente Ativo ----------
 function converterLeadEmCliente(leadId) {
   const lead = state.leads.find(l => l.id === leadId);
@@ -3456,9 +3504,9 @@ function renderCadastroProdutivoTab(cliente) {
 function renderHistoricoVendasCompleto(cliente) {
   return `
   ${renderVendasTab(cliente)}
-  <h3>Ciclo de Recompra</h3>
+  <h3 class="secao-divisor">Ciclo de Recompra</h3>
   ${stripActionsRow(renderRecompraTab(cliente))}
-  <h3>Upsell e Expansão</h3>
+  <h3 class="secao-divisor">Upsell e Expansão</h3>
   ${renderUpsellTab(cliente)}`;
 }
 function attachHistoricoVendasEvents(cliente) {
@@ -3475,9 +3523,7 @@ function renderProdutivoTab(entidade) {
     ${field("Consultor/Nutricionista vinculado", consultorNome(entidade.consultorId))}
   </div>` : "";
   return `
-  <div class="detalhe-section"><h4>Categoria animal</h4>
-    ${categoriasTableHtml(entidade.categoriasAnimais, entidade.id)}
-  </div>
+  ${categoriasTableHtml(entidade.categoriasAnimais, entidade.id)}
   ${extras}`;
 }
 
@@ -3620,6 +3666,21 @@ function renderVendasTab(cliente) {
     <td>${p.dataEntregaRealizada ? formatDate(p.dataEntregaRealizada) : (p.dataEntregaPrevista ? "prev. " + formatDate(p.dataEntregaPrevista) : "-")}</td>
     <td><span class="badge ${badgeClassForPedidoStatus(p.status)}">${escapeHtml(p.status || "-")}</span></td>
   </tr>`).join("") || `<tr><td colspan="7">Nenhum pedido no filtro selecionado.</td></tr>`;
+  const tabelaHtml = `<div style="overflow-x:auto;">
+    <table class="mini"><thead><tr><th>Nº do pedido</th><th>Data</th><th>Produtos</th><th>Volume (t)</th><th>Valor c/ frete</th><th>Entrega</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+
+  // Com poucos pedidos a tabela já é o resumo — o resumo + "ver detalhes" só entra quando a lista
+  // fica longa o bastante pra valer a pena esconder as colunas técnicas por padrão.
+  const volumeTotal = filtrados.reduce((s, p) => s + (Number(p.volume) || 0), 0);
+  const valorTotal = filtrados.reduce((s, p) => s + (Number(p.valorComFrete) || 0), 0);
+  const ultimoPedido = filtrados.reduce((max, p) => (!max || (p.dataPedido || "") > (max.dataPedido || "")) ? p : max, null);
+  const resumoHtml = resumoCardsHtml([
+    { v: filtrados.length, l: "Pedidos" },
+    { v: formatVolume(volumeTotal) + " t", l: "Volume total" },
+    { v: formatMoney(valorTotal), l: "Valor total" },
+    { v: ultimoPedido ? formatDate(ultimoPedido.dataPedido) : "—", l: "Último pedido" }
+  ]);
 
   return `
     <h4>Volume mensal (últimos 12 meses)</h4>
@@ -3629,9 +3690,7 @@ function renderVendasTab(cliente) {
       <select id="vendas-filtro-produto"><option value="">Produto (todos)</option>${produtosUnicos.map(p => `<option ${vendasFiltro.produto === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select>
       <select id="vendas-filtro-status"><option value="">Status (todos)</option>${statusOpcoes.map(s => `<option ${vendasFiltro.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
     </div>
-    <div style="overflow-x:auto;">
-    <table class="mini"><thead><tr><th>Nº do pedido</th><th>Data</th><th>Produtos</th><th>Volume (t)</th><th>Valor c/ frete</th><th>Entrega</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
-    </div>
+    ${filtrados.length > 6 ? resumoDetalheHtml(resumoHtml, tabelaHtml, `Ver todos os ${filtrados.length} pedidos`) : tabelaHtml}
     <div class="detalhe-section no-print">
       <h4>Condições padrão deste cliente</h4>
       <div class="detalhe-grid">
@@ -3668,6 +3727,8 @@ function attachVendasTabEvents(cliente) {
 
 const CICLO_COR = { "em-dia": "#1e7a3d", "atencao": "#b3860f", "atrasado": "#b3261e", "sem-historico": "#8a8f7a" };
 
+const ALERTA_TONE_POR_STATUS_CICLO = { "atrasado": "critico", "atencao": "atencao", "em-dia": "ok", "sem-historico": "ok" };
+
 function renderRecompraTab(client) {
   const insight = computeClientInsight(client);
   const cor = CICLO_COR[insight.status] || CICLO_COR["sem-historico"];
@@ -3679,16 +3740,18 @@ function renderRecompraTab(client) {
     ? `<div class="detalhe-grid">${insight.consumosPorProduto.map(c => field(c.produto, formatVolume(c.consumoMensal) + " t/mês")).join("")}</div>`
     : `<p class="hint">Sem consumo mensal declarado — em cada categoria animal, na aba Perfil Produtivo, informe "Produto que usa hoje" e "Volume mensal estimado" para o sistema estimar a recompra desse produto mesmo sem histórico de pedidos.</p>`;
   return `
-    <div class="tip-box"><strong>${insight.statusLabel}.</strong> ${escapeHtml(insight.tip)}</div>
+    <div class="info-alert info-alert-${ALERTA_TONE_POR_STATUS_CICLO[insight.status] || "ok"}"><div><strong>${insight.statusLabel}.</strong> ${escapeHtml(insight.tip)}</div></div>
     ${barra}
-    <div class="detalhe-grid">
-      ${reportField(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
-      ${reportField("Volume médio por pedido", insight.avgVolume ? formatVolume(insight.avgVolume) + " t" : "")}
-      ${reportField("Data do último pedido", insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "")}
-      ${reportField("Dias desde o último pedido", insight.daysSinceLast !== null ? insight.daysSinceLast : "")}
-      ${reportField("Próximo pedido previsto", insight.nextExpectedDate ? formatDate(insight.nextExpectedDate) : "")}
-      ${reportField("Produto favorito", insight.favoriteProduct)}
-      ${reportField("Avisar (dias antes do previsto)", client.alertaRecompraDias)}
+    <div class="info-card"><h5>Detalhes do ciclo</h5>
+      <div class="detalhe-grid">
+        ${reportField(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
+        ${reportField("Volume médio por pedido", insight.avgVolume ? formatVolume(insight.avgVolume) + " t" : "")}
+        ${reportField("Data do último pedido", insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "")}
+        ${reportField("Dias desde o último pedido", insight.daysSinceLast !== null ? insight.daysSinceLast : "")}
+        ${reportField("Próximo pedido previsto", insight.nextExpectedDate ? formatDate(insight.nextExpectedDate) : "")}
+        ${reportField("Produto favorito", insight.favoriteProduct)}
+        ${reportField("Avisar (dias antes do previsto)", client.alertaRecompraDias)}
+      </div>
     </div>
     <div class="detalhe-section"><h4>Consumo mensal declarado por produto</h4>${consumosHtml}</div>
     ${client.cicloObs ? `<div class="detalhe-section"><h4>Observações sobre o ciclo</h4><p>${escapeHtml(client.cicloObs)}</p></div>` : ""}`;
@@ -3707,14 +3770,31 @@ function badgeClassForSacStatus(status) {
 }
 function renderSacTab(client) {
   const sacs = sacsForClient(client.id);
+  const hoje = todayStr();
+  // Mesmo critério de "SAC aberto há +5 dias" já usado em computeChurnRisco — a informação que
+  // pede ação vira alerta no topo em vez de ficar só numa linha de tabela lá embaixo.
+  const criticos = sacs.filter(s => !["Resolvido", "Encerrado sem resolução"].includes(s.status) && daysBetween(s.data, hoje) > 5);
+  const alertaHtml = criticos.length
+    ? `<div class="info-alert info-alert-critico"><div><strong>${criticos.length} SAC${criticos.length === 1 ? "" : "s"} aberto${criticos.length === 1 ? "" : "s"} há mais de 5 dias:</strong> ${criticos.map(s => `${escapeHtml(s.numero)} (${daysBetween(s.data, hoje)} dias)`).join(", ")}.</div></div>`
+    : "";
   const rows = sacs.map(s => `<tr data-sac-id="${s.id}" style="cursor:pointer">
     <td>${escapeHtml(s.numero)}</td><td>${formatDate(s.data)}</td><td>${escapeHtml(s.tipo)}</td>
     <td>${escapeHtml(s.produto || "-")}</td><td>${escapeHtml(s.responsavel || "-")}</td>
     <td><span class="badge ${badgeClassForSacStatus(s.status)}">${escapeHtml(s.status)}</span></td>
   </tr>`).join("") || `<tr><td colspan="6">Nenhum SAC registrado.</td></tr>`;
+  const tabelaHtml = `<div style="overflow-x:auto;">
+    <table class="mini"><thead><tr><th>Número</th><th>Abertura</th><th>Tipo</th><th>Produto</th><th>Responsável</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+  const abertos = sacs.filter(s => !["Resolvido", "Encerrado sem resolução"].includes(s.status));
+  const resumoHtml = resumoCardsHtml([
+    { v: sacs.length, l: "Total de SACs" },
+    { v: abertos.length, l: "Em aberto" },
+    { v: sacs.filter(s => s.status === "Resolvido").length, l: "Resolvidos" }
+  ]);
   return `
-    <div class="detalhe-section" style="overflow-x:auto;">
-      <table class="mini"><thead><tr><th>Número</th><th>Abertura</th><th>Tipo</th><th>Produto</th><th>Responsável</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+    ${alertaHtml}
+    <div class="info-card">
+      ${sacs.length > 6 ? resumoDetalheHtml(resumoHtml, tabelaHtml, `Ver todos os ${sacs.length} SACs`) : tabelaHtml}
     </div>`;
 }
 function attachSacTabEvents() {
@@ -3774,6 +3854,11 @@ document.getElementById("form-upsell").addEventListener("submit", e => {
 
 function renderUpsellTab(client) {
   const upsells = upsellsForClient(client.id);
+  const abertas = upsells.filter(u => u.status !== "Convertida" && u.status !== "Descartada");
+  const potencialAberto = abertas.reduce((s, u) => s + (Number(u.volumePotencial) || 0), 0);
+  const alertaHtml = abertas.length
+    ? `<div class="info-alert info-alert-ok"><div><strong>${abertas.length} oportunidade${abertas.length === 1 ? "" : "s"} em aberto</strong>${potencialAberto ? ` — ${formatVolume(potencialAberto)} t de potencial.` : "."}</div></div>`
+    : "";
   const rows = upsells.map(u => `<tr data-upsell-id="${u.id}" style="cursor:pointer">
     <td>${escapeHtml(u.produto || "-")}</td><td>${escapeHtml(u.categoria || "-")}</td>
     <td>${u.volumePotencial ? formatVolume(u.volumePotencial) + " t" : "-"}</td>
@@ -3781,6 +3866,7 @@ function renderUpsellTab(client) {
     <td><span class="badge ${badgeClassForUpsellStatus(u.status)}">${escapeHtml(u.status)}</span></td>
   </tr>`).join("") || `<tr><td colspan="5">Nenhuma oportunidade registrada.</td></tr>`;
   return `
+    ${alertaHtml}
     <div class="detalhe-section" style="overflow-x:auto;">
       <table class="mini"><thead><tr><th>Produto</th><th>Categoria alvo</th><th>Volume potencial</th><th>Identificado em</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
     </div>

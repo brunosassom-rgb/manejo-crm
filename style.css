@@ -800,18 +800,43 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .detalhe-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; font-size: 0.9rem; margin-bottom: 4px; }
 .detalhe-grid div { font-weight: 600; color: var(--text); }
 .detalhe-grid div span { display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.02em; font-weight: 600; margin-bottom: 1px; }
-.detalhe-section {
+/* ============ Padrão de organização de informação densa ============
+   .info-card agrupa dados relacionados (mesmo raciocínio de .detalhe-section, nome mais genérico —
+   usado também fora da ficha do cliente). .info-alert destaca informação acionável que hoje ficava
+   enterrada dentro de uma linha de tabela (previsão de estoque acabando, SAC crítico etc.). */
+.detalhe-section, .info-card {
   background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--stone-mid, #6C7A52);
   border-radius: 0 10px 10px 0; padding: 14px 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm);
 }
-.detalhe-section h4 { margin: 0 0 10px; font-size: 0.9rem; font-family: var(--font-display); }
-.detalhe-section .detalhe-grid, .detalhe-section table.mini { margin-bottom: 0; }
-.detalhe-section table.mini + table.mini { margin-top: 14px; }
+.detalhe-section h4, .info-card h4, .info-card h5 { margin: 0 0 10px; font-size: 0.9rem; font-family: var(--font-display); }
+.detalhe-section .detalhe-grid, .detalhe-section table.mini,
+.info-card .detalhe-grid, .info-card table.mini { margin-bottom: 0; }
+.detalhe-section table.mini + table.mini, .info-card table.mini + table.mini { margin-top: 14px; }
 .tip-box { background: var(--ok-bg); color: var(--ok-text); border-radius: 8px; padding: 12px 14px; font-size: 0.9rem; margin-bottom: 16px; }
-/* Diferencia tabelas relacionadas empilhadas (ex: rebanho / fornecimento atual / previsão de
-   estoque) — sem isso pareciam uma tabela só cortada ao meio. */
-.report-table-subtitle { font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
-.report-table-subtitle:first-child { margin-top: 0; }
+
+.info-alert {
+  display: flex; align-items: flex-start; gap: 10px; border-radius: 8px; padding: 12px 14px;
+  font-size: 0.88rem; margin-bottom: 16px;
+}
+.info-alert strong { font-weight: 700; }
+.info-alert-critico { background: var(--late-bg); color: var(--late-text); }
+.info-alert-atencao { background: var(--warn-bg); color: var(--warn-text); }
+.info-alert-ok { background: var(--ok-bg); color: var(--ok-text); }
+
+/* Resumo + "ver detalhes": por padrão só os números-chave aparecem; a tabela completa (ou colunas
+   técnicas que a maioria não precisa ver toda hora) fica atrás de um link, não empilhada sempre visível. */
+.resumo-cards { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-bottom: 8px; }
+.resumo-cards .rc-v { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.resumo-cards .rc-l { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 1px; }
+
+/* Divisor de seção maior (ex: dentro de uma aba que reúne vários blocos de dado bem diferentes,
+   como Histórico de Vendas = pedidos + ciclo de recompra + upsell) — mais peso que um <h4> comum,
+   sem virar mais um card, já que os dados dentro de cada bloco já ganham seus próprios .info-card. */
+.secao-divisor {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700; text-transform: none;
+  letter-spacing: normal; color: var(--text); margin: 28px 0 12px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+.secao-divisor:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 
 table.mini { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 16px; }
 table.mini th, table.mini td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
@@ -1018,6 +1043,9 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 
 @media print {
   .rail, .rail-side, .appbar, .no-print, .hidden-for-print { display: none !important; }
+  /* O botão "ver detalhes" some (.no-print) mas a tabela que ele revela no toque não pode sumir
+     junto — no papel não tem como clicar em nada, então a versão impressa mostra tudo sempre. */
+  .tabela-detalhe.hidden { display: block !important; }
   .app-shell { display: block; min-height: 0; }
   main { max-width: 100%; padding: 0; margin: 0; }
   body { background: white; }
@@ -1153,14 +1181,14 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 
   /* Tabelas/tabs largas dentro de relatórios: sem rolagem — deixa fluir e encolhe a fonte pra caber */
   [style*="overflow-x"] { overflow-x: visible !important; }
-  .report-doc table.mini, .detalhe-section table.mini { font-size: 0.74rem; }
+  .report-doc table.mini, .detalhe-section table.mini, .info-card table.mini { font-size: 0.74rem; }
 
   /* Estado vazio: sem o respiro/ícone decorativo pensado pra tela, senão sobra um vão em branco */
   .empty-state { padding: 8px 4px; }
   .empty-state::before { display: none; }
 
   /* Evita cortar um bloco no meio entre duas páginas */
-  .tip-box, .rs-card, .detalhe-section, .report-doc-head, .stat-tile, table.mini tr {
+  .tip-box, .rs-card, .detalhe-section, .info-card, .info-alert, .report-doc-head, .stat-tile, table.mini tr {
     break-inside: avoid; page-break-inside: avoid;
   }
 }
