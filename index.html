@@ -214,78 +214,133 @@
     <!-- ==================== RELATÓRIOS ==================== -->
     <section id="relatorios" class="tab-panel">
       <h2 class="no-print">Relatórios</h2>
-      <div class="report-cards no-print">
-        <div class="report-card"><h4>Pipeline por etapa</h4><p>Distribuição e conversão do funil.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="pipeline">Ver</button></div>
-        <div class="report-card"><h4>Volume por cliente</h4><p>Ranking de volume comprado.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="volume">Ver</button></div>
-        <div class="report-card"><h4>Conversão entre etapas</h4><p>Taxa de avanço no funil.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="conversao">Ver</button></div>
-        <div class="report-card"><h4>Follow-ups: real vs. planejado</h4><p>Contatos realizados x agendados.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="followups">Ver</button></div>
-        <div class="report-card"><h4>Intel. competitiva por região</h4><p>Concorrência observada em campo.</p><button class="btn-secondary btn-relatorio-rapido" data-relatorio="competitiva">Ver</button></div>
-      </div>
+      <div class="relatorios-layout">
+        <nav class="relatorios-menu no-print" id="relatorios-menu">
+          <button type="button" class="relatorios-menu-item" data-relview="overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span>Visão geral</span>
+          </button>
 
-      <div class="report-switch no-print">
-        <button class="report-switch-btn active" data-report="cliente">Relatório por cliente</button>
-        <button class="report-switch-btn" data-report="cliente-periodo">Relatório por cliente e período</button>
-        <button class="report-switch-btn" data-report="mensal">Atividades do mês</button>
-        <button class="report-switch-btn" data-report="visitas">Visitas Técnicas</button>
-        <button class="report-switch-btn" data-report="funil">Funil &amp; Carteira</button>
-      </div>
+          <div class="relatorios-menu-group">
+            <span class="relatorios-menu-label">Comercial</span>
+            <button type="button" class="relatorios-menu-item" data-relview="volume">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg>
+              <span>Volume por cliente</span>
+            </button>
+            <button type="button" class="relatorios-menu-item" data-relview="pipeline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+              <span>Pipeline por etapa</span>
+            </button>
+            <button type="button" class="relatorios-menu-item" data-relview="conversao">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              <span>Conversão entre etapas</span>
+            </button>
+          </div>
 
-      <div id="report-cliente" class="report-panel active">
-        <div class="report-controls no-print">
-          <select id="relatorio-cliente-select"></select>
-          <button id="btn-imprimir-relatorio-cliente" class="btn-secondary">Imprimir / Salvar PDF</button>
-        </div>
-        <div id="relatorio-cliente-conteudo"></div>
-      </div>
+          <div class="relatorios-menu-group">
+            <span class="relatorios-menu-label">Atividade em campo</span>
+            <button type="button" class="relatorios-menu-item" data-relview="followups">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.4 12.4 0 0 0 3.81.61 2 2 0 0 1 2 2v3.5a2 2 0 0 1-2 2A19 19 0 0 1 2.72 3.81 2 2 0 0 1 4.72 2h3.5a2 2 0 0 1 2 2 12.4 12.4 0 0 0 .61 3.81 2 2 0 0 1-.45 2.11z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <span>Follow-ups: real vs. planejado</span>
+            </button>
+            <button type="button" class="relatorios-menu-item" data-relview="visitas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Visitas Técnicas</span>
+            </button>
+            <button type="button" class="relatorios-menu-item" data-relview="mensal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>Atividades do mês</span>
+            </button>
+          </div>
 
-      <div id="report-cliente-periodo" class="report-panel">
-        <div class="report-controls no-print">
-          <select id="relatorio-cliente-periodo-select"></select>
-          <input type="month" id="relatorio-cliente-periodo-mes">
-          <button id="btn-imprimir-relatorio-cliente-periodo" class="btn-secondary">Imprimir / Salvar PDF</button>
-        </div>
-        <div id="relatorio-cliente-periodo-conteudo"></div>
-      </div>
+          <div class="relatorios-menu-group">
+            <span class="relatorios-menu-label">Cliente</span>
+            <button type="button" class="relatorios-menu-item" data-relview="cliente">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Relatório por cliente</span>
+            </button>
+            <button type="button" class="relatorios-menu-item" data-relview="cliente-periodo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
+              <span>Relatório por cliente e período</span>
+            </button>
+          </div>
 
-      <div id="report-mensal" class="report-panel">
-        <div class="report-controls no-print">
-          <input type="month" id="relatorio-mes-select">
-          <button id="btn-imprimir-relatorio-mensal" class="btn-secondary">Imprimir / Salvar PDF</button>
-        </div>
-        <div id="relatorio-mensal-conteudo"></div>
-      </div>
+          <div class="relatorios-menu-group">
+            <span class="relatorios-menu-label">Concorrência</span>
+            <button type="button" class="relatorios-menu-item" data-relview="competitiva">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+              <span>Intel. competitiva por região</span>
+            </button>
+            <button type="button" class="relatorios-menu-item" data-relview="funil">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+              <span>Funil &amp; Carteira</span>
+            </button>
+          </div>
+        </nav>
 
-      <div id="report-visitas" class="report-panel">
-        <div class="report-controls no-print" style="flex-wrap:wrap;">
-          <input type="text" id="visitas-busca" placeholder="Buscar por cliente...">
-          <input type="date" id="visitas-filtro-data">
-          <select id="visitas-filtro-objetivo"><option value="">Objetivo (todos)</option></select>
-        </div>
-        <div class="no-print" style="overflow-x:auto; margin-bottom:20px;">
-          <table class="mini" id="visitas-tabela">
-            <thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Objetivo</th><th>Condição</th><th></th></tr></thead>
-            <tbody id="visitas-tabela-body"></tbody>
-          </table>
-        </div>
+        <div class="relatorios-content">
+          <div id="relatorios-overview" class="report-panel active">
+            <div class="relatorios-tiles" id="relatorios-tiles"></div>
+          </div>
 
-        <div class="report-controls no-print">
-          <button id="btn-imprimir-visita" class="btn-secondary">Imprimir / Salvar PDF do relatório selecionado</button>
-        </div>
-        <div id="visita-documento-conteudo"></div>
+          <div id="report-cliente" class="report-panel">
+            <div class="report-controls no-print">
+              <select id="relatorio-cliente-select"></select>
+              <button id="btn-imprimir-relatorio-cliente" class="btn-secondary">Imprimir / Salvar PDF</button>
+            </div>
+            <div id="relatorio-cliente-conteudo"></div>
+          </div>
 
-        <h3 class="no-print">Gerencial de visitas por período</h3>
-        <div class="report-controls no-print">
-          <input type="month" id="visitas-gerencial-mes">
-          <button id="btn-imprimir-visitas-gerencial" class="btn-secondary">Imprimir / Salvar PDF</button>
-        </div>
-        <div id="visitas-gerencial-conteudo"></div>
-      </div>
+          <div id="report-cliente-periodo" class="report-panel">
+            <div class="report-controls no-print">
+              <select id="relatorio-cliente-periodo-select"></select>
+              <input type="month" id="relatorio-cliente-periodo-mes">
+              <button id="btn-imprimir-relatorio-cliente-periodo" class="btn-secondary">Imprimir / Salvar PDF</button>
+            </div>
+            <div id="relatorio-cliente-periodo-conteudo"></div>
+          </div>
 
-      <div id="report-funil" class="report-panel">
-        <div class="report-controls no-print">
-          <button id="btn-imprimir-relatorio-funil" class="btn-secondary">Imprimir / Salvar PDF</button>
+          <div id="report-mensal" class="report-panel">
+            <div class="report-controls no-print">
+              <input type="month" id="relatorio-mes-select">
+              <button id="btn-imprimir-relatorio-mensal" class="btn-secondary">Imprimir / Salvar PDF</button>
+            </div>
+            <div id="relatorio-mensal-conteudo"></div>
+          </div>
+
+          <div id="report-visitas" class="report-panel">
+            <div class="report-controls no-print" style="flex-wrap:wrap;">
+              <input type="text" id="visitas-busca" placeholder="Buscar por cliente...">
+              <input type="date" id="visitas-filtro-data">
+              <select id="visitas-filtro-objetivo"><option value="">Objetivo (todos)</option></select>
+            </div>
+            <div class="no-print" style="overflow-x:auto; margin-bottom:20px;">
+              <table class="mini" id="visitas-tabela">
+                <thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Objetivo</th><th>Condição</th><th></th></tr></thead>
+                <tbody id="visitas-tabela-body"></tbody>
+              </table>
+            </div>
+
+            <div class="report-controls no-print">
+              <button id="btn-imprimir-visita" class="btn-secondary">Imprimir / Salvar PDF do relatório selecionado</button>
+            </div>
+            <div id="visita-documento-conteudo"></div>
+
+            <h3 class="no-print">Gerencial de visitas por período</h3>
+            <div class="report-controls no-print">
+              <input type="month" id="visitas-gerencial-mes">
+              <button id="btn-imprimir-visitas-gerencial" class="btn-secondary">Imprimir / Salvar PDF</button>
+            </div>
+            <div id="visitas-gerencial-conteudo"></div>
+          </div>
+
+          <div id="report-funil" class="report-panel">
+            <div class="report-controls no-print">
+              <button id="btn-imprimir-relatorio-funil" class="btn-secondary">Imprimir / Salvar PDF</button>
+            </div>
+            <div id="relatorio-funil-conteudo"></div>
+          </div>
         </div>
-        <div id="relatorio-funil-conteudo"></div>
       </div>
     </section>
 

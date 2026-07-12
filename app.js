@@ -13,6 +13,7 @@ const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
 
 // Funil de LEAD (6 etapas) — Cliente Ativo é uma entidade separada, fora do funil
 const LEAD_FUNIL_STAGES = ["Prospecção", "Qualificação", "Diagnóstico", "Proposta enviada", "Negociação", "Fechamento"];
+const STAGE_FUNIL_COR = ["#A3AE8B", "#93A07A", "#82906A", "#6C7A52", "#5B6746", "#4B5347"]; // mesma ordem de LEAD_FUNIL_STAGES
 const LEAD_STAGE_CRITERIA = {
   "Prospecção": "primeiro contato realizado", "Qualificação": "perfil confirmado, BANT validado",
   "Diagnóstico": "visita realizada, dores identificadas", "Proposta enviada": "cotação ou proposta formal enviada",
@@ -1369,6 +1370,12 @@ document.getElementById("qa-editar-layout").addEventListener("click", () => {
   renderDashboard();
 });
 
+function computeVolumeRanking() {
+  return state.clientesAtivos
+    .map(c => ({ client: c, volume: pedidosForClient(c.id).reduce((s, p) => s + (Number(p.volume) || 0), 0) }))
+    .filter(r => r.volume > 0).sort((a, b) => b.volume - a.volume);
+}
+
 function renderDashboard() {
   const clientesAtivos = state.clientesAtivos;
   const leadsPipeline = state.leads.filter(l => l.status === "Ativo").length;
@@ -1423,7 +1430,6 @@ function renderDashboard() {
 
   const leadsAtivos = state.leads.filter(l => l.status === "Ativo");
   const maxCount = Math.max(1, ...LEAD_FUNIL_STAGES.map(stage => leadsAtivos.filter(l => l.etapaFunil === stage).length));
-  const STAGE_FUNIL_COR = ["#A3AE8B", "#93A07A", "#82906A", "#6C7A52", "#5B6746", "#4B5347"]; // mesma ordem de LEAD_FUNIL_STAGES
   const maxBarWidth = 220; // px, largura da etapa com mais leads
   document.getElementById("funnel-visual").innerHTML = LEAD_FUNIL_STAGES.map((stage, i) => {
     const stageLeads = leadsAtivos.filter(l => l.etapaFunil === stage);
@@ -1468,9 +1474,7 @@ function renderDashboard() {
     return `<div class="bar-col"><div class="bar-value">${monthVolumes[i].toFixed(0)}</div><div class="bar-fill" style="height:${h}%"></div><div class="bar-label">${label}</div></div>`;
   }).join("");
 
-  const ranking = state.clientesAtivos
-    .map(c => ({ client: c, volume: pedidosForClient(c.id).reduce((s, p) => s + (Number(p.volume) || 0), 0) }))
-    .filter(r => r.volume > 0).sort((a, b) => b.volume - a.volume).slice(0, 5);
+  const ranking = computeVolumeRanking().slice(0, 5);
   const maxRank = ranking.length ? ranking[0].volume : 1;
   document.getElementById("ranking-list").innerHTML = ranking.length
     ? ranking.map((r, i) => `
@@ -3380,22 +3384,12 @@ function attachRelatorioSecaoEvents(cliente) {
   const completo = document.getElementById("rel-completo");
   if (completo) completo.addEventListener("click", () => {
     switchMainTab("relatorios");
-    document.querySelectorAll(".report-switch-btn").forEach(b => b.classList.toggle("active", b.dataset.report === "cliente"));
-    document.querySelectorAll(".report-panel").forEach(p => p.classList.toggle("active", p.id === "report-cliente"));
-    currentReportView = "cliente";
-    document.getElementById("relatorio-cliente-select").value = cliente.id;
-    renderRelatorioCliente(cliente.id);
+    mostrarRelatorioView("cliente", { clienteId: cliente.id });
   });
   const periodo = document.getElementById("rel-periodo");
   if (periodo) periodo.addEventListener("click", () => {
     switchMainTab("relatorios");
-    document.querySelectorAll(".report-switch-btn").forEach(b => b.classList.toggle("active", b.dataset.report === "cliente-periodo"));
-    document.querySelectorAll(".report-panel").forEach(p => p.classList.toggle("active", p.id === "report-cliente-periodo"));
-    currentReportView = "cliente-periodo";
-    document.getElementById("relatorio-cliente-periodo-select").value = cliente.id;
-    const mesInput = document.getElementById("relatorio-cliente-periodo-mes");
-    if (!mesInput.value) mesInput.value = todayStr().slice(0, 7);
-    renderRelatorioClientePeriodo(cliente.id, mesInput.value);
+    mostrarRelatorioView("cliente-periodo", { clienteId: cliente.id });
   });
 }
 
@@ -4607,12 +4601,7 @@ function salvarVisitaAtual(clientId) {
   if (confirm("Relatório salvo. Deseja gerar o PDF agora?")) {
     visitaSelecionadaId = visita.id;
     switchMainTab("relatorios");
-    document.querySelectorAll(".report-switch-btn").forEach(b => b.classList.toggle("active", b.dataset.report === "visitas"));
-    document.getElementById("report-cliente").classList.remove("active");
-    document.getElementById("report-mensal").classList.remove("active");
-    document.getElementById("report-visitas").classList.add("active");
-    currentReportView = "visitas";
-    initVisitasReportTab();
+    mostrarRelatorioView("visitas");
     setTimeout(() => abrirPreviewImpressao("visita-documento-conteudo", { outroContainerId: "visitas-gerencial-conteudo" }), 200);
   }
 }
@@ -4853,12 +4842,7 @@ function attachVisitasFichaEvents(client) {
     btn.addEventListener("click", () => {
       visitaSelecionadaId = btn.dataset.visitaId;
       switchMainTab("relatorios");
-      document.querySelectorAll(".report-switch-btn").forEach(b => b.classList.toggle("active", b.dataset.report === "visitas"));
-      document.getElementById("report-cliente").classList.remove("active");
-      document.getElementById("report-mensal").classList.remove("active");
-      document.getElementById("report-visitas").classList.add("active");
-      currentReportView = "visitas";
-      initVisitasReportTab();
+      mostrarRelatorioView("visitas");
     });
   });
   document.querySelectorAll(".btn-duplicar-visita-ficha").forEach(btn => {
@@ -4871,28 +4855,113 @@ function attachVisitasFichaEvents(client) {
 // ============================================================
 function stripActionsRow(html) { return html.replace(/<div class="actions-row"[^>]*>[\s\S]*?<\/div>/g, ""); }
 
+// ---------- Relatórios: menu lateral único + "Visão geral" em mosaico ----------
 let currentReportView = "cliente";
-document.querySelectorAll(".report-switch-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".report-switch-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentReportView = btn.dataset.report;
-    document.getElementById("report-cliente").classList.toggle("active", currentReportView === "cliente");
-    document.getElementById("report-cliente-periodo").classList.toggle("active", currentReportView === "cliente-periodo");
-    document.getElementById("report-mensal").classList.toggle("active", currentReportView === "mensal");
-    document.getElementById("report-visitas").classList.toggle("active", currentReportView === "visitas");
-    document.getElementById("report-funil").classList.toggle("active", currentReportView === "funil");
-    if (currentReportView === "visitas") initVisitasReportTab();
-    if (currentReportView === "funil") renderRelatorioFunil();
-    if (currentReportView === "cliente-periodo") {
-      const sel = document.getElementById("relatorio-cliente-periodo-select");
-      const mesInput = document.getElementById("relatorio-cliente-periodo-mes");
-      if (!mesInput.value) mesInput.value = todayStr().slice(0, 7);
-      if (sel.value) renderRelatorioClientePeriodo(sel.value, mesInput.value);
-      else if (state.clientesAtivos.length) renderRelatorioClientePeriodo(state.clientesAtivos[0].id, mesInput.value);
-    }
-  });
+const RELATORIO_PANEL_IDS = ["cliente", "cliente-periodo", "mensal", "visitas", "funil"];
+// pipeline/volume/competitiva navegam pra outra aba; conversao/followups reaproveitam o painel "funil" —
+// nenhum desses 5 tem conteúdo próprio dentro de Relatórios, só o toast explica onde o dado está.
+const RELATORIO_TOASTS = {
+  pipeline: "Veja a distribuição do funil no Dashboard e o quadro completo no Pipeline.",
+  volume: "Veja o ranking de volume no Dashboard, ou gere o relatório detalhado por cliente ao lado.",
+  conversao: "Taxa de conversão lead → cliente e tempo médio por etapa abaixo, em Funil & Carteira.",
+  followups: "Leads sem contato há mais de 7 dias e clientes sem pedido há mais de um ciclo abaixo, em Funil & Carteira.",
+  competitiva: "Veja a tabela, radar e mapa de calor na tela Inteligência Competitiva."
+};
+function mostrarRelatorioView(viewId, opts) {
+  opts = opts || {};
+  if (RELATORIO_TOASTS[viewId]) showToast(RELATORIO_TOASTS[viewId]);
+
+  document.querySelectorAll(".relatorios-menu-item").forEach(b => b.classList.toggle("active", b.dataset.relview === viewId));
+  document.getElementById("relatorios-overview").classList.toggle("active", viewId === "overview");
+  RELATORIO_PANEL_IDS.forEach(id => document.getElementById("report-" + id).classList.remove("active"));
+
+  if (viewId === "overview") { renderRelatoriosOverviewTiles(); return; }
+  if (viewId === "volume") { switchMainTab("dashboard"); return; }
+  if (viewId === "pipeline") { switchMainTab("pipeline"); return; }
+  if (viewId === "competitiva") { switchMainTab("competitiva"); return; }
+
+  const painelId = (viewId === "conversao" || viewId === "followups") ? "funil" : viewId;
+  document.getElementById("report-" + painelId).classList.add("active");
+  currentReportView = painelId;
+
+  if (painelId === "cliente") {
+    const sel = document.getElementById("relatorio-cliente-select");
+    const clienteId = opts.clienteId || sel.value || (state.clientesAtivos[0] && state.clientesAtivos[0].id);
+    if (clienteId) { sel.value = clienteId; renderRelatorioCliente(clienteId); }
+  } else if (painelId === "cliente-periodo") {
+    const sel = document.getElementById("relatorio-cliente-periodo-select");
+    const mesInput = document.getElementById("relatorio-cliente-periodo-mes");
+    if (!mesInput.value) mesInput.value = todayStr().slice(0, 7);
+    const clienteId = opts.clienteId || sel.value || (state.clientesAtivos[0] && state.clientesAtivos[0].id);
+    if (clienteId) { sel.value = clienteId; renderRelatorioClientePeriodo(clienteId, mesInput.value); }
+  } else if (painelId === "visitas") {
+    initVisitasReportTab();
+  } else if (painelId === "funil") {
+    renderRelatorioFunil();
+  }
+}
+document.querySelectorAll(".relatorios-menu-item").forEach(btn => {
+  btn.addEventListener("click", () => mostrarRelatorioView(btn.dataset.relview));
 });
+
+// "Visão geral": mosaico de tiles com prévia real de cada relatório, reaproveitando os
+// mesmos cálculos já usados no Dashboard / widget de visitas — clicar num tile abre o
+// relatório completo através do mesmo mostrarRelatorioView() usado pelo menu lateral.
+function renderRelatoriosOverviewTiles() {
+  const container = document.getElementById("relatorios-tiles");
+  if (!container) return;
+
+  const rankingFull = computeVolumeRanking();
+  const totalVolume = rankingFull.reduce((s, r) => s + r.volume, 0);
+  const lider = rankingFull[0] || null;
+
+  const leadsAtivos = state.leads.filter(l => l.status === "Ativo");
+  const maxCount = Math.max(1, ...LEAD_FUNIL_STAGES.map(stage => leadsAtivos.filter(l => l.etapaFunil === stage).length));
+  const pipelineBarsHtml = LEAD_FUNIL_STAGES.map((stage, i) => {
+    const count = leadsAtivos.filter(l => l.etapaFunil === stage).length;
+    const largura = Math.max(4, Math.round((count / maxCount) * 100));
+    return `<div class="relatorios-mini-bar-track"><div class="relatorios-mini-bar-fill" style="width:${largura}%; background:${STAGE_FUNIL_COR[i]};"></div></div>`;
+  }).join("");
+
+  const conv = computeConversaoFunil6Meses();
+  const ringSize = 64, ringStroke = 7, ringR = (ringSize - ringStroke) / 2, ringC = 2 * Math.PI * ringR;
+  const ringOffset = ringC * (1 - conv.pct / 100);
+
+  const mesAtual = todayStr().slice(0, 7);
+  const visitasCount = state.visitas.filter(v => v.dataVisita && v.dataVisita.slice(0, 7) === mesAtual).length;
+  const metaVisitas = state.metaVisitasMes || 0;
+  const pctVisitas = metaVisitas > 0 ? Math.min(Math.round((visitasCount / metaVisitas) * 100), 100) : 0;
+
+  container.innerHTML = `
+    <button type="button" class="relatorios-tile" data-relview="volume">
+      <h4><span class="panel-ico tone-olive">${ICONS.box}</span>Volume por cliente</h4>
+      <div class="relatorios-tile-big">${formatVolume(totalVolume)}t</div>
+      <div class="relatorios-tile-sub">${lider ? `Líder atual: ${escapeHtml(lider.client.nome)} (${formatVolume(lider.volume)}t)` : "Nenhum pedido registrado ainda."}</div>
+    </button>
+    <button type="button" class="relatorios-tile" data-relview="pipeline">
+      <h4><span class="panel-ico tone-blue">${ICONS.funnel}</span>Pipeline por etapa</h4>
+      <div class="relatorios-mini-bars">${pipelineBarsHtml}</div>
+      <div class="relatorios-tile-sub">${leadsAtivos.length} lead${leadsAtivos.length === 1 ? "" : "s"} ativo${leadsAtivos.length === 1 ? "" : "s"} no funil</div>
+    </button>
+    <button type="button" class="relatorios-tile" data-relview="conversao">
+      <h4><span class="panel-ico tone-sage">${ICONS.trendingUp}</span>Conversão do funil</h4>
+      <div class="relatorios-tile-ring-row">
+        <svg width="${ringSize}" height="${ringSize}" viewBox="0 0 ${ringSize} ${ringSize}" class="relatorios-ring">
+          <circle cx="${ringSize / 2}" cy="${ringSize / 2}" r="${ringR}" fill="none" stroke="var(--border)" stroke-width="${ringStroke}"/>
+          <circle cx="${ringSize / 2}" cy="${ringSize / 2}" r="${ringR}" fill="none" stroke="var(--chart-1)" stroke-width="${ringStroke}" stroke-linecap="round" stroke-dasharray="${ringC}" stroke-dashoffset="${ringOffset}" transform="rotate(-90 ${ringSize / 2} ${ringSize / 2})"/>
+        </svg>
+        <div class="relatorios-tile-big">${conv.pct}%</div>
+      </div>
+      <div class="relatorios-tile-sub">Lead → cliente, últimos 6 meses</div>
+    </button>
+    <button type="button" class="relatorios-tile" data-relview="visitas">
+      <h4><span class="panel-ico tone-gold">${ICONS.mapPin}</span>Visitas × meta do mês</h4>
+      <div class="kpi-value">${visitasCount}<span style="font-size:1rem; color:var(--text-muted);"> / ${metaVisitas}</span></div>
+      <div class="rank-track"><div class="rank-fill" style="width:${pctVisitas}%; background:${pctVisitas >= 100 ? "var(--ok-text)" : "var(--chart-1)"}"></div></div>
+    </button>
+  `;
+  container.querySelectorAll(".relatorios-tile").forEach(btn => btn.addEventListener("click", () => mostrarRelatorioView(btn.dataset.relview)));
+}
 // ---------- Preview de impressão ----------
 // Clona o HTML já renderizado do container do relatório pra dentro do modal de preview, em vez
 // de chamar window.print() direto — assim dá pra conferir capa/cabeçalho/rodapé/encerramento
@@ -4933,6 +5002,7 @@ function initRelatoriosTab() {
   const mesInput = document.getElementById("relatorio-mes-select");
   if (!mesInput.value) mesInput.value = todayStr().slice(0, 7);
   renderRelatorioMensal(mesInput.value);
+  mostrarRelatorioView("overview");
 }
 document.getElementById("relatorio-cliente-select").addEventListener("change", e => renderRelatorioCliente(e.target.value));
 document.getElementById("relatorio-mes-select").addEventListener("change", e => renderRelatorioMensal(e.target.value));
@@ -5262,6 +5332,15 @@ function renderRelatorioMensal(yyyyMM) {
     ${reportEncerramentoHtml(null)}`;
 }
 
+function computeConversaoFunil6Meses() {
+  const hoje = new Date();
+  const meses = [];
+  for (let i = 5; i >= 0; i--) meses.push(`${new Date(hoje.getFullYear(), hoje.getMonth() - i, 1).getFullYear()}-${String(new Date(hoje.getFullYear(), hoje.getMonth() - i, 1).getMonth() + 1).padStart(2, "0")}`);
+  const totalNovos = meses.reduce((s, mes) => s + state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes).length, 0);
+  const totalConvertidos = meses.reduce((s, mes) => s + state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes && l.dataConversao).length, 0);
+  return { totalNovos, totalConvertidos, pct: totalNovos ? Math.round((totalConvertidos / totalNovos) * 100) : 0 };
+}
+
 function renderRelatorioFunil() {
   const container = document.getElementById("relatorio-funil-conteudo");
   const hoje = new Date();
@@ -5322,8 +5401,7 @@ function renderRelatorioFunil() {
   const semContatoCards = reportRecordCardsHtml(["Lead", "Etapa", "Sem contato"],
     semContato.map(({ l, dias }) => [escapeHtml(l.nome), escapeHtml(l.etapaFunil), dias === null ? "nunca contatado" : dias + " dias"]));
 
-  const totalNovos = meses.reduce((s, mes) => s + state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes).length, 0);
-  const totalConvertidos = meses.reduce((s, mes) => s + state.leads.filter(l => (l.criadoEm || "").slice(0, 7) === mes && l.dataConversao).length, 0);
+  const { totalNovos, totalConvertidos } = computeConversaoFunil6Meses();
   const etapaMaisLenta = LEAD_FUNIL_STAGES.filter(e => contPorEtapa[e]).sort((a, b) => (somaPorEtapa[b] / contPorEtapa[b]) - (somaPorEtapa[a] / contPorEtapa[a]))[0];
   const tiles = [
     { icon: ICONS.trendingUp, label: "Taxa de conversão (6 meses)", value: totalNovos ? Math.round((totalConvertidos / totalNovos) * 100) + "%" : "-" },
@@ -5353,33 +5431,6 @@ function renderRelatorioFunil() {
     </div>
     ${reportEncerramentoHtml(null)}`;
 }
-
-// ---------- Relatórios rápidos (cards) ----------
-document.querySelectorAll(".btn-relatorio-rapido").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const tipo = btn.dataset.relatorio;
-    const msgs = {
-      pipeline: "Veja a distribuição do funil no Dashboard e o quadro completo no Pipeline.",
-      volume: "Veja o ranking de volume no Dashboard, ou gere o relatório detalhado por cliente abaixo.",
-      conversao: "Taxa de conversão lead → cliente e tempo médio por etapa abaixo, em Funil & Carteira.",
-      followups: "Leads sem contato há mais de 7 dias e clientes sem pedido há mais de um ciclo abaixo, em Funil & Carteira.",
-      competitiva: "Veja a tabela, radar e mapa de calor na tela Inteligência Competitiva."
-    };
-    showToast(msgs[tipo] || "Relatório disponível abaixo.");
-    if (tipo === "conversao" || tipo === "followups") {
-      document.querySelectorAll(".report-switch-btn").forEach(b => b.classList.toggle("active", b.dataset.report === "funil"));
-      document.querySelectorAll(".report-panel").forEach(p => p.classList.toggle("active", p.id === "report-funil"));
-      currentReportView = "funil";
-      renderRelatorioFunil();
-    } else if (tipo === "pipeline") {
-      switchMainTab("pipeline");
-    } else if (tipo === "volume") {
-      switchMainTab("dashboard");
-    } else if (tipo === "competitiva") {
-      switchMainTab("competitiva");
-    }
-  });
-});
 
 // ---------- Fechar modais ----------
 document.querySelectorAll("[data-close-modal]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.dataset.closeModal)));

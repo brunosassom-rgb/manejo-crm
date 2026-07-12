@@ -692,14 +692,46 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 }
 
 /* ============ Relatórios ============ */
-.report-cards { display: flex; gap: 14px; margin-top: 14px; overflow-x: auto; padding-bottom: 4px; }
-.report-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; flex: 1 1 0; min-width: 0; }
-.report-card h4 { margin: 8px 0 4px; font-size: 0.92rem; }
-.report-card p { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 12px; }
+.relatorios-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 14px; }
+.relatorios-menu {
+  width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px; box-shadow: var(--shadow-sm); position: sticky; top: 14px;
+}
+.relatorios-menu-group { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.relatorios-menu-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-faint); padding: 8px 10px 3px;
+}
+.relatorios-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; background: transparent;
+  border: none; text-align: left; padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  font-size: 0.85rem; color: var(--text-muted); font-family: inherit;
+}
+.relatorios-menu-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+.relatorios-menu-item:hover { background: var(--border-soft); color: var(--text); }
+.relatorios-menu-item.active { background: var(--ink-dark, #4B5347); color: #F3F1E8; font-weight: 600; }
 
-.report-switch { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
-.report-switch-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 9px 16px; border-radius: 9px; cursor: pointer; font-size: 0.85rem; box-shadow: var(--shadow-sm); }
-.report-switch-btn.active { background: var(--ink-dark, #4B5347); border-color: var(--ink-dark, #4B5347); color: #F3F1E8; font-weight: 600; }
+.relatorios-content { flex: 1; min-width: 0; }
+
+/* "Visão geral" — mosaico de prévias reais, cada tile abre o relatório completo no lugar do mosaico */
+.relatorios-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.relatorios-tile {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px; box-shadow: var(--shadow-sm); cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 10px; font-family: inherit;
+  transition: box-shadow 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+}
+.relatorios-tile:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+.relatorios-tile h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 0.92rem; letter-spacing: -0.01em; }
+.relatorios-tile-big { font-size: 27px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.relatorios-tile-sub { font-size: 0.78rem; color: var(--text-muted); }
+.relatorios-mini-bars { display: flex; flex-direction: column; gap: 5px; }
+.relatorios-mini-bar-track { background: var(--border-soft); border-radius: 999px; height: 7px; overflow: hidden; }
+.relatorios-mini-bar-fill { height: 100%; border-radius: 999px; }
+.relatorios-tile-ring-row { display: flex; align-items: center; gap: 14px; }
+.relatorios-ring circle { transition: stroke-dashoffset 0.5s ease; }
+
 .report-panel { display: none; }
 .report-panel.active { display: block; }
 .report-controls {
@@ -707,6 +739,18 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow-sm);
 }
 .report-doc { background: transparent; }
+
+@media (max-width: 880px) {
+  /* Sidebar de 220px + conteúdo lado a lado não cabe numa tela estreita — vira uma
+     faixa horizontal de pílulas roláveis acima do conteúdo, o mesmo tratamento que
+     as abas de relatório já usavam nesta tela antes desta reorganização. */
+  .relatorios-layout { flex-direction: column; }
+  .relatorios-menu { width: 100%; flex-direction: row; flex-wrap: wrap; position: static; gap: 6px; }
+  .relatorios-menu-group { flex-direction: row; flex-wrap: wrap; align-items: center; margin-top: 0; gap: 6px; }
+  .relatorios-menu-label { display: none; }
+  .relatorios-menu-item { width: auto; border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow-sm); }
+  .relatorios-tiles { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* Cabeçalho em destaque do relatório */
 .report-doc-head {
@@ -958,7 +1002,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 @page { size: A4; margin: 0; }
 
 @media print {
-  .rail, .rail-side, .appbar, .report-switch, .no-print, .hidden-for-print { display: none !important; }
+  .rail, .rail-side, .appbar, .no-print, .hidden-for-print { display: none !important; }
   .app-shell { display: block; min-height: 0; }
   main { max-width: 100%; padding: 0; margin: 0; }
   body { background: white; }
@@ -1314,12 +1358,12 @@ h2 { font-size: 21px; font-weight: 700; }
 
 /* ---------- Cartões e superfícies: elevação + hover ---------- */
 .kpi-card, .dash-widget, .dash-panel, .card, .kanban-card,
-.stat-tile, .metrica-card, .report-card, .chart-card, .agenda-side, .calendar-cell {
+.stat-tile, .metrica-card, .chart-card, .agenda-side, .calendar-cell {
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
 }
 .dash-widget-flat { box-shadow: none; }
-.card:hover, .kanban-card:hover, .report-card:hover {
+.card:hover, .kanban-card:hover {
   box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--border);
 }
 .dash-widget, .dash-panel { border-radius: 12px; }
@@ -1400,7 +1444,7 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
 
 /* Respeita reduced motion (herda regra global de transições) */
 @media (prefers-reduced-motion: reduce) {
-  .kpi-card, .card, .kanban-card, .report-card { transition: none !important; }
+  .kpi-card, .card, .kanban-card { transition: none !important; }
 }
 
 /* =====================================================================
@@ -1538,10 +1582,8 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 @media (max-width: 900px) {
   /* Abaixo de 900px, 6 colunas dividindo a tela igualmente viravam sopa de
      letrinhas (uma palavra por linha). Agora cada coluna tem uma largura
-     mínima legível e o quadro vira um carrossel horizontal de arrastar —
-     mesmo tratamento já usado nos cards de Relatórios. */
+     mínima legível e o quadro vira um carrossel horizontal de arrastar. */
   .kanban-col { flex: 0 0 240px; min-width: 240px; }
-  .report-card { flex: 0 0 160px; min-width: 160px; }
 }
 .kanban-col-header { padding: 2px 4px 12px; }
 .kanban-col-header .stage-name { color: var(--text); font-size: 0.86rem; }
@@ -1598,13 +1640,11 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 h2 { font-size: 22px; }
 .hint { font-size: 0.9rem; }
 .section-header { margin-bottom: 4px; }
-.report-card:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
-.report-card h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .stat-tile { border-radius: 10px; }
 .chart-card { border-radius: 12px; }
 
 /* Chips de filtro/estados com um pouco mais de vida */
-.view-switch-btn.active, .report-switch-btn.active, .detalhe-tab-btn.active, .ficha-secao-btn.active {
+.view-switch-btn.active, .detalhe-tab-btn.active, .ficha-secao-btn.active {
   box-shadow: var(--shadow-sm);
 }
 
