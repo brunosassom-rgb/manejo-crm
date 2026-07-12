@@ -292,9 +292,11 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; margin-right: 4px; flex-shrink: 0;
 }
-.badge-classe-a { background: var(--ok-bg); color: var(--ok-text); }
-.badge-classe-b { background: var(--warn-bg); color: var(--warn-text); }
-.badge-classe-c { background: var(--neutral-bg); color: var(--neutral-text); }
+/* Selo A/B/C: fundo sólido + texto branco em vez do fundo suave (--x-bg) usado nos badges de status
+   comuns — o objetivo aqui é peso visual forte (é uma classificação de destaque), não um estado. */
+.badge-classe-a { background: var(--gold); color: #fff; }
+.badge-classe-b { background: var(--ok-text); color: #fff; }
+.badge-classe-c { background: var(--text-faint); color: #fff; }
 
 /* ============ KPIs ============ */
 .kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 14px 0 10px; }
@@ -1637,8 +1639,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 .theme-dark .kc-pot { background: #23271D; color: var(--chart-1); }
 .kc-vencido { color: var(--late-text); font-weight: 700; }
 
-/* ---------- Card de cliente: mais informação por linha ---------- */
-.client-card { flex-direction: column; }
+/* ---------- Card de lead: mais informação por linha ---------- */
 .client-meta {
   display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 11px; padding-top: 11px;
   border-top: 1px solid var(--border-soft);
@@ -1646,8 +1647,17 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 .client-meta .cm { display: flex; flex-direction: column; gap: 1px; }
 .client-meta .cm-l { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
 .client-meta .cm-v { font-size: 0.82rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
-.client-recompra { height: 4px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: 11px; }
-.client-recompra-fill { height: 100%; border-radius: 999px; }
+
+/* ---------- Card de cliente ativo: formato lista de contatos ---------- */
+.client-card-simples { display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--border); }
+.ccs-avatar {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); flex-shrink: 0;
+}
+.ccs-text { flex: 1; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ccs-nome { font-weight: 700; font-size: 0.88rem; }
+.ccs-fazenda { font-size: 0.8rem; color: var(--text-faint); }
+.ccs-letra { font-size: 0.72rem; font-weight: 800; color: var(--text-faint); padding: 10px 6px 4px; }
 
 /* ---------- Logo em mais lugares ---------- */
 /* Marca d'água simbólica nos estados vazios */
@@ -1682,12 +1692,6 @@ h2 { font-size: 22px; }
   content: "Sem leads nesta etapa";
   color: var(--text-faint); font-size: 0.78rem; padding: 8px 4px;
 }
-
-/* ---------- Sparkline no card de cliente ---------- */
-.card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
-.client-spark { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
-.client-spark i { width: 4px; border-radius: 1px; background: var(--chart-1); display: block; }
-.client-spark i:last-child { background: var(--primary); }
 
 /* ---------- Configurações: layout em cartões ---------- */
 #configuracoes .settings-grid {

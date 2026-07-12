@@ -1650,8 +1650,18 @@ function renderClientList() {
     if (!query) return true;
     return [c.nome, c.fazenda, c.municipio].some(v => (v || "").toLowerCase().includes(query));
   });
-  container.innerHTML = filtered.length ? filtered.map(c => clienteAtivoCardHtml(c, query, classificacao[c.id])).join("")
-    : `<div class="empty-state">Nenhum cliente ativo encontrado.</div>`;
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state">Nenhum cliente ativo encontrado.</div>`;
+  } else {
+    // Ordenada por nome com um divisor de letra inicial — mesmo padrão de lista de contatos do celular.
+    const ordenados = [...filtered].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    let letraAtual = "";
+    container.innerHTML = ordenados.map(c => {
+      const letra = (c.nome[0] || "").toUpperCase();
+      const divisor = letra !== letraAtual ? (letraAtual = letra, `<div class="ccs-letra">${letra}</div>`) : "";
+      return divisor + clienteAtivoCardHtml(c, query, classificacao[c.id]);
+    }).join("");
+  }
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
 }
 document.getElementById("busca-cliente").addEventListener("input", renderClientList);
@@ -1783,30 +1793,15 @@ function leadCardHtml(lead, query) {
 }
 
 function clienteAtivoCardHtml(cliente, query, classe) {
-  const insight = computeClientInsight(cliente);
-  const badge = cliente.status === "Inativo"
-    ? `<span class="badge badge-late">Inativo</span>`
-    : `<span class="badge ${insight.status === "atrasado" ? "badge-late" : insight.status === "atencao" ? "badge-warn" : insight.status === "em-dia" ? "badge-ok" : "badge-neutral"}">${insight.statusLabel}</span>`;
-  const classeBadge = classificacaoBadgeHtml(classe);
-  const prog = insight.progresso != null ? Math.max(0, Math.min(100, insight.progresso)) : null;
-  const progCor = insight.status === "atrasado" ? "var(--late-text)" : insight.status === "atencao" ? "var(--warn-text)" : "var(--primary)";
-  const spPeds = state.pedidos.filter(p => p.clientId === cliente.id && p.volume).sort((a, b) => (a.dataPedido || "").localeCompare(b.dataPedido || "")).slice(-6);
-  const spMax = Math.max(1, ...spPeds.map(p => Number(p.volume) || 0));
-  const spark = spPeds.length >= 2 ? `<div class="client-spark" title="Últimos pedidos (volume)">${spPeds.map(p => `<i style="height:${Math.max(3, Math.round((Number(p.volume) || 0) / spMax * 22))}px"></i>`).join("")}</div>` : "";
+  const iniciais = initials(cliente.nome);
   return `
-    <div class="card client-card" data-client-id="${cliente.id}">
-      <div class="card-top">
-        <div><div class="card-name">${highlight(cliente.nome, query)}${cliente.fazenda ? " · " + escapeHtml(cliente.fazenda) : ""}</div>
-        <div class="card-sub">${escapeHtml(describeCategorias(cliente))} ${cliente.municipio ? "· " + escapeHtml(cliente.municipio) : ""}</div></div>
-        <div class="card-right">${classeBadge}${badge}${spark}</div>
+    <div class="card client-card-simples" data-client-id="${cliente.id}">
+      <div class="ccs-avatar">${iniciais}</div>
+      <div class="ccs-text">
+        <span class="ccs-nome">${highlight(cliente.nome, query)}</span>
+        <span class="ccs-fazenda">${cliente.fazenda ? escapeHtml(cliente.fazenda) : "—"}</span>
       </div>
-      <div class="client-meta">
-        <span class="cm"><span class="cm-l">Últ. pedido</span><span class="cm-v">${insight.lastPedidoDate ? formatDate(insight.lastPedidoDate) : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Vol. médio</span><span class="cm-v">${insight.avgVolume ? formatVolume(insight.avgVolume) + "t" : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Recompra</span><span class="cm-v">${insight.diasRestantes != null ? "~" + insight.diasRestantes + "d" : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Favorito</span><span class="cm-v">${insight.favoriteProduct ? escapeHtml(insight.favoriteProduct) : "—"}</span></span>
-      </div>
-      ${prog != null ? `<div class="client-recompra" title="Ciclo de recompra"><div class="client-recompra-fill" style="width:${prog}%;background:${progCor}"></div></div>` : ""}
+      ${classificacaoBadgeHtml(classe)}
     </div>`;
 }
 
