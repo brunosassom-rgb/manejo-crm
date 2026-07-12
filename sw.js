@@ -3,7 +3,7 @@
 // Bump CACHE_VERSION on every deploy that touches index.html/app.js/style.css
 // (or any file in SHELL_FILES). Without this, phones with the app installed
 // keep serving a stale app.js indefinitely, with no visible reload affordance.
-const CACHE_VERSION = "v20";
+const CACHE_VERSION = "v21";
 const CACHE_NAME = `manejo-shell-${CACHE_VERSION}`;
 
 const SHELL_FILES = [

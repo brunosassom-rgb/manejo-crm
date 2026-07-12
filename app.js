@@ -1460,7 +1460,7 @@ function renderDashboard() {
     ? alerts.slice(0, 12).map(a => `
         <div class="alert-item ${a.tipo === "Estoque baixo" ? "alert-item-destaque" : ""}" data-client-id="${a.clientId}">
           <span class="alert-dot ${alertVisualClass(a.severidade)}"></span>
-          <div><div class="name">${escapeHtml(a.clientName)}</div><div class="msg">${a.tipo === "Estoque baixo" ? `<span class="inline-ico">${ICONS.box}</span> ` : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
+          <div><div class="name">${escapeHtml(a.clientName)}</div><div class="msg">${escapeHtml(a.tipo)}</div></div>
         </div>`).join("")
     : `<div class="empty-state-plain">Nenhum alerta no momento.</div>`;
   document.querySelectorAll("#alertas-list .alert-item").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
