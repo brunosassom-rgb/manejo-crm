@@ -2958,14 +2958,39 @@ function renderMetricasTab(cliente) {
   const variacao = volLast > 0 ? Math.round(((volThis - volLast) / volLast) * 100) : null;
 
   const risco = computeChurnRisco(cliente);
-  const riscoBadge = risco.nivel === "Alto" ? "badge-late" : risco.nivel === "Médio" ? "badge-warn" : "badge-ok";
   const indicados = indicadosPor(cliente);
   const visitas = visitasForClient(cliente.id);
   const avals = [...pedidos.map(p => p.satisfacaoEntrega), ...visitas.map(v => v.satisfacaoCliente)]
     .filter(a => a && a !== "— Não avaliado —");
   const positivas = avals.filter(a => a === "Ótima" || a === "Boa").length;
 
-  const cards = [
+  // ---- Saúde do cliente: resumo em destaque no topo (score = 100 - risco de churn) ----
+  const saudeScore = 100 - risco.score;
+  const SAUDE_POR_NIVEL_RISCO = {
+    "Baixo": { titulo: "Relação saudável", cor: "var(--ok-text)" },
+    "Médio": { titulo: "Estável, mas de olho", cor: "var(--warn-text)" },
+    "Alto": { titulo: "Risco de perda", cor: "var(--late-text)" }
+  };
+  const saude = SAUDE_POR_NIVEL_RISCO[risco.nivel];
+  const saudeFrase = risco.motivos.length ? `Sinais identificados: ${risco.motivos.join(", ")}.` : "Nenhum sinal de risco identificado.";
+  const ringR = 36, ringStroke = 8, ringC = 2 * Math.PI * ringR, ringOffset = ringC * (1 - saudeScore / 100);
+  const saudeHtml = `
+    <div class="saude-cliente-card">
+      <div class="saude-ring-wrap">
+        <svg width="84" height="84" viewBox="0 0 84 84" class="saude-ring">
+          <circle cx="42" cy="42" r="${ringR}" fill="none" stroke="var(--border)" stroke-width="${ringStroke}"/>
+          <circle cx="42" cy="42" r="${ringR}" fill="none" stroke="${saude.cor}" stroke-width="${ringStroke}" stroke-linecap="round" stroke-dasharray="${ringC}" stroke-dashoffset="${ringOffset}" transform="rotate(-90 42 42)"/>
+        </svg>
+        <div class="saude-ring-score">${saudeScore}</div>
+      </div>
+      <div class="saude-texto">
+        <div class="saude-titulo" style="color:${saude.cor}">${saude.titulo}</div>
+        <div class="saude-frase">${saudeFrase}</div>
+      </div>
+    </div>
+  `;
+
+  const linhas = [
     { v: formatVolume(volumeTotal) + " t", l: "Volume total comprado" },
     { v: formatMoney(valorTotal), l: "Valor total comprado" },
     { v: formatVolume(ticketMedioTon) + " t / " + formatMoney(ticketMedioReais), l: "Ticket médio (volume / valor)" },
@@ -2975,7 +3000,6 @@ function renderMetricasTab(cliente) {
     { v: formatMoney(ltvProjetado), l: "LTV estimado (projeção 5 anos)" },
     { v: variacao === null ? "-" : (variacao >= 0 ? "+" : "") + variacao + "%", l: "Variação de volume (mês vs. anterior)" },
     { v: diasComoCliente !== null ? diasComoCliente + " dias" : "-", l: "Cliente ativo há" },
-    { v: `<span class="badge ${riscoBadge}">${risco.nivel}</span> <span class="metrica-sub">${risco.score}/100</span>`, l: "Risco de churn" },
     { v: indicados.length, l: "Clientes indicados" },
     { v: avals.length ? `${positivas} de ${avals.length}` : "—", l: avals.length ? "Avaliações positivas" : "Sem avaliações registradas" }
   ];
@@ -2987,7 +3011,8 @@ function renderMetricasTab(cliente) {
   ` : "";
 
   return `
-    <div class="metrica-cards">${cards.map(c => `<div class="metrica-card"><div class="v">${c.v}</div><div class="l">${c.l}</div></div>`).join("")}</div>
+    ${saudeHtml}
+    <div class="metrica-linha-list">${linhas.map(m => `<div class="metrica-linha"><span class="l">${m.l}</span><span class="v">${m.v}</span></div>`).join("")}</div>
     ${indicadosHtml}
     <h4>Evolução do volume (últimos 12 meses)</h4>
     ${monthlyVolumeBarsHtml(pedidos)}
