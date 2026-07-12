@@ -728,6 +728,20 @@ function classificacaoABCClientes() {
   ranking.forEach((r, i) => { mapa[r.id] = i < corteA ? "A" : i < corteB ? "B" : "C"; });
   return mapa;
 }
+// Agenda automaticamente a próxima visita técnica na cadência da classificação A/B/C do cliente,
+// disparado ao registrar uma visita ou pedido novo (nunca edição). Não duplica se já houver um
+// compromisso de visita pendente — o vendedor decide se reagenda, não sobrescrevemos a escolha dele.
+function agendarProximaVisitaAutomatica(clientId) {
+  if (isLeadId(clientId)) return;
+  const jaTemPendente = state.compromissos.some(c => c.clientId === clientId && c.tipo === "visita" && !c.feito);
+  if (jaTemPendente) return;
+  const classe = classificacaoABCClientes()[clientId];
+  if (!classe) return;
+  const cadencia = CLASSIFICACAO_CADENCIA_DIAS[classe];
+  const cliente = state.clientesAtivos.find(c => c.id === clientId);
+  state.compromissos.push({ id: uid(), clientId, tipo: "visita", data: addDays(todayStr(), cadencia), hora: "", descricao: `Visita técnica — ${cliente ? cliente.nome : ""}` });
+}
+
 function classificacaoBadgeHtml(classe) {
   if (!classe) return "";
   return `<span class="badge-classe badge-classe-${classe.toLowerCase()}" title="Classificação por potencial de volume — A é o maior potencial">${classe}</span>`;
@@ -2275,6 +2289,15 @@ document.getElementById("form-cliente").addEventListener("submit", e => {
   }
 
   if (idx >= 0) state.leads[idx] = data; else state.leads.push(data);
+  // Cadência inicial de prospecção — não substitui o "Próximo passo" obrigatório do lead, só
+  // adiciona compromissos na Agenda pra garantir que o primeiro contato realmente aconteça.
+  if (!anterior) {
+    state.compromissos.push(
+      { id: uid(), clientId: data.id, tipo: "ligacao", data: addDays(todayStr(), 2), hora: "", descricao: `Primeiro contato — ${data.nome}` },
+      { id: uid(), clientId: data.id, tipo: "followup", data: addDays(todayStr(), 7), hora: "", descricao: `Follow-up — ${data.nome}` },
+      { id: uid(), clientId: data.id, tipo: "visita", data: addDays(todayStr(), 14), hora: "", descricao: `Avaliar visita técnica — ${data.nome}` }
+    );
+  }
   saveState();
   closeModal("modal-cliente");
   refreshClientSelects();
@@ -2626,7 +2649,7 @@ document.getElementById("form-pedido").addEventListener("submit", e => {
     dataEntrega: dataEntregaRealizada || dataEntregaPrevista || ""
   };
   const idx = state.pedidos.findIndex(p => p.id === id);
-  if (idx >= 0) state.pedidos[idx] = pedido; else state.pedidos.push(pedido);
+  if (idx >= 0) { state.pedidos[idx] = pedido; } else { state.pedidos.push(pedido); agendarProximaVisitaAutomatica(clientId); }
   saveState();
   closeModal("modal-pedido");
   if (currentFichaClientId === clientId) { renderFichaLeft(); renderFichaTab(); }
@@ -4784,7 +4807,7 @@ function salvarVisitaAtual(clientId) {
     criadoEm: idx >= 0 ? state.visitas[idx].criadoEm : todayStr()
   };
 
-  if (idx >= 0) state.visitas[idx] = visita; else state.visitas.push(visita);
+  if (idx >= 0) { state.visitas[idx] = visita; } else { state.visitas.push(visita); agendarProximaVisitaAutomatica(clientId); }
 
   if (entidadeVisita) {
     estoqueCards.forEach(card => {
