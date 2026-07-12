@@ -2827,12 +2827,12 @@ function renderFichaLeft() {
     ${badge}${classeBadge}
     ${podeAvancarEtapa ? `<button class="btn-secondary" id="btn-ficha-avancar-etapa" style="width:100%; margin-top:8px;">Avançar para "${escapeHtml(proximaEtapaLead)}"</button>` : ""}
     <div class="ficha-contacts">
-      ${wa ? `<a class="ficha-contact-btn" href="https://wa.me/55${wa}" target="_blank" rel="noopener">WhatsApp: ${escapeHtml(entidade.whatsappDecisor)}</a>` : ""}
-      ${wa ? `<a class="ficha-contact-btn" href="tel:${wa}">Ligar: ${escapeHtml(entidade.whatsappDecisor)}</a>` : ""}
-      ${!wa ? `<div class="hint">Sem WhatsApp/telefone cadastrado.</div>` : ""}
-      ${mapsUrl ? `<a class="ficha-contact-btn" href="${mapsUrl}" target="_blank" rel="noopener">Abrir no Google Maps</a>` : ""}
-      ${wazeUrl ? `<a class="ficha-contact-btn" href="${wazeUrl}" target="_blank" rel="noopener">Abrir no Waze</a>` : ""}
+      ${wa ? `<a class="ficha-contact-circle wa" href="https://wa.me/55${wa}" target="_blank" rel="noopener" title="WhatsApp: ${escapeHtml(entidade.whatsappDecisor)}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.38 5.07L2 22l5.07-1.38A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg></a>` : ""}
+      ${wa ? `<a class="ficha-contact-circle" href="tel:${wa}" title="Ligar: ${escapeHtml(entidade.whatsappDecisor)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a>` : ""}
+      ${mapsUrl ? `<a class="ficha-contact-circle" href="${mapsUrl}" target="_blank" rel="noopener" title="Abrir no Google Maps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></a>` : ""}
+      ${wazeUrl ? `<a class="ficha-contact-circle" href="${wazeUrl}" target="_blank" rel="noopener" title="Abrir no Waze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></a>` : ""}
     </div>
+    ${!wa ? `<div class="hint">Sem WhatsApp/telefone cadastrado.</div>` : ""}
     ${potencialBox}
     <div class="ficha-actions">
       ${podeConverter ? `<button class="btn-primary" id="btn-ficha-converter">Converter em Cliente Ativo</button>` : ""}
