@@ -3264,13 +3264,12 @@ function openInativarClienteModal(clienteId, motivoPreSelecionado, viaVisitaPend
   inativarAposVisitaPendente = !!viaVisitaPendente;
   document.getElementById("modal-inativar-cliente").classList.remove("hidden");
 }
-// Se o modal fechar sem confirmar (X ou Esc) enquanto uma visita está pendente, reabre a visita
-// em vez de deixar os dados digitados presos num modal invisível sem salvar.
+// Se o modal fechar sem confirmar (X ou Esc) enquanto uma visita está pendente, a página do
+// relatório continua ali embaixo do jeito que estava (nunca foi fechada) — só avisa que não salvou.
 new MutationObserver(() => {
   const modal = document.getElementById("modal-inativar-cliente");
   if (modal.classList.contains("hidden") && inativarAposVisitaPendente) {
     inativarAposVisitaPendente = false;
-    document.getElementById("modal-visita").classList.remove("hidden");
     showToast("Inativação cancelada — relatório de visita não foi salvo.");
   }
 }).observe(document.getElementById("modal-inativar-cliente"), { attributes: true, attributeFilter: ["class"] });
@@ -4457,8 +4456,8 @@ function mostrarVisitaWizardStep(step) {
   document.getElementById("btn-visita-voltar").classList.toggle("hidden", step === 1);
   document.getElementById("btn-visita-proximo").textContent = step === VISITA_WIZARD_STEPS.length ? "Salvar relatório" : "Próximo →";
   renderVisitaWizardProgress();
-  const modalBody = document.querySelector("#modal-visita .modal");
-  if (modalBody) modalBody.scrollTop = 0;
+  const scrollArea = document.querySelector("main");
+  if (scrollArea) scrollArea.scrollTop = 0;
 }
 
 function validarVisitaWizardStepAtual() {
@@ -4480,11 +4479,46 @@ document.getElementById("btn-visita-proximo").addEventListener("click", e => {
   }
 });
 
+// ---------- Navegação de página cheia (mesmo padrão de fichaNavStack/activateFichaPanel) ----------
+// Relatório de Visita Técnica é sempre aberto a partir da Ficha ou da aba Relatórios, nunca de si
+// mesmo — não precisa de uma pilha, só de lembrar o único lugar de onde veio.
+let visitaRelatorioRetorno = null;
+
+function activateVisitaRelatorioPanel() {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "visita-relatorio"));
+}
+
+function voltarDoVisitaRelatorio() {
+  const retorno = visitaRelatorioRetorno;
+  visitaRelatorioRetorno = null;
+  if (retorno) {
+    if (retorno.tipo === "ficha" && getEntidadeById(retorno.id)) { openFicha(retorno.id, true); return; }
+    if (retorno.tipo === "tab") {
+      switchMainTab(retorno.nome);
+      if (retorno.nome === "relatorios" && retorno.relatorioView) mostrarRelatorioView(retorno.relatorioView);
+      return;
+    }
+  }
+  switchMainTab("relatorios");
+}
+document.getElementById("btn-visita-relatorio-voltar").addEventListener("click", voltarDoVisitaRelatorio);
+
 function openVisitaModal(clientId, duplicarDeVisitaId) {
+  const activePanel = document.querySelector(".tab-panel.active");
+  if (activePanel && activePanel.id === "ficha") {
+    visitaRelatorioRetorno = { tipo: "ficha", id: currentFichaClientId };
+  } else if (activePanel && activePanel.id === "relatorios") {
+    visitaRelatorioRetorno = { tipo: "tab", nome: "relatorios", relatorioView: currentReportView };
+  } else if (activePanel) {
+    visitaRelatorioRetorno = { tipo: "tab", nome: activePanel.id };
+  } else {
+    visitaRelatorioRetorno = null;
+  }
+
   const form = document.getElementById("form-visita");
   form.reset();
   document.getElementById("visita-id").value = "";
-  document.getElementById("modal-visita-titulo").textContent = "Relatório de Visita Técnica";
+  document.getElementById("visita-relatorio-titulo").textContent = "Relatório de Visita Técnica";
   document.getElementById("visita-cliente-busca").value = "";
   document.querySelectorAll("#visita-cliente option").forEach(opt => opt.style.display = "");
   // Aberto a partir da ficha de um cliente/lead específico: a busca/seleção não faz sentido (já
@@ -4501,7 +4535,7 @@ function openVisitaModal(clientId, duplicarDeVisitaId) {
 
   const duplicar = duplicarDeVisitaId ? state.visitas.find(v => v.id === duplicarDeVisitaId) : null;
   if (duplicar) {
-    document.getElementById("modal-visita-titulo").textContent = "Nova visita (baseada em " + duplicar.numero + ")";
+    document.getElementById("visita-relatorio-titulo").textContent = "Nova visita (baseada em " + duplicar.numero + ")";
     document.getElementById("visita-cliente").value = duplicar.clientId;
     document.getElementById("visita-responsavel").value = duplicar.responsavelVisita || nomeUsuarioPadrao();
     document.getElementById("visita-participantes").value = duplicar.participantes || "";
@@ -4525,7 +4559,7 @@ function openVisitaModal(clientId, duplicarDeVisitaId) {
   renderVisitaFotosRecomendacoesPreview();
   renderVisitaProdutosRows();
   mostrarVisitaWizardStep(1);
-  document.getElementById("modal-visita").classList.remove("hidden");
+  activateVisitaRelatorioPanel();
 }
 
 document.getElementById("form-visita").addEventListener("submit", e => {
@@ -4536,11 +4570,11 @@ document.getElementById("form-visita").addEventListener("submit", e => {
   // Cliente ativo marcado como perdido pra concorrência: zera o estoque reportado nesta visita
   // (não faz sentido reportar estoque do nosso produto num cliente que já migrou) e pausa o
   // salvamento até a inativação ser confirmada — salvarVisitaAtual() só roda depois, disparada
-  // pelo próprio submit de form-inativar-cliente logo abaixo.
+  // pelo próprio submit de form-inativar-cliente logo abaixo. O modal de inativar abre por cima
+  // da própria página do relatório (que fica no lugar, ao fundo, como qualquer modal do app).
   const perdidoParaConcorrencia = !isLeadId(clientId) && document.getElementById("visita-perdido-concorrencia").checked;
   if (perdidoParaConcorrencia) {
     document.querySelectorAll("#visita-estoque-categorias-list .visita-estoque-quantidade").forEach(input => { input.value = "0"; });
-    closeModal("modal-visita");
     openInativarClienteModal(clientId, "Migrou para concorrente", true);
     return;
   }
@@ -4548,7 +4582,6 @@ document.getElementById("form-visita").addEventListener("submit", e => {
 });
 
 function salvarVisitaAtual(clientId) {
-  document.getElementById("modal-visita").classList.remove("hidden");
   const entidadeVisita = getEntidadeById(clientId);
   const estoqueCards = [...document.querySelectorAll("#visita-estoque-categorias-list .categoria-card")];
   const cardEstoqueFaltando = estoqueCards.find(card => !card.querySelector(".visita-estoque-quantidade").value || !card.querySelector(".visita-estoque-qtd-animais").value);
@@ -4635,7 +4668,6 @@ function salvarVisitaAtual(clientId) {
   }
 
   saveState();
-  closeModal("modal-visita");
   showToast(`Relatório ${visita.numero} salvo.`);
   if (currentFichaClientId === clientId) renderFichaTab();
   renderDashboard();
@@ -4646,6 +4678,8 @@ function salvarVisitaAtual(clientId) {
     switchMainTab("relatorios");
     mostrarRelatorioView("visitas");
     setTimeout(() => abrirPreviewImpressao("visita-documento-conteudo", { outroContainerId: "visitas-gerencial-conteudo" }), 200);
+  } else {
+    voltarDoVisitaRelatorio();
   }
 }
 

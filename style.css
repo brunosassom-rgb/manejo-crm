@@ -1158,7 +1158,10 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
   .ficha-right { border-radius: 0 0 12px 12px; }
 }
 
-/* ============ Relatório de Visita Técnica — wizard passo a passo ============ */
+/* ============ Relatório de Visita Técnica — página cheia, wizard passo a passo ============ */
+/* Página cheia dá muito mais largura que o modal antigo — sem isso, o form ficava travado nos
+   480px genéricos de .form, sobrando um vão em branco enorme ao lado numa tela normal. */
+#visita-relatorio .wizard-progress, #visita-relatorio .form { max-width: 740px; margin-left: auto; margin-right: auto; }
 .wizard-progress { margin-bottom: 16px; }
 .wizard-progress-bubbles { display: flex; align-items: center; justify-content: space-between; position: relative; }
 .wizard-progress-bubbles::before {

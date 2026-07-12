@@ -489,6 +489,183 @@
         </div>
       </div>
     </section>
+
+    <!-- ==================== RELATÓRIO DE VISITA TÉCNICA (página cheia) ==================== -->
+    <section id="visita-relatorio" class="tab-panel">
+      <div class="section-header no-print" style="margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <button class="btn-secondary" id="btn-visita-relatorio-voltar">&larr; Voltar</button>
+          <h2 id="visita-relatorio-titulo" style="margin:0;">Relatório de Visita Técnica</h2>
+        </div>
+      </div>
+      <div class="wizard-progress">
+        <div class="wizard-progress-bubbles">
+          <div class="wizard-bubble" data-bubble="1">1</div>
+          <div class="wizard-bubble" data-bubble="2">2</div>
+          <div class="wizard-bubble" data-bubble="3">3</div>
+          <div class="wizard-bubble" data-bubble="4">4</div>
+          <div class="wizard-bubble" data-bubble="5">5</div>
+          <div class="wizard-bubble" data-bubble="6">6</div>
+        </div>
+        <div class="wizard-progress-label" id="visita-wizard-label"></div>
+      </div>
+      <form id="form-visita" class="form">
+        <input type="hidden" id="visita-id">
+
+        <div class="wizard-step" data-step="1">
+          <label id="visita-cliente-busca-wrap">Cliente / lead
+            <input type="text" id="visita-cliente-busca" placeholder="Buscar cliente...">
+            <select id="visita-cliente" required style="margin-top:6px;"></select>
+          </label>
+          <div id="visita-cliente-info" class="visita-info-box"></div>
+          <label>Data da visita
+            <input type="date" id="visita-data" required>
+          </label>
+          <label>Hora de início
+            <input type="time" id="visita-hora-inicio">
+          </label>
+          <label>Hora de fim
+            <input type="time" id="visita-hora-fim">
+          </label>
+          <label>Responsável pela visita
+            <input type="text" id="visita-responsavel">
+          </label>
+          <label>Outros participantes (opcional)
+            <input type="text" id="visita-participantes">
+          </label>
+          <div class="actions-row" style="margin-top:6px;">
+            <button type="button" class="btn-secondary" id="btn-capturar-gps-visita">Registrar localização da visita</button>
+          </div>
+          <p class="hint" id="visita-localizacao-status"></p>
+          <input type="hidden" id="visita-localizacao-lat">
+          <input type="hidden" id="visita-localizacao-lng">
+          <input type="hidden" id="visita-localizacao-endereco">
+        </div>
+
+        <div class="wizard-step" data-step="2">
+          <div id="visita-objetivos-container" class="visita-checkbox-grid"></div>
+          <label>Detalhar objetivo (se necessário)
+            <textarea id="visita-objetivo-detalhe" rows="2"></textarea>
+          </label>
+        </div>
+
+        <div class="wizard-step" data-step="3">
+          <label>Situação atual do sistema produtivo
+            <textarea id="visita-situacao-atual" rows="2"></textarea>
+          </label>
+          <label>Principais problemas identificados
+            <textarea id="visita-problemas" rows="2"></textarea>
+          </label>
+          <label>Produtos utilizados atualmente
+            <textarea id="visita-produtos-atuais" rows="2"></textarea>
+          </label>
+          <label style="margin-bottom:2px">Estoque e rebanho por categoria (obrigatório)</label>
+          <p class="hint" style="margin-top:-4px">Confirme a quantidade de animais e conte o estoque atual de todas as categorias — é o que alimenta a previsão de recompra.</p>
+          <div id="visita-estoque-categorias-list"></div>
+          <label>Condição geral do rebanho/instalação
+            <select id="visita-condicao-geral">
+              <option>Ótima</option>
+              <option>Boa</option>
+              <option>Regular</option>
+              <option>Crítica</option>
+            </select>
+          </label>
+          <label>Fotos (até 10 — câmera ou galeria)
+            <input type="file" id="visita-fotos-input" accept="image/*" capture="environment" multiple>
+          </label>
+          <div id="visita-fotos-preview" class="visita-fotos-grid"></div>
+        </div>
+
+        <div class="wizard-step" data-step="4">
+          <label>Recomendações realizadas durante a visita
+            <textarea id="visita-recomendacoes" rows="2"></textarea>
+          </label>
+          <label style="margin-bottom:0">Produtos recomendados</label>
+          <div id="visita-produtos-recomendados-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+          <button type="button" class="btn-secondary" id="btn-add-produto-recomendado" style="align-self:flex-start;">+ Adicionar produto</button>
+          <label>Protocolo sugerido
+            <textarea id="visita-protocolo" rows="2"></textarea>
+          </label>
+          <label>Resultados esperados (com prazo estimado)
+            <textarea id="visita-resultados-esperados" rows="2"></textarea>
+          </label>
+          <label>Fotos das recomendações (produto, rótulo, ponto de aplicação... até 10)
+            <input type="file" id="visita-fotos-recomendacoes-input" accept="image/*" capture="environment" multiple>
+          </label>
+          <div id="visita-fotos-recomendacoes-preview" class="visita-fotos-grid-legenda"></div>
+        </div>
+
+        <div class="wizard-step" data-step="5">
+          <label>Compromissos assumidos na visita
+            <textarea id="visita-compromissos" rows="2"></textarea>
+          </label>
+          <label>Próxima ação
+            <select id="visita-proxima-acao">
+              <option>Enviar proposta</option>
+              <option>Retornar em data específica</option>
+              <option>Visita de acompanhamento</option>
+              <option>Aguardar retorno do cliente</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Data do próximo contato
+            <input type="date" id="visita-data-proximo-contato">
+          </label>
+          <label>Observações finais
+            <textarea id="visita-obs-finais" rows="2"></textarea>
+          </label>
+        </div>
+
+        <div class="wizard-step" data-step="6">
+          <p class="hint" style="margin-top:0">Dados Internos — não aparecem no PDF do cliente</p>
+          <label>Percepção do vendedor (uso interno)
+            <textarea id="visita-percepcao-vendedor" rows="2"></textarea>
+          </label>
+          <label>Temperatura do lead
+            <select id="visita-temperatura-lead">
+              <option>Frio</option>
+              <option>Morno</option>
+              <option>Quente</option>
+              <option>Cliente confirmado</option>
+            </select>
+          </label>
+          <label>Satisfação do cliente com a visita
+            <select id="visita-satisfacao-cliente">
+              <option>— Não avaliado —</option>
+              <option>Ótima</option>
+              <option>Boa</option>
+              <option>Regular</option>
+              <option>Ruim</option>
+            </select>
+          </label>
+          <label>Objeções identificadas
+            <textarea id="visita-objecoes-internas" rows="2"></textarea>
+          </label>
+          <label id="visita-atualizar-etapa-label">Atualizar etapa no funil
+            <select id="visita-atualizar-etapa">
+              <option value="">— Não alterar —</option>
+              <option>Prospecção</option>
+              <option>Diagnóstico</option>
+              <option>Proposta enviada</option>
+              <option>Negociação</option>
+              <option>Cliente ativo</option>
+              <option>Bloqueado</option>
+              <option>Inativo</option>
+              <option>Perdido</option>
+            </select>
+          </label>
+          <label id="visita-perdido-concorrencia-wrap" class="hidden" style="flex-direction:row; align-items:center; gap:8px; text-transform:none; font-size:0.86rem; font-weight:500; color:var(--text);">
+            <input type="checkbox" id="visita-perdido-concorrencia" style="width:auto;">
+            Identifiquei que o cliente está comprando da concorrência
+          </label>
+        </div>
+
+        <div class="wizard-footer">
+          <button type="button" class="btn-secondary" id="btn-visita-voltar">← Voltar</button>
+          <button type="submit" class="btn-primary" id="btn-visita-proximo">Próximo →</button>
+        </div>
+      </form>
+    </section>
   </main>
   </div>
   </div>
@@ -1493,182 +1670,6 @@
   </div>
 
   <!-- MODAL: RELATÓRIO DE VISITA TÉCNICA -->
-  <div id="modal-visita" class="modal-overlay hidden">
-    <div class="modal modal-wide" style="max-width:800px;">
-      <div class="modal-header">
-        <h3 id="modal-visita-titulo">Relatório de Visita Técnica</h3>
-        <button class="btn-close" data-close-modal="modal-visita">&times;</button>
-      </div>
-      <div class="wizard-progress">
-        <div class="wizard-progress-bubbles">
-          <div class="wizard-bubble" data-bubble="1">1</div>
-          <div class="wizard-bubble" data-bubble="2">2</div>
-          <div class="wizard-bubble" data-bubble="3">3</div>
-          <div class="wizard-bubble" data-bubble="4">4</div>
-          <div class="wizard-bubble" data-bubble="5">5</div>
-          <div class="wizard-bubble" data-bubble="6">6</div>
-        </div>
-        <div class="wizard-progress-label" id="visita-wizard-label"></div>
-      </div>
-      <form id="form-visita" class="form">
-        <input type="hidden" id="visita-id">
-
-        <div class="wizard-step" data-step="1">
-          <label id="visita-cliente-busca-wrap">Cliente / lead
-            <input type="text" id="visita-cliente-busca" placeholder="Buscar cliente...">
-            <select id="visita-cliente" required style="margin-top:6px;"></select>
-          </label>
-          <div id="visita-cliente-info" class="visita-info-box"></div>
-          <label>Data da visita
-            <input type="date" id="visita-data" required>
-          </label>
-          <label>Hora de início
-            <input type="time" id="visita-hora-inicio">
-          </label>
-          <label>Hora de fim
-            <input type="time" id="visita-hora-fim">
-          </label>
-          <label>Responsável pela visita
-            <input type="text" id="visita-responsavel">
-          </label>
-          <label>Outros participantes (opcional)
-            <input type="text" id="visita-participantes">
-          </label>
-          <div class="actions-row" style="margin-top:6px;">
-            <button type="button" class="btn-secondary" id="btn-capturar-gps-visita">Registrar localização da visita</button>
-          </div>
-          <p class="hint" id="visita-localizacao-status"></p>
-          <input type="hidden" id="visita-localizacao-lat">
-          <input type="hidden" id="visita-localizacao-lng">
-          <input type="hidden" id="visita-localizacao-endereco">
-        </div>
-
-        <div class="wizard-step" data-step="2">
-          <div id="visita-objetivos-container" class="visita-checkbox-grid"></div>
-          <label>Detalhar objetivo (se necessário)
-            <textarea id="visita-objetivo-detalhe" rows="2"></textarea>
-          </label>
-        </div>
-
-        <div class="wizard-step" data-step="3">
-          <label>Situação atual do sistema produtivo
-            <textarea id="visita-situacao-atual" rows="2"></textarea>
-          </label>
-          <label>Principais problemas identificados
-            <textarea id="visita-problemas" rows="2"></textarea>
-          </label>
-          <label>Produtos utilizados atualmente
-            <textarea id="visita-produtos-atuais" rows="2"></textarea>
-          </label>
-          <label style="margin-bottom:2px">Estoque e rebanho por categoria (obrigatório)</label>
-          <p class="hint" style="margin-top:-4px">Confirme a quantidade de animais e conte o estoque atual de todas as categorias — é o que alimenta a previsão de recompra.</p>
-          <div id="visita-estoque-categorias-list"></div>
-          <label>Condição geral do rebanho/instalação
-            <select id="visita-condicao-geral">
-              <option>Ótima</option>
-              <option>Boa</option>
-              <option>Regular</option>
-              <option>Crítica</option>
-            </select>
-          </label>
-          <label>Fotos (até 10 — câmera ou galeria)
-            <input type="file" id="visita-fotos-input" accept="image/*" capture="environment" multiple>
-          </label>
-          <div id="visita-fotos-preview" class="visita-fotos-grid"></div>
-        </div>
-
-        <div class="wizard-step" data-step="4">
-          <label>Recomendações realizadas durante a visita
-            <textarea id="visita-recomendacoes" rows="2"></textarea>
-          </label>
-          <label style="margin-bottom:0">Produtos recomendados</label>
-          <div id="visita-produtos-recomendados-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-          <button type="button" class="btn-secondary" id="btn-add-produto-recomendado" style="align-self:flex-start;">+ Adicionar produto</button>
-          <label>Protocolo sugerido
-            <textarea id="visita-protocolo" rows="2"></textarea>
-          </label>
-          <label>Resultados esperados (com prazo estimado)
-            <textarea id="visita-resultados-esperados" rows="2"></textarea>
-          </label>
-          <label>Fotos das recomendações (produto, rótulo, ponto de aplicação... até 10)
-            <input type="file" id="visita-fotos-recomendacoes-input" accept="image/*" capture="environment" multiple>
-          </label>
-          <div id="visita-fotos-recomendacoes-preview" class="visita-fotos-grid-legenda"></div>
-        </div>
-
-        <div class="wizard-step" data-step="5">
-          <label>Compromissos assumidos na visita
-            <textarea id="visita-compromissos" rows="2"></textarea>
-          </label>
-          <label>Próxima ação
-            <select id="visita-proxima-acao">
-              <option>Enviar proposta</option>
-              <option>Retornar em data específica</option>
-              <option>Visita de acompanhamento</option>
-              <option>Aguardar retorno do cliente</option>
-              <option>Outro</option>
-            </select>
-          </label>
-          <label>Data do próximo contato
-            <input type="date" id="visita-data-proximo-contato">
-          </label>
-          <label>Observações finais
-            <textarea id="visita-obs-finais" rows="2"></textarea>
-          </label>
-        </div>
-
-        <div class="wizard-step" data-step="6">
-          <p class="hint" style="margin-top:0">Dados Internos — não aparecem no PDF do cliente</p>
-          <label>Percepção do vendedor (uso interno)
-            <textarea id="visita-percepcao-vendedor" rows="2"></textarea>
-          </label>
-          <label>Temperatura do lead
-            <select id="visita-temperatura-lead">
-              <option>Frio</option>
-              <option>Morno</option>
-              <option>Quente</option>
-              <option>Cliente confirmado</option>
-            </select>
-          </label>
-          <label>Satisfação do cliente com a visita
-            <select id="visita-satisfacao-cliente">
-              <option>— Não avaliado —</option>
-              <option>Ótima</option>
-              <option>Boa</option>
-              <option>Regular</option>
-              <option>Ruim</option>
-            </select>
-          </label>
-          <label>Objeções identificadas
-            <textarea id="visita-objecoes-internas" rows="2"></textarea>
-          </label>
-          <label id="visita-atualizar-etapa-label">Atualizar etapa no funil
-            <select id="visita-atualizar-etapa">
-              <option value="">— Não alterar —</option>
-              <option>Prospecção</option>
-              <option>Diagnóstico</option>
-              <option>Proposta enviada</option>
-              <option>Negociação</option>
-              <option>Cliente ativo</option>
-              <option>Bloqueado</option>
-              <option>Inativo</option>
-              <option>Perdido</option>
-            </select>
-          </label>
-          <label id="visita-perdido-concorrencia-wrap" class="hidden" style="flex-direction:row; align-items:center; gap:8px; text-transform:none; font-size:0.86rem; font-weight:500; color:var(--text);">
-            <input type="checkbox" id="visita-perdido-concorrencia" style="width:auto;">
-            Identifiquei que o cliente está comprando da concorrência
-          </label>
-        </div>
-
-        <div class="wizard-footer">
-          <button type="button" class="btn-secondary" id="btn-visita-voltar">← Voltar</button>
-          <button type="submit" class="btn-primary" id="btn-visita-proximo">Próximo →</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- MODAL: pré-visualização de impressão (mostra capa/cabeçalho/rodapé/encerramento antes de
        abrir a caixa de impressão de verdade) -->
   <div id="modal-print-preview" class="modal-overlay hidden no-print">
