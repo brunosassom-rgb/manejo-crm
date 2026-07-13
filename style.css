@@ -518,18 +518,23 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .ficha-right { padding: 22px 26px; background: var(--surface); border-radius: 0 8px 8px 0; }
 
 /* ============ Timeline de contatos ============ */
-.timeline { display: flex; flex-direction: column; }
-.timeline-item { display: flex; gap: 12px; padding-bottom: 18px; position: relative; }
-.timeline-item::before {
-  content: ""; position: absolute; left: 15px; top: 30px; bottom: 0; width: 1px; background: var(--border);
+.timeline { display: flex; flex-direction: column; gap: 8px; }
+.timeline-item {
+  border-left: 3px solid var(--neutral-text);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 11px 14px 11px 13px;
 }
-.timeline-item:last-child::before { display: none; }
-.timeline-body { flex: 1; margin-left: 15px; }
-.timeline-head { display: flex; justify-content: space-between; gap: 8px; }
+.timeline-item.r-avancou { border-left-color: var(--ok-text); background: color-mix(in srgb, var(--ok-text) 7%, var(--surface-2)); }
+.timeline-item.r-manteve { border-left-color: var(--neutral-text); background: var(--surface-2); }
+.timeline-item.r-regrediu { border-left-color: var(--late-text); background: color-mix(in srgb, var(--late-text) 7%, var(--surface-2)); }
+.timeline-item.r-sem-resposta { border-left-color: var(--warn-text); background: color-mix(in srgb, var(--warn-text) 9%, var(--surface-2)); }
+.timeline-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .timeline-head .t-tipo { font-weight: 700; font-size: 0.85rem; }
 .timeline-head .t-data { font-size: 0.72rem; color: var(--text-faint); white-space: nowrap; }
-.timeline-resumo { font-size: 0.84rem; margin-top: 3px; }
-.timeline-next { font-size: 0.76rem; color: var(--primary); margin-top: 3px; }
+.timeline-resumo { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+.timeline-next { font-size: 0.78rem; color: var(--text); font-weight: 600; margin-top: 6px; }
+.timeline-next b { color: var(--primary); }
 
 /* ============ Histórico do Lead (Cadastro do Cliente Ativo) ============ */
 .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px; }

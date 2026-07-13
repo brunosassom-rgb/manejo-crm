@@ -3697,7 +3697,7 @@ function renderProdutivoTab(entidade) {
   ${extras}`;
 }
 
-const RESULTADO_BADGE = { "Avançou": "badge-ok", "Manteve": "badge-neutral", "Regrediu": "badge-late", "Sem resposta": "badge-warn" };
+const RESULTADO_CLASS = { "Avançou": "r-avancou", "Manteve": "r-manteve", "Regrediu": "r-regrediu", "Sem resposta": "r-sem-resposta" };
 
 function renderContatosPessoasSection(entidade) {
   if (!(entidade.contatosPessoas || []).length) return "";
@@ -3714,12 +3714,12 @@ function renderContatosPessoasSection(entidade) {
 function renderContatosTimelineTab(client, { showContatosPessoas = true, showRegistrarButton = true } = {}) {
   const contatos = contatosForClient(client.id);
   const items = contatos.map(c => `
-    <div class="timeline-item" data-contato-id="${c.id}" style="cursor:pointer">
+    <div class="timeline-item ${RESULTADO_CLASS[c.resultado] || "r-manteve"}" data-contato-id="${c.id}" style="cursor:pointer">
       <div class="timeline-body">
-        <div class="timeline-head"><span class="t-tipo">${escapeHtml(c.tipo)}${c.comQuem ? " · " + escapeHtml(c.comQuem) : ""}</span><span class="t-data">${formatDate(c.data)}${c.resultado ? ` <span class="badge ${RESULTADO_BADGE[c.resultado] || "badge-neutral"}">${escapeHtml(c.resultado)}</span>` : ""}</span></div>
+        <div class="timeline-head"><span class="t-tipo">${escapeHtml(c.tipo)}${c.comQuem ? " · " + escapeHtml(c.comQuem) : ""}</span><span class="t-data">${formatDate(c.data)}</span></div>
         ${c.resumo ? `<div class="timeline-resumo">${escapeHtml(c.resumo)}</div>` : ""}
         ${c.combinado ? `<div class="timeline-resumo">Combinado: ${escapeHtml(c.combinado)}</div>` : ""}
-        ${c.proximoPasso ? `<div class="timeline-next">Próximo passo: ${escapeHtml(c.proximoPasso)}${c.dataProximoContato ? " — " + formatDate(c.dataProximoContato) : ""}</div>` : ""}
+        ${c.proximoPasso ? `<div class="timeline-next">Próximo passo: <b>${escapeHtml(c.proximoPasso)}${c.dataProximoContato ? " — " + formatDate(c.dataProximoContato) : ""}</b></div>` : ""}
       </div>
     </div>`).join("");
   return `
