@@ -3033,9 +3033,9 @@ document.querySelectorAll("#ficha-lead-nav .detalhe-tab-btn").forEach(btn => {
 
 // ---------- Navegação da ficha de Cliente Ativo (Histórico / Cadastro) ----------
 const HISTORICO_SUBTABS = [
-  { key: "followups", label: "Follow-ups" },
+  { key: "vendas", label: "Pedidos" },
   { key: "visitas", label: "Visitas" },
-  { key: "vendas", label: "Histórico de Vendas" },
+  { key: "followups", label: "Follow-ups" },
   { key: "concorrencia", label: "Inteligência Competitiva" },
   { key: "sac", label: "SAC" }
 ];
@@ -3793,28 +3793,21 @@ function renderVendasTab(cliente) {
   ]);
 
   return `
-    <h4>Volume mensal (últimos 12 meses)</h4>
-    ${barsHtml}
+    ${filtrados.length >= 2 ? `<h4>Volume mensal (últimos 12 meses)</h4>${barsHtml}` : ""}
     <div class="actions-row no-print" style="margin-bottom:10px;">
       <input type="month" id="vendas-filtro-periodo" value="${vendasFiltro.periodo}">
       <select id="vendas-filtro-produto"><option value="">Produto (todos)</option>${produtosUnicos.map(p => `<option ${vendasFiltro.produto === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select>
       <select id="vendas-filtro-status"><option value="">Status (todos)</option>${statusOpcoes.map(s => `<option ${vendasFiltro.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
     </div>
     ${filtrados.length > 6 ? resumoDetalheHtml(resumoHtml, tabelaHtml, `Ver todos os ${filtrados.length} pedidos`) : tabelaHtml}
-    <div class="detalhe-section no-print">
-      <h4>Condições padrão deste cliente</h4>
-      <div class="detalhe-grid">
-        <label>Condição de pagamento padrão (dias)
-          <input type="text" id="vendas-condicao-pagamento-padrao" value="${escapeHtml(cliente.condicaoPagamentoDias || "")}" placeholder="Ex: 30/60/90 dias">
-        </label>
-        <label>Tipo de frete padrão
-          <select id="vendas-tipo-frete-padrao">
-            <option ${cliente.tipoFrete === "FOB" || !cliente.tipoFrete ? "selected" : ""}>FOB</option>
-            <option ${cliente.tipoFrete === "CIF" ? "selected" : ""}>CIF</option>
-          </select>
-        </label>
-      </div>
-      <p class="hint">Usadas para pré-preencher novos pedidos deste cliente.</p>
+    <div class="hint no-print" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px;">
+      <span>Pagamento padrão:</span>
+      <input type="text" id="vendas-condicao-pagamento-padrao" value="${escapeHtml(cliente.condicaoPagamentoDias || "")}" placeholder="Ex: 30/60/90 dias" style="width:130px;">
+      <span>· Frete padrão:</span>
+      <select id="vendas-tipo-frete-padrao">
+        <option ${cliente.tipoFrete === "FOB" || !cliente.tipoFrete ? "selected" : ""}>FOB</option>
+        <option ${cliente.tipoFrete === "CIF" ? "selected" : ""}>CIF</option>
+      </select>
     </div>`;
 }
 
