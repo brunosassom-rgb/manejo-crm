@@ -3042,7 +3042,8 @@ const HISTORICO_SUBTABS = [
 const CADASTRO_SUBTABS = [
   { key: "identificacao", label: "Identificação" },
   { key: "contatos", label: "Contatos" },
-  { key: "produtivo", label: "Perfil Produtivo" }
+  { key: "produtivo", label: "Perfil Produtivo" },
+  { key: "historico-lead", label: "Histórico do Lead" }
 ];
 
 function renderFichaClienteSubTabs() {
@@ -3506,7 +3507,8 @@ function renderFichaTab() {
     sac: renderSacTab,
     identificacao: renderCadastroIdentificacaoTab,
     contatos: renderCadastroContatosTab,
-    produtivo: renderCadastroProdutivoTab
+    produtivo: renderCadastroProdutivoTab,
+    "historico-lead": renderHistoricoLeadTab
   };
   container.innerHTML = renderers[currentFichaTab](entidade);
   attachFichaEvents(entidade);
@@ -3609,6 +3611,48 @@ function renderCadastroContatosTab(cliente) {
 
 function renderCadastroProdutivoTab(cliente) {
   return renderProdutivoTab(cliente) + `<div class="actions-row"><button class="btn-secondary" id="btn-editar-cadastro-cliente">Editar cadastro</button></div>`;
+}
+
+function renderHistoricoLeadTab(cliente) {
+  const lead = cliente.leadOrigemId ? state.leads.find(l => l.id === cliente.leadOrigemId) : null;
+  if (!lead) return `<div class="empty-state">Sem histórico de prospecção disponível para este cliente.</div>`;
+
+  const diasProspeccao = lead.dataConversao ? daysBetween(lead.criadoEm, lead.dataConversao) : null;
+  const bant = computeBantScore(lead);
+
+  // Fornecedor/produto declarado durante a prospecção, por categoria animal
+  const concorrenciaHtml = (lead.categoriasAnimais || [])
+    .filter(c => c.fornecedorAtual)
+    .map(c => `<div class="item">${escapeHtml(categoriaRowLabel(c))}: <b>${escapeHtml(c.produtoAtual || "-")}</b> via ${escapeHtml(c.fornecedorAtual)}${c.satisfacao ? " · satisfação " + escapeHtml(c.satisfacao) : ""}</div>`)
+    .join("");
+
+  // Timeline: início (com o bloco de concorrência) + mudanças de etapa + contatos/visitas pré-conversão + conversão
+  const contatosPreConversao = contatosForClient(cliente.id).filter(c => !lead.dataConversao || c.data <= lead.dataConversao);
+  const visitasPreConversao = visitasForClient(cliente.id).filter(v => !lead.dataConversao || v.dataVisita <= lead.dataConversao);
+
+  const pontos = [
+    { data: lead.criadoEm, marco: true, titulo: "Entrou como Lead — Prospecção", corpo: lead.comoChegou ? `Como chegou: ${lead.comoChegou}${lead.indicadoPor ? " (" + lead.indicadoPor + ")" : ""}.` : "", concorrencia: concorrenciaHtml },
+    ...(lead.historicoEtapas || []).map(h => ({ data: h.data, titulo: `Avançou para ${h.etapa}` })),
+    ...contatosPreConversao.map(c => ({ data: c.data, titulo: `Follow-up registrado (${c.tipo})`, corpo: c.resumo })),
+    ...visitasPreConversao.map(v => ({ data: v.dataVisita, titulo: "Visita técnica realizada", corpo: v.situacaoAtual })),
+    ...(lead.dataConversao ? [{ data: lead.dataConversao, marco: true, titulo: "Convertido em Cliente Ativo", corpo: "Lead arquivado — histórico de follow-ups e visitas vinculado ao cliente novo." }] : [])
+  ].sort((a, b) => (a.data || "").localeCompare(b.data || ""));
+
+  const timelineHtml = pontos.map(p => `
+    <div class="lead-tpoint ${p.marco ? "marco" : ""}">
+      <div class="d">${formatDate(p.data)}</div>
+      <h4>${escapeHtml(p.titulo)}</h4>
+      ${p.corpo ? `<p>${escapeHtml(p.corpo)}</p>` : ""}
+      ${p.concorrencia ? `<div class="concorrencia-box"><b>Fornecedor no momento da prospecção</b>${p.concorrencia}</div>` : ""}
+    </div>`).join("");
+
+  return `
+    <div class="stats">
+      <div class="stat"><div class="v">${diasProspeccao !== null ? diasProspeccao + " dias" : "—"}</div><div class="l">Tempo até fechar</div></div>
+      <div class="stat"><div class="v">${escapeHtml(lead.comoChegou || "—")}</div><div class="l">Como chegou até mim</div></div>
+      <div class="stat"><div class="v">${bant || "—"}</div><div class="l">Qualificação BANT</div></div>
+    </div>
+    <div class="lead-timeline">${timelineHtml}</div>`;
 }
 
 function renderHistoricoVendasCompleto(cliente) {

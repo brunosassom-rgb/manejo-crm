@@ -531,6 +531,24 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .timeline-resumo { font-size: 0.84rem; margin-top: 3px; }
 .timeline-next { font-size: 0.76rem; color: var(--primary); margin-top: 3px; }
 
+/* ============ Histórico do Lead (Cadastro do Cliente Ativo) ============ */
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px; }
+.stat { background:var(--surface-2); border-radius:10px; padding:12px 14px; }
+.stat .v { font-size:1.15rem; font-weight:800; }
+.stat .l { font-size:.68rem; color:var(--text-faint); }
+.lead-timeline { position:relative; padding-left:24px; }
+.lead-timeline::before { content:""; position:absolute; left:7px; top:6px; bottom:6px; width:2px; background:var(--border); }
+.lead-tpoint { position:relative; padding-bottom:20px; }
+.lead-tpoint:last-child { padding-bottom:0; }
+.lead-tpoint::before { content:""; position:absolute; left:-24px; top:2px; width:14px; height:14px; border-radius:50%; background:var(--primary); border:3px solid var(--surface); box-shadow:0 0 0 1px var(--border); }
+.lead-tpoint.marco::before { background:var(--accent-gold, #B3711E); }
+.lead-tpoint .d { font-size:.72rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.03em; }
+.lead-tpoint h4 { margin:2px 0 3px; font-size:.9rem; }
+.lead-tpoint p { margin:0; font-size:.82rem; color:var(--text-muted); line-height:1.5; }
+.concorrencia-box { background:var(--late-bg); border:1px solid color-mix(in srgb, var(--late-text) 30%, var(--late-bg)); border-radius:10px; padding:12px 14px; margin-top:8px; font-size:.82rem; }
+.concorrencia-box b { color:var(--late-text); }
+.concorrencia-box .item { margin-top:4px; }
+
 /* ============ Empty state ============ */
 .empty-state { color: var(--text-muted); font-size: 0.9rem; padding: 32px 16px; text-align: center; }
 .empty-state-plain { color: var(--text-faint); font-size: 13px; padding: 12px 0; }
