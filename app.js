@@ -1509,13 +1509,23 @@ function renderDashboard() {
     : `<div class="empty-state-plain">Nenhum alerta no momento.</div>`;
   document.querySelectorAll("#alertas-list .alert-item").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
 
-  const proximos = state.contatos.filter(c => c.dataProximoContato && c.dataProximoContato >= todayStr())
-    .sort((a, b) => new Date(a.dataProximoContato) - new Date(b.dataProximoContato)).slice(0, 8);
+  // Une os dois sistemas de "próximo contato": o histórico de contatos (campo opcional "Data do
+  // próximo contato") e a Agenda (compromissos ainda não marcados como feitos) — antes esse widget
+  // só olhava o primeiro, então a cadência automática de lead novo/próxima visita (que só grava em
+  // state.compromissos) nunca aparecia aqui.
+  const proximosContatos = state.contatos
+    .filter(c => c.dataProximoContato && c.dataProximoContato >= todayStr())
+    .map(c => ({ data: c.dataProximoContato, clientId: c.clientId, label: c.tipo }));
+  const proximosCompromissos = state.compromissos
+    .filter(c => c.data >= todayStr() && !c.feito)
+    .map(c => ({ data: c.data, clientId: c.clientId, label: c.descricao || (EVENT_TYPES[c.tipo] ? EVENT_TYPES[c.tipo].label : c.tipo) }));
+  const proximos = [...proximosContatos, ...proximosCompromissos]
+    .sort((a, b) => new Date(a.data) - new Date(b.data)).slice(0, 8);
   document.getElementById("proximos-contatos-list").innerHTML = proximos.length
     ? proximos.map(c => {
         const cli = getEntidadeById(c.clientId);
-        const when = c.dataProximoContato === todayStr() ? "Hoje" : c.dataProximoContato === addDays(todayStr(), 1) ? "Amanhã" : formatDate(c.dataProximoContato);
-        return `<div class="contact-row"><div class="avatar">${initials(cli ? cli.nome : "?")}</div><div class="info"><div class="name">${escapeHtml(cli ? cli.nome : "-")}</div><div class="type">${escapeHtml(c.tipo)}</div></div><div class="when">${when}</div></div>`;
+        const when = c.data === todayStr() ? "Hoje" : c.data === addDays(todayStr(), 1) ? "Amanhã" : formatDate(c.data);
+        return `<div class="contact-row"><div class="avatar">${initials(cli ? cli.nome : "?")}</div><div class="info"><div class="name">${escapeHtml(cli ? cli.nome : "-")}</div><div class="type">${escapeHtml(c.label)}</div></div><div class="when">${when}</div></div>`;
       }).join("")
     : `<div class="empty-state">Nenhum contato agendado.</div>`;
 
