@@ -1004,6 +1004,13 @@ function computeAlerts() {
       }
     });
 
+    pedidosForClient(c.id).forEach(p => {
+      if (p.dataCarregamentoPrevista === today && !["Carregado", "Entregue", "Cancelado"].includes(p.status)) {
+        alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Carregamento hoje", severidade: "today",
+          mensagem: `Confirmar se o pedido ${p.numeroPedidoADM || ""} vai ser carregado hoje.` });
+      }
+    });
+
     sacsForClient(c.id).filter(s => !["Resolvido", "Encerrado sem resolução"].includes(s.status)).forEach(s => {
       const dias = daysBetween(s.data, today);
       if (dias > 5) alerts.push({ clientId: c.id, clientName: c.nome, tipo: "SAC aberto", severidade: "orange",
@@ -2668,7 +2675,17 @@ document.getElementById("form-pedido").addEventListener("submit", e => {
     dataEntrega: dataEntregaRealizada || dataEntregaPrevista || ""
   };
   const idx = state.pedidos.findIndex(p => p.id === id);
+  const anterior = idx >= 0 ? state.pedidos[idx] : null;
+  const entregaAcabouDeSerRegistrada = dataEntregaRealizada && dataEntregaRealizada !== (anterior ? anterior.dataEntregaRealizada : "");
   if (idx >= 0) { state.pedidos[idx] = pedido; } else { state.pedidos.push(pedido); agendarProximaVisitaAutomatica(clientId); }
+  if (entregaAcabouDeSerRegistrada) {
+    const cliente = state.clientesAtivos.find(c => c.id === clientId);
+    state.compromissos.push({
+      id: uid(), clientId, tipo: "followup",
+      data: ajustarParaDiaUtil(addDays(dataEntregaRealizada, 1)), hora: "",
+      descricao: `Conferir como foi a entrega — ${cliente ? cliente.nome : ""}`
+    });
+  }
   saveState();
   closeModal("modal-pedido");
   if (currentFichaClientId === clientId) { renderFichaLeft(); renderFichaTab(); }
