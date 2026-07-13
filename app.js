@@ -2956,7 +2956,6 @@ function renderFichaLeft() {
       </div>` : ""}
       ${!isLead ? `<button class="btn-secondary ficha-secao-btn active" id="btn-ficha-secao-metricas" data-secao="metricas">Métricas</button>
       <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-historico" data-secao="historico">Histórico</button>
-      <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-acoes" data-secao="acoes">Registrar ação</button>
       <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-cadastro" data-secao="cadastro">Cadastro</button>
       <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-relatorio" data-secao="relatorio">Relatório Gerencial</button>` : ""}
       ${!isLead && clienteInativo ? `<button class="btn-secondary" id="btn-reativar-cliente">Reativar cliente</button>` : ""}
@@ -3020,6 +3019,19 @@ function renderFichaLeft() {
       btn.addEventListener("click", () => document.getElementById("ficha-mais-opcoes-dropdown").classList.add("hidden"));
     });
   }
+  const fab = document.getElementById("ficha-fab");
+  fab.classList.toggle("hidden", isLead);
+  if (!isLead) {
+    const fabBtn = document.getElementById("ficha-fab-btn");
+    const fabMenu = document.getElementById("ficha-fab-menu");
+    fabBtn.onclick = () => { fab.classList.toggle("open"); fabMenu.classList.toggle("hidden"); };
+    const onFab = (id, fn) => { document.getElementById(id).onclick = () => { fn(); fab.classList.remove("open"); fabMenu.classList.add("hidden"); }; };
+    onFab("fab-acao-venda", () => openPedidoModal(entidade.id));
+    onFab("fab-acao-estoque", () => openEstoqueModal(entidade.id));
+    onFab("fab-acao-contato", () => openContatoModal(entidade.id));
+    onFab("fab-acao-visita", () => openVisitaModal(entidade.id));
+    onFab("fab-acao-sac", () => openSacModal(entidade.id));
+  }
   const btnInativar = document.getElementById("btn-inativar-cliente");
   if (btnInativar) btnInativar.addEventListener("click", () => openInativarClienteModal(entidade.id));
   const btnReativar = document.getElementById("btn-reativar-cliente");
@@ -3036,6 +3048,11 @@ document.addEventListener("click", e => {
       dropdown.classList.add("hidden");
     }
   });
+  const fab = document.getElementById("ficha-fab");
+  if (fab && fab.classList.contains("open") && !e.target.closest(".ficha-fab")) {
+    fab.classList.remove("open");
+    document.getElementById("ficha-fab-menu").classList.add("hidden");
+  }
 });
 
 function irParaAbaLead(tab) {
@@ -3064,7 +3081,7 @@ const CADASTRO_SUBTABS = [
 
 function renderFichaClienteSubTabs() {
   const bar = document.getElementById("ficha-sub-tabs");
-  if (["metricas", "acoes", "relatorio"].includes(currentFichaSecao)) {
+  if (["metricas", "relatorio"].includes(currentFichaSecao)) {
     currentFichaTab = currentFichaSecao;
     bar.innerHTML = "";
     bar.classList.add("hidden");
@@ -3514,7 +3531,6 @@ function renderFichaTab() {
 
   const renderers = {
     metricas: renderMetricasTab,
-    acoes: renderAcoesTab,
     relatorio: renderRelatorioSecaoTab,
     followups: c => renderContatosTimelineTab(c, { showContatosPessoas: false, showRegistrarButton: false }),
     visitas: c => renderVisitasFichaTab(c, { showRegistrarButton: false }),
@@ -3531,34 +3547,7 @@ function renderFichaTab() {
   if (currentFichaTab === "visitas") attachVisitasFichaEvents(entidade);
   if (currentFichaTab === "vendas") attachHistoricoVendasEvents(entidade);
   if (currentFichaTab === "sac") attachSacTabEvents();
-  if (currentFichaTab === "acoes") attachAcoesEvents(entidade);
   if (currentFichaTab === "relatorio") attachRelatorioSecaoEvents(entidade);
-}
-
-// Painel de ações (abre ao lado, como as outras seções) — substitui o dropdown flutuante
-function renderAcoesTab(cliente) {
-  const acoes = [
-    { id: "acao-venda", t: "Registrar Venda", d: "Novo pedido/venda para este cliente" },
-    { id: "acao-contato", t: "Registrar Contato", d: "Follow-up, ligação, WhatsApp ou visita" },
-    { id: "acao-sac", t: "Registrar SAC", d: "Atendimento ou ocorrência do cliente" },
-    { id: "acao-visita", t: "Relatório de Visita Técnica", d: "Formulário completo de visita" },
-    { id: "acao-estoque", t: "Registrar Estoque", d: "Estoque atual de uma categoria animal" }
-  ];
-  return `
-  <div class="detalhe-section"><h4>Registrar ação</h4>
-    <p class="hint" style="margin-bottom:14px">O que você quer registrar para ${escapeHtml(cliente.nome)}?</p>
-    <div class="acoes-grid">
-      ${acoes.map(a => `<button type="button" class="acao-card" id="${a.id}"><span class="acao-t">${a.t}</span><span class="acao-d">${escapeHtml(a.d)}</span></button>`).join("")}
-    </div>
-  </div>`;
-}
-function attachAcoesEvents(cliente) {
-  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener("click", fn); };
-  on("acao-venda", () => openPedidoModal(cliente.id));
-  on("acao-contato", () => openContatoModal(cliente.id));
-  on("acao-sac", () => openSacModal(cliente.id));
-  on("acao-visita", () => openVisitaModal(cliente.id));
-  on("acao-estoque", () => openEstoqueModal(cliente.id));
 }
 
 // Relatório Gerencial como seção (painel ao lado)
