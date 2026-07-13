@@ -621,7 +621,12 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .calendar-cell.out { opacity: 0.35; }
 .calendar-cell.today { border-color: var(--primary); border-width: 2px; }
 .calendar-daynum { font-weight: 700; font-size: 0.72rem; }
-.calendar-evt { margin-top: 2px; padding: 1px 5px; border-radius: 4px; font-size: 0.62rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.calendar-evt { margin-top: 2px; padding: 1px 5px; border-radius: 4px; font-size: 0.62rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+/* Só compromissos de verdade são arrastáveis (têm draggable="true") — o cursor de "segurar"
+   diferencia deles dos eventos só informativos (Pedido/Recompra/Estoque/Aniversário), clicáveis
+   mas fixos na data calculada. */
+.calendar-evt[draggable="true"] { cursor: grab; }
+.calendar-evt[draggable="true"]:active { cursor: grabbing; }
 .evt-visita { background: var(--primary); }
 .evt-ligacao { background: #6B7280; }
 .evt-followup { background: var(--urgent); }

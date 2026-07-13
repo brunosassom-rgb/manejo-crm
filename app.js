@@ -4035,26 +4035,26 @@ function getAllAgendaEvents() {
   state.compromissos.forEach(c => {
     const cli = getEntidadeById(c.clientId);
     const classe = EVENT_TYPES[c.tipo] ? c.tipo : "followup";
-    events.push({ data: c.data, hora: c.hora || "", classe, label: c.descricao || EVENT_TYPES[classe].label, clientName: cli ? cli.nome : null });
+    events.push({ id: c.id, clientId: c.clientId, data: c.data, hora: c.hora || "", classe, label: c.descricao || EVENT_TYPES[classe].label, clientName: cli ? cli.nome : null });
   });
   state.pedidos.forEach(p => {
     const cli = getEntidadeById(p.clientId);
-    events.push({ data: p.dataPedido, hora: "", classe: "pedido", label: `Pedido: ${cli ? cli.nome : "-"}`, clientName: cli ? cli.nome : null });
+    events.push({ clientId: p.clientId, data: p.dataPedido, hora: "", classe: "pedido", label: `Pedido: ${cli ? cli.nome : "-"}`, clientName: cli ? cli.nome : null });
   });
   state.clientesAtivos.forEach(c => {
     const insight = computeClientInsight(c);
     if (insight.nextExpectedDate) {
       const vencido = insight.status === "atrasado";
-      events.push({ data: insight.nextExpectedDate, hora: "", classe: vencido ? "vencido" : "followup", label: "Recompra prevista: " + c.nome, clientName: c.nome });
+      events.push({ clientId: c.id, data: insight.nextExpectedDate, hora: "", classe: vencido ? "vencido" : "followup", label: "Recompra prevista: " + c.nome, clientName: c.nome });
     }
     computeEstoqueForecastsCliente(c).forEach(({ categoria, forecast }) => {
       if (estoqueAlertaSuprimido(c.id, categoria.id, forecast)) return;
       const dataAlerta = addDays(forecast.dataPrevistaEsgotamento, -20);
-      events.push({ data: dataAlerta, hora: "", classe: "estoque", label: `Estoque de ${categoriaRowLabel(categoria)} acabando: ${c.nome}`, clientName: c.nome });
+      events.push({ clientId: c.id, data: dataAlerta, hora: "", classe: "estoque", label: `Estoque de ${categoriaRowLabel(categoria)} acabando: ${c.nome}`, clientName: c.nome });
     });
     (c.contatosPessoas || []).forEach(pessoa => {
       const info = aniversarioInfo(pessoa.dataNascimento);
-      if (info) events.push({ data: addDays(todayStr(), info.dias), hora: "", classe: "aniversario", label: `Ligar para parabenizar: ${pessoa.nome || "contato"}`, clientName: c.nome });
+      if (info) events.push({ clientId: c.id, data: addDays(todayStr(), info.dias), hora: "", classe: "aniversario", label: `Ligar para parabenizar: ${pessoa.nome || "contato"}`, clientName: c.nome });
     });
   });
   return events.filter(e => agendaActiveFilters.has(e.classe));
@@ -4124,9 +4124,9 @@ function renderMonthView(events, body) {
     const dayEvents = dateStr ? events.filter(e => e.data === dateStr) : [];
     const shown = dayEvents.slice(0, 3);
     const extra = dayEvents.length - shown.length;
-    return `<div class="calendar-cell ${cell.out ? "out" : ""} ${isToday ? "today" : ""}">
+    return `<div class="calendar-cell ${cell.out ? "out" : ""} ${isToday ? "today" : ""}" data-date="${dateStr || ""}">
       <div class="calendar-daynum">${cell.day}</div>
-      ${shown.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}">${escapeHtml(e.label)}</div>`).join("")}
+      ${shown.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}>${escapeHtml(e.label)}</div>`).join("")}
       ${extra > 0 ? `<div class="calendar-evt" style="background:transparent;color:var(--text-faint);">+${extra}</div>` : ""}
     </div>`;
   }).join("");
@@ -4147,8 +4147,8 @@ function renderWeekView(events, body) {
     const dateStr = dateToStr(d);
     const isToday = dateStr === todayStr();
     const dayEvents = events.filter(e => e.data === dateStr).sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
-    return `<div class="calendar-cell calendar-week-col ${isToday ? "today" : ""}">
-      ${dayEvents.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}">${e.hora ? escapeHtml(e.hora) + " " : ""}${escapeHtml(e.label)}</div>`).join("") || `<span class="hint" style="font-size:0.68rem;">-</span>`}
+    return `<div class="calendar-cell calendar-week-col ${isToday ? "today" : ""}" data-date="${dateStr}">
+      ${dayEvents.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}>${e.hora ? escapeHtml(e.hora) + " " : ""}${escapeHtml(e.label)}</div>`).join("") || `<span class="hint" style="font-size:0.68rem;">-</span>`}
     </div>`;
   }).join("");
 
@@ -4179,6 +4179,38 @@ document.getElementById("cal-next").addEventListener("click", () => {
   if (calendarView === "mes") calendarCursor.setMonth(calendarCursor.getMonth() + 1);
   else if (calendarView === "semana") calendarCursor.setDate(calendarCursor.getDate() + 7);
   else calendarCursor.setDate(calendarCursor.getDate() + 1);
+  renderAgenda();
+});
+
+// Clique em qualquer evento do calendário abre a ficha do cliente — mesmo padrão já usado nos
+// alertas do Dashboard e no Roteiro do dia. Delegado em #calendar-body (sobrevive a cada
+// re-render, já que o conteúdo é recriado inteiro a cada chamada de renderAgenda()).
+document.getElementById("calendar-body").addEventListener("click", e => {
+  const evt = e.target.closest(".calendar-evt");
+  if (evt && evt.dataset.clientId) openFicha(evt.dataset.clientId);
+});
+
+// Arrastar-para-remarcar: só compromissos de verdade (visita/ligação/follow-up/reunião/viagem, os
+// que têm data-compromisso-id) são arrastáveis — Pedido/Recompra/Estoque/Aniversário são só
+// informativos, calculados na hora, e não têm um registro próprio pra remarcar.
+document.getElementById("calendar-body").addEventListener("dragstart", e => {
+  const evt = e.target.closest(".calendar-evt[data-compromisso-id]");
+  if (!evt) return;
+  e.dataTransfer.setData("text/plain", evt.dataset.compromissoId);
+});
+document.getElementById("calendar-body").addEventListener("dragover", e => {
+  const cell = e.target.closest(".calendar-cell");
+  if (cell && cell.dataset.date) e.preventDefault();
+});
+document.getElementById("calendar-body").addEventListener("drop", e => {
+  const cell = e.target.closest(".calendar-cell");
+  if (!cell || !cell.dataset.date) return;
+  e.preventDefault();
+  const compromissoId = e.dataTransfer.getData("text/plain");
+  const compromisso = state.compromissos.find(c => c.id === compromissoId);
+  if (!compromisso) return;
+  compromisso.data = cell.dataset.date;
+  saveState();
   renderAgenda();
 });
 
