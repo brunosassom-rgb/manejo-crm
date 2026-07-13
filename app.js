@@ -4298,7 +4298,7 @@ function badgeFornecedorClassificacao(fornecedorText) {
 function renderCarteiraFornecedor() {
   const linhas = [];
   state.leads.filter(l => l.status === "Ativo").forEach(l => (l.categoriasAnimais || []).forEach(c => { if (c.fornecedorAtual) linhas.push({ entidade: l, tipo: "Lead", cat: c }); }));
-  state.clientesAtivos.forEach(cl => (cl.categoriasAnimais || []).forEach(c => { if (c.fornecedorAtual) linhas.push({ entidade: cl, tipo: "Cliente Ativo", cat: c }); }));
+  state.clientesAtivos.forEach(cl => (cl.categoriasAnimais || []).forEach(c => { if (c.fornecedorAtual) linhas.push({ entidade: cl, tipo: "Cliente", cat: c }); }));
   const linhasClassificadas = linhas.map(l => ({ ...l, classe: classificarFornecedorTexto(l.cat.fornecedorAtual) }));
   const comCasa = linhasClassificadas.filter(x => x.classe === "casa");
   const comConcorrente = linhasClassificadas.filter(x => x.classe === "concorrente");
@@ -4339,12 +4339,14 @@ function renderCarteiraFornecedor() {
           : classe === "concorrente" ? `<span class="badge badge-late">Concorrente</span>`
           : `<span class="badge badge-neutral">Sem informação</span>`;
         return `<tr data-client-id="${entidade.id}" style="cursor:pointer">
-          <td>${escapeHtml(entidade.nome)}</td><td>${tipo}</td><td>${escapeHtml(categoriaRowLabel(cat))}</td><td>${escapeHtml(entidade.municipio || "-")}</td>
-          <td>${escapeHtml(cat.fornecedorAtual)}</td><td>${classificacao}</td>
+          <td>${escapeHtml(entidade.nome)} <span class="badge badge-neutral" style="font-size:0.65rem;">${tipo}</span></td>
+          <td>${escapeHtml(categoriaRowLabel(cat))}</td>
+          <td>${escapeHtml(entidade.municipio || "-")}</td>
+          <td>${escapeHtml(cat.fornecedorAtual)} ${classificacao}</td>
           <td>${escapeHtml(cat.volumeMensalEstimado || "-")}</td>
         </tr>`;
       }).join("")
-    : `<tr><td colspan="7">Nenhum lead ou cliente com fornecedor cadastrado ainda.</td></tr>`;
+    : `<tr><td colspan="5">Nenhum lead ou cliente com fornecedor cadastrado ainda.</td></tr>`;
   document.querySelectorAll("#carteira-fornecedor-tabela-body tr[data-client-id]").forEach(tr => {
     tr.addEventListener("click", () => openFicha(tr.dataset.clientId));
   });
@@ -4459,7 +4461,7 @@ function renderCompetitivaPage() {
         const bg = `rgba(147,160,106,${0.25 + intensity * 0.65})`;
         return `<div class="heatmap-cell" style="background:${bg}; color:${intensity > 0.5 ? "#fff" : "#1a1a1a"}"><div class="hm-n">${set.size}</div>${escapeHtml(mun)}</div>`;
       }).join("")
-    : `<div class="empty-state">Cadastre município nos clientes para ver o mapa.</div>`;
+    : `<div class="empty-state">Nenhuma observação competitiva registrada ainda. Adicione pela ficha do cliente → Inteligência Competitiva → "Nova observação competitiva" para ver o mapa por município.</div>`;
 
   const pontosFracos = state.competitivas.filter(o => o.pontoFraco).sort((a, b) => new Date(b.data) - new Date(a.data));
   document.getElementById("pontos-fracos-list").innerHTML = pontosFracos.length
@@ -4467,7 +4469,7 @@ function renderCompetitivaPage() {
         const cli = getEntidadeById(o.clientId);
         return `<div class="card" data-client-id="${o.clientId}"><div class="card-top"><div class="card-name">${escapeHtml(o.concorrente || "Concorrente")}</div><span class="card-sub">${formatDate(o.data)}</span></div><div class="card-tip">${escapeHtml(o.pontoFraco)} ${cli ? "— relatado por " + escapeHtml(cli.nome) : ""}</div></div>`;
       }).join("")
-    : `<div class="empty-state">Nenhum ponto fraco relatado ainda.</div>`;
+    : `<div class="empty-state">Nenhum ponto fraco registrado ainda. Adicione numa Observação Competitiva, pela ficha do cliente.</div>`;
   document.querySelectorAll("#pontos-fracos-list .card").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
 
   const pontosFortes = state.competitivas.filter(o => o.pontoForte).sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -4476,7 +4478,7 @@ function renderCompetitivaPage() {
         const cli = getEntidadeById(o.clientId);
         return `<div class="card" data-client-id="${o.clientId}"><div class="card-top"><div class="card-name">${escapeHtml(o.concorrente || "Concorrente")}</div><span class="card-sub">${formatDate(o.data)}</span></div><div class="card-tip">${escapeHtml(o.pontoForte)} ${cli ? "— relatado por " + escapeHtml(cli.nome) : ""}</div></div>`;
       }).join("")
-    : `<div class="empty-state">Nenhum ponto forte relatado ainda.</div>`;
+    : `<div class="empty-state">Nenhum ponto forte registrado ainda. Adicione numa Observação Competitiva, pela ficha do cliente.</div>`;
   document.querySelectorAll("#pontos-fortes-list .card").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
 
   applyMasonry(document.getElementById("competitiva-masonry"));
