@@ -2123,7 +2123,7 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
       <details class="categoria-situacao">
         <summary>Situação atual (fornecedor, produto, satisfação...)</summary>
         <div class="categoria-situacao-grid">
-          <input type="text" class="cat-fornecedor" placeholder="Empresa fornecedora atual" list="fornecedores-datalist" value="${escapeHtml(row.fornecedorAtual || "")}">
+          <select class="cat-fornecedor">${fornecedorOptionsHtml(row.fornecedorAtual)}</select>
           <input type="text" class="cat-produto" placeholder="Produto que usa hoje" value="${escapeHtml(row.produtoAtual || "")}">
           <div class="cat-consumo-wrap">
             <input type="number" class="cat-consumo-animal" min="0" step="any" placeholder="Consumo por animal (kg/dia)" value="${escapeHtml(row.consumoPorAnimalDia || "")}">
@@ -2153,7 +2153,15 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
     card.querySelector(".cat-fase").addEventListener("change", e => { list[idx].faseProducao = e.target.value; });
     card.querySelector(".cat-qty").addEventListener("input", e => { list[idx].quantidade = e.target.value; renderCategoriasTotalGeneric(list, totalId); recalcularVolume(); });
     card.querySelector(".cat-sistema").addEventListener("change", e => { list[idx].sistemaProducao = e.target.value; });
-    card.querySelector(".cat-fornecedor").addEventListener("input", e => { list[idx].fornecedorAtual = e.target.value; });
+    card.querySelector(".cat-fornecedor").addEventListener("change", e => {
+      if (e.target.value === "__novo__") {
+        pendingFornecedorTarget = e.target;
+        e.target.value = "";
+        openFornecedorModal();
+        return;
+      }
+      list[idx].fornecedorAtual = e.target.value;
+    });
     card.querySelector(".cat-produto").addEventListener("input", e => { list[idx].produtoAtual = e.target.value; });
     card.querySelector(".cat-consumo-animal").addEventListener("input", e => { list[idx].consumoPorAnimalDia = e.target.value; recalcularVolume(); });
     card.querySelector(".cat-prazo").addEventListener("input", e => { list[idx].prazoPagamento = e.target.value; });
@@ -2336,7 +2344,7 @@ document.getElementById("form-cliente").addEventListener("submit", e => {
 
 function openClienteModal(clientId) {
   refreshConsultorSelect();
-  refreshFornecedoresDatalist();
+  refreshFornecedorSelects();
   const form = document.getElementById("form-cliente");
   form.reset();
   document.getElementById("cliente-id").value = "";
@@ -2444,8 +2452,16 @@ function openCompetitivaModal(clientId) {
   document.getElementById("form-competitiva").reset();
   document.getElementById("competitiva-cliente-id").value = clientId;
   document.getElementById("competitiva-data").value = todayStr();
+  document.getElementById("competitiva-concorrente").innerHTML = fornecedorOptionsHtml("");
   document.getElementById("modal-competitiva").classList.remove("hidden");
 }
+document.getElementById("competitiva-concorrente").addEventListener("change", e => {
+  if (e.target.value === "__novo__") {
+    pendingFornecedorTarget = e.target;
+    e.target.value = "";
+    openFornecedorModal();
+  }
+});
 const COMPETITIVA_FIELD_MAP = [
   ["competitiva-data", "data"], ["competitiva-concorrente", "concorrente"], ["competitiva-produto", "produtoConcorrente"],
   ["competitiva-preco", "preco"], ["competitiva-canal", "canalVenda"], ["competitiva-prazo", "prazoPagamento"],
@@ -3250,7 +3266,7 @@ function openClienteAtivoModal(clienteId) {
   const cliente = state.clientesAtivos.find(c => c.id === clienteId);
   if (!cliente) return;
   refreshConsultorSelect();
-  refreshFornecedoresDatalist();
+  refreshFornecedorSelects();
   document.getElementById("ca-id").value = cliente.id;
   CLIENTE_ATIVO_FIELD_MAP.forEach(([domId, key]) => {
     const el = document.getElementById(domId);
@@ -4367,9 +4383,17 @@ function renderFornecedoresList() {
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFornecedorModal(card.dataset.fornecedorId)));
 }
 
-function refreshFornecedoresDatalist() {
-  const list = document.getElementById("fornecedores-datalist");
-  if (list) list.innerHTML = state.fornecedores.map(f => `<option value="${escapeHtml(f.nome)}">`).join("");
+// Referência transitória ao <select> que abriu "+ Cadastrar novo fornecedor" — de propósito
+// NÃO fica em `state` (que é serializado inteiro em todo saveState()); é só pra saber, depois
+// que o modal de fornecedor salvar, qual select específico deve voltar com o novo valor selecionado.
+let pendingFornecedorTarget = null;
+function fornecedorOptionsHtml(selectedNome) {
+  return `<option value="">Selecione o fornecedor…</option>
+    ${state.fornecedores.map(f => `<option value="${escapeHtml(f.nome)}" ${selectedNome === f.nome ? "selected" : ""}>${escapeHtml(f.nome)}${f.ehCasa ? " (nós)" : ""}</option>`).join("")}
+    <option value="__novo__">+ Cadastrar novo fornecedor…</option>`;
+}
+function refreshFornecedorSelects() {
+  document.querySelectorAll(".cat-fornecedor").forEach(sel => { sel.innerHTML = fornecedorOptionsHtml(sel.value); });
 }
 
 function openFornecedorModal(fornecedorId) {
@@ -4390,6 +4414,7 @@ function openFornecedorModal(fornecedorId) {
   document.getElementById("modal-fornecedor").classList.remove("hidden");
 }
 document.getElementById("qa-novo-fornecedor").addEventListener("click", () => openFornecedorModal());
+document.querySelector('#modal-fornecedor [data-close-modal="modal-fornecedor"]').addEventListener("click", () => { pendingFornecedorTarget = null; });
 document.getElementById("btn-excluir-fornecedor").addEventListener("click", () => {
   const fornecedorId = document.getElementById("fornecedor-id").value;
   if (!fornecedorId) return;
@@ -4398,7 +4423,7 @@ document.getElementById("btn-excluir-fornecedor").addEventListener("click", () =
   saveState();
   closeModal("modal-fornecedor");
   renderFornecedoresList();
-  refreshFornecedoresDatalist();
+  refreshFornecedorSelects();
   showToast("Fornecedor excluído.");
 });
 document.getElementById("form-fornecedor").addEventListener("submit", e => {
@@ -4413,7 +4438,13 @@ document.getElementById("form-fornecedor").addEventListener("submit", e => {
   saveState();
   closeModal("modal-fornecedor");
   renderFornecedoresList();
-  refreshFornecedoresDatalist();
+  refreshFornecedorSelects();
+  if (pendingFornecedorTarget) {
+    const sel = pendingFornecedorTarget;
+    sel.innerHTML = fornecedorOptionsHtml(data.nome);
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    pendingFornecedorTarget = null;
+  }
   showToast("Fornecedor salvo.");
 });
 
@@ -4433,7 +4464,7 @@ window.addEventListener("resize", () => {
 });
 
 function renderCompetitivaPage() {
-  refreshFornecedoresDatalist();
+  refreshFornecedorSelects();
   renderCarteiraFornecedor();
   const rows = state.competitivas.map(o => {
     const cli = getEntidadeById(o.clientId);
@@ -6139,7 +6170,7 @@ function boot() {
   applyTheme();
   refreshClientSelects();
   refreshConsultorSelect();
-  refreshFornecedoresDatalist();
+  refreshFornecedorSelects();
   renderDashboardCanvas();
   renderDashboard();
   renderClientList();
