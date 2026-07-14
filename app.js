@@ -509,6 +509,13 @@ aplicarConfigMarca();
 function uid() { return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); }
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 function daysBetween(d1, d2) { return Math.round((new Date(d2) - new Date(d1)) / (1000 * 60 * 60 * 24)); }
+function urgenciaProximoPasso(lead) {
+  if (!lead.dataProximoPasso) return "sem-dado";
+  const dias = daysBetween(todayStr(), lead.dataProximoPasso);
+  if (dias < 0) return "late";
+  if (dias <= 1) return "soon";
+  return "ok";
+}
 function addDays(dateStr, days) { const d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
 function formatDate(iso) { if (!iso) return "-"; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; }
 function formatMoney(v) { const n = Number(v) || 0; return "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -1849,16 +1856,22 @@ function leadCardHtml(lead, query) {
   const ultimoContato = contatos.length ? formatDate(contatos[0].data) : "—";
   const ultimaEtapa = (lead.historicoEtapas || [])[(lead.historicoEtapas || []).length - 1];
   const diasNaEtapa = ultimaEtapa ? daysBetween(ultimaEtapa.data, todayStr()) : (lead.criadoEm ? daysBetween(lead.criadoEm, todayStr()) : null);
+  const urgencia = urgenciaProximoPasso(lead);
   return `
     <div class="card" data-client-id="${lead.id}">
       <div class="card-top">
-        <div><div class="card-name">${highlight(lead.nome, query)}${lead.fazenda ? " · " + escapeHtml(lead.fazenda) : ""}</div>
-        <div class="card-sub">${escapeHtml(describeCategorias(lead))} ${lead.municipio ? "· " + escapeHtml(lead.municipio) : ""}${lead.temperatura ? " · " + escapeHtml(lead.temperatura) : ""}</div></div>
+        <div class="lead-avatar-row">
+          <div class="lead-avatar">${initials(lead.nome)}</div>
+          <div>
+            <div class="card-name">${highlight(lead.nome, query)}${lead.fazenda ? " · " + escapeHtml(lead.fazenda) : ""}</div>
+            <div class="card-sub">${escapeHtml(describeCategorias(lead))} ${lead.municipio ? "· " + escapeHtml(lead.municipio) : ""}${lead.temperatura ? " · " + escapeHtml(lead.temperatura) : ""}</div>
+          </div>
+        </div>
         ${badge}
       </div>
       <div class="client-meta">
         <span class="cm"><span class="cm-l">Potencial</span><span class="cm-v">${lead.potencialTon ? lead.potencialTon + "t/mês" : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Próx. passo</span><span class="cm-v">${lead.dataProximoPasso ? formatDate(lead.dataProximoPasso) : "—"}</span></span>
+        <span class="cm"><span class="cm-l">Próx. passo</span><span class="cm-v"><span class="lead-urgencia-dot ${urgencia}"></span>${lead.dataProximoPasso ? formatDate(lead.dataProximoPasso) : "—"}</span></span>
         <span class="cm"><span class="cm-l">Últ. contato</span><span class="cm-v">${ultimoContato}</span></span>
         <span class="cm"><span class="cm-l">Na etapa há</span><span class="cm-v">${diasNaEtapa != null ? diasNaEtapa + "d" : "—"}</span></span>
       </div>

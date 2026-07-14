@@ -1745,6 +1745,17 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 .client-meta .cm-l { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
 .client-meta .cm-v { font-size: 0.82rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 
+.lead-avatar-row { display: flex; align-items: center; gap: 12px; }
+.lead-avatar {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
+}
+.lead-urgencia-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.lead-urgencia-dot.late { background: var(--late-text); }
+.lead-urgencia-dot.soon { background: var(--warn-text); }
+.lead-urgencia-dot.ok { background: var(--ok-text); }
+.lead-urgencia-dot.sem-dado { background: var(--text-faint); }
+
 /* ---------- Card de cliente ativo: formato lista de contatos ---------- */
 .client-card-simples { display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--border); }
 .ccs-avatar {
