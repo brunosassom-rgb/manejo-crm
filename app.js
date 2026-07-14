@@ -3818,16 +3818,22 @@ function renderVendasTab(cliente) {
   });
 
   const statusOpcoes = ["Em processamento", "Carregado", "Em trânsito", "Entregue", "Com ocorrência", "Cancelado"];
-  const rows = filtrados.map(p => `<tr data-pedido-id="${p.id}" style="cursor:pointer">
-    <td>${escapeHtml(p.numeroPedidoADM || "-")}</td><td>${formatDate(p.dataPedido)}</td>
-    <td>${escapeHtml(p.produto || "-")}</td><td>${p.volume ? formatVolume(p.volume) : "-"}</td>
-    <td>${p.valorComFrete ? formatMoney(p.valorComFrete) : "-"}</td>
-    <td>${p.dataEntregaRealizada ? formatDate(p.dataEntregaRealizada) : (p.dataEntregaPrevista ? "prev. " + formatDate(p.dataEntregaPrevista) : "-")}</td>
-    <td><span class="badge ${badgeClassForPedidoStatus(p.status)}">${escapeHtml(p.status || "-")}</span></td>
-  </tr>`).join("") || `<tr><td colspan="7">Nenhum pedido no filtro selecionado.</td></tr>`;
-  const tabelaHtml = `<div style="overflow-x:auto;">
-    <table class="mini"><thead><tr><th>Nº do pedido</th><th>Data</th><th>Produtos</th><th>Volume (t)</th><th>Valor c/ frete</th><th>Entrega</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
+  const cardsHtml = filtrados.length
+    ? `<div class="pedidos-cards">${filtrados.map(p => `
+      <div class="pedido-card" data-pedido-id="${p.id}">
+        <div class="pedido-card-head">
+          <span class="pedido-num">Pedido ${escapeHtml(p.numeroPedidoADM || "-")}</span>
+          <span class="pedido-data">${formatDate(p.dataPedido)} <span class="badge ${badgeClassForPedidoStatus(p.status)}">${escapeHtml(p.status || "-")}</span></span>
+        </div>
+        <div class="pedido-card-body">
+          <div class="pedido-produto">${escapeHtml(p.produto || "-")}${p.volume ? ` <span class="qtd">· ${formatVolume(p.volume)}</span>` : ""}</div>
+          <div>
+            <div class="pedido-valor">${p.valorComFrete ? formatMoney(p.valorComFrete) : "-"}</div>
+            <div class="pedido-entrega">${p.dataEntregaRealizada ? formatDate(p.dataEntregaRealizada) : (p.dataEntregaPrevista ? "prev. " + formatDate(p.dataEntregaPrevista) : "-")}</div>
+          </div>
+        </div>
+      </div>`).join("")}</div>`
+    : `<div class="empty-state">Nenhum pedido no filtro selecionado.</div>`;
 
   // Com poucos pedidos a tabela já é o resumo — o resumo + "ver detalhes" só entra quando a lista
   // fica longa o bastante pra valer a pena esconder as colunas técnicas por padrão.
@@ -3848,7 +3854,7 @@ function renderVendasTab(cliente) {
       <select id="vendas-filtro-produto"><option value="">Produto (todos)</option>${produtosUnicos.map(p => `<option ${vendasFiltro.produto === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select>
       <select id="vendas-filtro-status"><option value="">Status (todos)</option>${statusOpcoes.map(s => `<option ${vendasFiltro.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
     </div>
-    ${filtrados.length > 6 ? resumoDetalheHtml(resumoHtml, tabelaHtml, `Ver todos os ${filtrados.length} pedidos`) : tabelaHtml}
+    ${filtrados.length > 6 ? resumoDetalheHtml(resumoHtml, cardsHtml, `Ver todos os ${filtrados.length} pedidos`) : cardsHtml}
     <div class="hint no-print" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px;">
       <span>Pagamento padrão:</span>
       <input type="text" id="vendas-condicao-pagamento-padrao" value="${escapeHtml(cliente.condicaoPagamentoDias || "")}" placeholder="Ex: 30/60/90 dias" style="width:130px;">
@@ -3864,8 +3870,8 @@ function attachVendasTabEvents(cliente) {
   document.getElementById("vendas-filtro-periodo").addEventListener("change", e => { vendasFiltro.periodo = e.target.value; renderFichaTab(); });
   document.getElementById("vendas-filtro-produto").addEventListener("change", e => { vendasFiltro.produto = e.target.value; renderFichaTab(); });
   document.getElementById("vendas-filtro-status").addEventListener("change", e => { vendasFiltro.status = e.target.value; renderFichaTab(); });
-  document.querySelectorAll("#ficha-conteudo tr[data-pedido-id]").forEach(tr => {
-    tr.addEventListener("click", () => { openPedidoModal(cliente.id, tr.dataset.pedidoId); });
+  document.querySelectorAll("#ficha-conteudo .pedido-card[data-pedido-id]").forEach(card => {
+    card.addEventListener("click", () => { openPedidoModal(cliente.id, card.dataset.pedidoId); });
   });
   document.getElementById("vendas-condicao-pagamento-padrao").addEventListener("change", e => {
     cliente.condicaoPagamentoDias = e.target.value.trim();

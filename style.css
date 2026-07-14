@@ -885,6 +885,18 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .resumo-cards .rc-v { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .resumo-cards .rc-l { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 1px; }
 
+.pedidos-cards { display: flex; flex-direction: column; gap: 10px; }
+.pedido-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface); box-shadow: var(--shadow-sm); cursor: pointer; }
+.pedido-card:hover { border-color: var(--primary); }
+.pedido-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.pedido-num { font-weight: 800; font-size: 0.85rem; }
+.pedido-data { font-size: 0.72rem; color: var(--text-faint); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.pedido-card-body { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.pedido-produto { font-size: 0.85rem; }
+.pedido-produto .qtd { color: var(--text-muted); font-size: 0.78rem; }
+.pedido-valor { font-weight: 800; font-size: 0.95rem; text-align: right; font-variant-numeric: tabular-nums; }
+.pedido-entrega { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 2px; }
+
 /* Divisor de seção maior (ex: dentro de uma aba que reúne vários blocos de dado bem diferentes,
    como Histórico de Vendas = pedidos + ciclo de recompra + upsell) — mais peso que um <h4> comum,
    sem virar mais um card, já que os dados dentro de cada bloco já ganham seus próprios .info-card. */
