@@ -461,7 +461,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .kanban-card .kc-meta { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-faint); margin-top: 6px; }
 
 /* ============ Ficha do cliente (2 colunas) ============ */
-.ficha-grid { display: grid; grid-template-columns: 260px 1fr; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.ficha-grid { display: grid; grid-template-columns: 260px 1fr; gap: 0; border: 1px solid var(--border); border-radius: 8px; }
 .ficha-left {
   background: var(--rail-bg); border-radius: 8px 0 0 8px; padding: 26px 22px;
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;
@@ -507,6 +507,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   box-shadow: var(--shadow-lg); padding: 4px; display: flex; flex-direction: column; gap: 2px;
 }
 .ficha-action-dropdown.hidden { display: none; }
+.ficha-action-dropdown.abre-pra-cima { top: auto; bottom: calc(100% + 4px); }
 .ficha-action-item {
   background: transparent; border: none; text-align: left; padding: 8px 10px; border-radius: 6px;
   font-size: 13px; color: var(--text); cursor: pointer; width: 100%;

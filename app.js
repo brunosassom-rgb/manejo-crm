@@ -2900,6 +2900,16 @@ function voltarDaFicha() {
 }
 document.getElementById("btn-ficha-voltar").addEventListener("click", voltarDaFicha);
 
+function toggleFichaDropdown(dropdown) {
+  const wasHidden = dropdown.classList.contains("hidden");
+  dropdown.classList.toggle("hidden");
+  if (wasHidden) {
+    const rect = dropdown.getBoundingClientRect();
+    const estouraEmbaixo = rect.bottom > window.innerHeight;
+    dropdown.classList.toggle("abre-pra-cima", estouraEmbaixo);
+  }
+}
+
 function renderFichaLeft() {
   const entidade = getEntidadeById(currentFichaClientId);
   const container = document.getElementById("ficha-left");
@@ -2990,7 +3000,7 @@ function renderFichaLeft() {
   if (isLead) {
     document.getElementById("btn-ficha-registrar-acao").addEventListener("click", e => {
       e.stopPropagation();
-      document.getElementById("ficha-action-dropdown").classList.toggle("hidden");
+      toggleFichaDropdown(document.getElementById("ficha-action-dropdown"));
     });
     document.querySelectorAll("#ficha-action-dropdown .ficha-action-item").forEach(btn => {
       btn.addEventListener("click", () => document.getElementById("ficha-action-dropdown").classList.add("hidden"));
@@ -3013,7 +3023,7 @@ function renderFichaLeft() {
     const btnMaisOpcoes = document.getElementById("btn-ficha-mais-opcoes");
     btnMaisOpcoes.addEventListener("click", e => {
       e.stopPropagation();
-      document.getElementById("ficha-mais-opcoes-dropdown").classList.toggle("hidden");
+      toggleFichaDropdown(document.getElementById("ficha-mais-opcoes-dropdown"));
     });
     document.querySelectorAll("#ficha-mais-opcoes-dropdown .ficha-action-item").forEach(btn => {
       btn.addEventListener("click", () => document.getElementById("ficha-mais-opcoes-dropdown").classList.add("hidden"));
