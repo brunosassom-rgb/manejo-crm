@@ -4475,12 +4475,6 @@ function applyMasonry(container) {
     child.style.gridRowEnd = `span ${span}`;
   });
 }
-let masonryResizeTimer;
-window.addEventListener("resize", () => {
-  clearTimeout(masonryResizeTimer);
-  masonryResizeTimer = setTimeout(() => applyMasonry(document.getElementById("competitiva-masonry")), 150);
-});
-
 function renderCompetitivaPage() {
   refreshFornecedorSelects();
   renderCarteiraFornecedor();
@@ -4529,9 +4523,13 @@ function renderCompetitivaPage() {
       }).join("")
     : `<div class="empty-state">Nenhum ponto forte registrado ainda. Adicione numa Observação Competitiva, pela ficha do cliente.</div>`;
   document.querySelectorAll("#pontos-fortes-list .card").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
-
-  applyMasonry(document.getElementById("competitiva-masonry"));
 }
+document.querySelectorAll("#competitiva-subtabs .detalhe-tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#competitiva-subtabs .detalhe-tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+    document.querySelectorAll(".competitiva-tabgrid").forEach(g => g.classList.toggle("hidden", g.dataset.ctabPanel !== btn.dataset.ctab));
+  });
+});
 
 const RADAR_AXES = ["Preço", "Prazo", "Suporte técnico", "Qualidade", "Logística"];
 
