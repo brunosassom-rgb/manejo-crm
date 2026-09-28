@@ -532,6 +532,41 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 }
 .ficha-fab-item:hover { border-color: var(--primary); color: var(--primary); }
 
+/* ============ Copiloto lateral (painel de conversa fixo, desktop) ============ */
+.copiloto-painel {
+  width: 300px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; transition: width 0.15s ease;
+}
+.copiloto-head { display: flex; align-items: center; gap: 8px; padding: 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.copiloto-mark {
+  width: 26px; height: 26px; border-radius: 999px; background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;
+}
+.copiloto-titulo { font-weight: 650; font-size: 13.5px; flex: 1; }
+.copiloto-colapsar { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; flex-shrink: 0; }
+.copiloto-colapsar svg { width: 16px; height: 16px; transition: transform 0.15s; }
+.copiloto-painel.recolhido .copiloto-colapsar svg { transform: rotate(180deg); }
+.copiloto-corpo { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.copiloto-vazio { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
+.copiloto-bolha-usuario {
+  align-self: flex-end; max-width: 88%; background: var(--primary); color: #fff;
+  padding: 9px 12px; border-radius: 12px 12px 2px 12px; font-size: 13px; line-height: 1.45;
+}
+.copiloto-input-row { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.copiloto-input-row textarea {
+  width: 100%; resize: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  font-family: inherit; font-size: 12.5px; background: var(--surface-2); color: var(--text); box-sizing: border-box;
+}
+.copiloto-painel.recolhido .copiloto-titulo,
+.copiloto-painel.recolhido .copiloto-corpo,
+.copiloto-painel.recolhido .copiloto-input-row { display: none; }
+.copiloto-painel.recolhido { width: 48px; }
+@media (max-width: 900px) {
+  .copiloto-painel { display: none; }
+}
+.mobile-bottom-nav { display: none; }
+.mbn-mais-sheet { display: none; }
+
 .ficha-secao-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 
 .ficha-right { padding: 22px 26px; background: var(--surface); border-radius: 0 8px 8px 0; }
@@ -1956,5 +1991,47 @@ body::after {
   input, select, textarea, button { min-height: 44px; }
   table.mini .btn-primary, table.mini .btn-secondary,
   .btn-close, .theme-toggle, .appbar-bell { min-height: 36px; }
+
+  /* ---- "Painel de Campo": barra de navegação inferior no lugar da barra de ícones ---- */
+  .rail-side { display: none; }
+  main { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+
+  .mobile-bottom-nav {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+  .mbn-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: none; border: none; color: var(--text-muted); padding: 6px 2px; cursor: pointer; min-height: 44px;
+  }
+  .mbn-btn .ico { width: 20px; height: 20px; }
+  .mbn-btn .ico .icon-svg { width: 100%; height: 100%; }
+  .mbn-btn .mbn-label { font-size: 10px; font-weight: 600; }
+  .mbn-btn.active { color: var(--primary); }
+
+  .mbn-mais-sheet:not(.hidden) { display: block; position: fixed; inset: 0; z-index: 60; }
+  .mbn-mais-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.35); }
+  .mbn-mais-painel {
+    position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface);
+    border-radius: 14px 14px 0 0; padding: 10px 8px calc(14px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 2px; box-shadow: var(--shadow-lg);
+  }
+  .mbn-mais-item {
+    background: none; border: none; text-align: left; padding: 13px 14px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; min-height: 44px;
+  }
+  .mbn-mais-item:active { background: var(--border-soft); }
+
+  .ficha-fab { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+  .toast-stack { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Roteiro do dia = a próxima ação: sempre primeiro widget da tela */
+  .dash-widget[data-widget-id="roteiro"] { order: -1; }
+  /* Ação (Abrir/WhatsApp) empilhada abaixo do texto — numa linha só, o texto
+     longo empurrava os botões pra fora da largura visível do cartão (achado
+     da auditoria de set/2026). */
+  .roteiro-item { flex-wrap: wrap; }
+  .roteiro-actions { flex-basis: 100%; justify-content: flex-start; margin-top: 8px; padding-left: 18px; }
 }
 

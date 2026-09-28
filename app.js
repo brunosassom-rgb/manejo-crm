@@ -1110,7 +1110,7 @@ function badgeClassForLeadStatus(status) {
 // ---------- Navegação principal ----------
 function switchMainTab(tabName, preselectClientId) {
   if (tabName !== "ficha") fichaNavStack = [];
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
+  document.querySelectorAll(".tab-btn, .mbn-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === tabName));
   if (tabName === "dashboard") { renderDashboardCanvas(); renderDashboard(); }
   if (tabName === "pipeline") renderPipeline();
@@ -1123,6 +1123,49 @@ function switchMainTab(tabName, preselectClientId) {
   if (preselectClientId) { /* reserved for future preselect needs */ }
 }
 document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => switchMainTab(btn.dataset.tab)));
+
+// ---------- Navegação inferior do celular ("Painel de Campo") ----------
+document.querySelectorAll(".mbn-btn[data-tab], .mbn-mais-item[data-tab]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    switchMainTab(btn.dataset.tab);
+    document.getElementById("mbn-mais-sheet").classList.add("hidden");
+  });
+});
+document.getElementById("mbn-mais").addEventListener("click", () => {
+  document.getElementById("mbn-mais-sheet").classList.toggle("hidden");
+});
+document.getElementById("mbn-mais-backdrop").addEventListener("click", () => {
+  document.getElementById("mbn-mais-sheet").classList.add("hidden");
+});
+document.getElementById("mbn-mais-perfil").addEventListener("click", () => {
+  switchMainTab("meus-dados");
+  document.getElementById("mbn-mais-sheet").classList.add("hidden");
+});
+
+// ---------- Copiloto lateral (painel de conversa fixo, desktop) ----------
+// Sem IA ainda: a captura de texto abre "Registrar Contato" já preenchido, pra revisar e
+// salvar em 1 passo a menos. O gancho pra uma IA de verdade entra bem aqui, mais pra frente.
+document.getElementById("btn-copiloto-colapsar").addEventListener("click", () => {
+  document.getElementById("copiloto-painel").classList.toggle("recolhido");
+});
+document.getElementById("btn-copiloto-enviar").addEventListener("click", () => {
+  const input = document.getElementById("copiloto-input");
+  const texto = input.value.trim();
+  if (!texto) return;
+  const corpo = document.getElementById("copiloto-corpo");
+  const vazio = corpo.querySelector(".copiloto-vazio");
+  if (vazio) vazio.remove();
+  const bolha = document.createElement("div");
+  bolha.className = "copiloto-bolha-usuario";
+  bolha.textContent = texto;
+  corpo.appendChild(bolha);
+  corpo.scrollTop = corpo.scrollHeight;
+
+  const fichaAtiva = document.getElementById("ficha").classList.contains("active") ? currentFichaClientId : undefined;
+  openContatoModal(fichaAtiva);
+  document.getElementById("contato-resumo").value = texto;
+  input.value = "";
+});
 
 // ---------- Tema escuro ----------
 function applyTheme() {

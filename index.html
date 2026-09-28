@@ -61,6 +61,35 @@
     </div>
   </nav>
 
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button type="button" class="mbn-btn active" data-tab="dashboard">
+      <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>
+      <span class="mbn-label">Hoje</span>
+    </button>
+    <button type="button" class="mbn-btn" data-tab="clientes">
+      <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <span class="mbn-label">Clientes</span>
+    </button>
+    <button type="button" class="mbn-btn" data-tab="agenda">
+      <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
+      <span class="mbn-label">Agenda</span>
+    </button>
+    <button type="button" class="mbn-btn" id="mbn-mais">
+      <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+      <span class="mbn-label">Mais</span>
+    </button>
+  </nav>
+  <div class="mbn-mais-sheet hidden" id="mbn-mais-sheet">
+    <div class="mbn-mais-backdrop" id="mbn-mais-backdrop"></div>
+    <div class="mbn-mais-painel">
+      <button type="button" class="mbn-mais-item" data-tab="pipeline">Pipeline</button>
+      <button type="button" class="mbn-mais-item" data-tab="leads">Leads</button>
+      <button type="button" class="mbn-mais-item" data-tab="competitiva">Inteligência Competitiva</button>
+      <button type="button" class="mbn-mais-item" data-tab="relatorios">Relatórios</button>
+      <button type="button" class="mbn-mais-item" id="mbn-mais-perfil">Meus dados / Configurações</button>
+    </div>
+  </div>
+
   <main>
     <!-- ==================== DASHBOARD ==================== -->
     <section id="dashboard" class="tab-panel active">
@@ -692,6 +721,23 @@
       </form>
     </section>
   </main>
+
+  <aside class="copiloto-painel" id="copiloto-painel">
+    <div class="copiloto-head">
+      <span class="copiloto-mark">M</span>
+      <span class="copiloto-titulo">Assistente do Manejo</span>
+      <button type="button" class="copiloto-colapsar" id="btn-copiloto-colapsar" title="Recolher/expandir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="copiloto-corpo" id="copiloto-corpo">
+      <div class="copiloto-vazio">Anote aqui o que aconteceu com um cliente. Por enquanto isso já abre um registro de contato pronto pra você revisar e salvar — em breve uma IA vai entender e organizar isso sozinha.</div>
+    </div>
+    <div class="copiloto-input-row">
+      <textarea id="copiloto-input" rows="2" placeholder="Ex: liguei pro Roberto da Montanha Encantada, ele quer aumentar o pedido..."></textarea>
+      <button type="button" class="btn-primary" id="btn-copiloto-enviar">Registrar contato</button>
+    </div>
+  </aside>
   </div>
   </div>
 
