@@ -17,6 +17,15 @@
         ],
         "createdAt": "2026-09-28T00:14:40.840Z",
         "reason": "all 11 instances checked individually (lines 577,721,753,861,901,1247,1570,1578,1738,1753,1902): each encodes real semantic meaning already established in earlier tasks this session (follow-up result color, agenda event type, report section tone, kanban stage, alert severity) via a colored left/top border, not decorative filler; none were added by today's Painel de Campo/Copiloto change"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "style.css"
+        ],
+        "createdAt": "2026-09-28T02:36:52.469Z",
+        "reason": "conferi as 3 ocorrencias (competitiva-tabgrid, rs-card, kanban-col) e visualmente por screenshot: borda de 3px com raio de 12px renderiza limpa, sem serrilhado, e e o padrao consistente de faixa colorida por categoria ja usado e aprovado em varias telas ao longo da sessao, nenhuma delas nova"
       }
     ]
   }
