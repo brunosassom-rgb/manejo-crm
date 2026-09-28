@@ -1506,14 +1506,23 @@ function refreshBellBadge() {
 }
 
 // ---------- Contador animado ----------
+// Valor em faixa de métricas: "R$ 82,7 mi" em vez de "R$ 82.680.000,00" (que quebrava em 2 a 3
+// linhas). O valor exato fica no title do elemento, pra quem passar o mouse.
+function formatMoneyCompacto(v) {
+  const n = Number(v) || 0;
+  if (Math.abs(n) >= 1e6) return "R$ " + (n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi";
+  if (Math.abs(n) >= 1e4) return "R$ " + (n / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mil";
+  return formatMoney(n);
+}
 function animateCounter(el, target, isMoney) {
   const start = 0;
   const duration = 500;
   const startTime = performance.now();
+  if (isMoney) el.title = formatMoney(target);
   function step(now) {
     const progress = Math.min((now - startTime) / duration, 1);
     const value = start + (target - start) * progress;
-    el.textContent = isMoney ? formatMoney(value) : Math.round(value).toLocaleString("pt-BR");
+    el.textContent = isMoney ? formatMoneyCompacto(value) : Math.round(value).toLocaleString("pt-BR");
     if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
@@ -1925,7 +1934,7 @@ function renderPipeline() {
         <div class="kanban-card ${tempCls}" draggable="true" data-client-id="${l.id}" role="button" tabindex="0" aria-label="${escapeHtml(l.nome)}, etapa ${escapeHtml(stage)}${l.temperatura ? ", " + escapeHtml(l.temperatura.toLowerCase()) : ""}${vencido ? ", próximo passo vencido" : ""}. Abrir ficha" style="${vencido ? "border-color:#a8441f;" : ""}">
           <div class="kc-top"><span class="kc-name">${escapeHtml(l.nome)}</span>${l.temperatura ? `<span class="kc-temp ${tempCls}">${escapeHtml(l.temperatura)}</span>` : `<span class="kc-dot" style="background:${vencido ? "#a8441f" : STAGE_COLOR[stage]}" aria-hidden="true"></span>`}</div>
           <div class="kc-sub">${escapeHtml(l.municipio || "-")} · ${escapeHtml(describeCategorias(l) || "sem categoria")}</div>
-          <div class="kc-meta"><span class="kc-pot">${l.potencialTon ? l.potencialTon + "t" : "—"}</span><span class="${vencido ? "kc-vencido" : ""}">${l.dataProximoPasso ? formatDate(l.dataProximoPasso) : "sem próximo passo"}</span></div>
+          <div class="kc-meta"><span class="kc-pot">${formatTon(l.potencialTon)}</span><span class="${vencido ? "kc-vencido" : ""}" title="${l.dataProximoPasso ? formatDate(l.dataProximoPasso) : ""}">${l.dataProximoPasso ? dataRelativa(l.dataProximoPasso, true) : "sem próximo passo"}</span></div>
         </div>`;
     }).join("");
     return `
@@ -2097,7 +2106,10 @@ function renderLeadsList() {
     if (!query) return true;
     return [l.nome, l.fazenda, l.municipio, l.estado].some(v => (v || "").toLowerCase().includes(query));
   });
-  container.innerHTML = leads.length ? leads.map(l => leadCardHtml(l, query)).join("")
+  // Cabeçalho só visual (aria-hidden): cada linha já carrega os próprios rótulos pra leitor de
+  // tela, e no celular esses rótulos aparecem em cima de cada valor no lugar do cabeçalho.
+  container.innerHTML = leads.length
+    ? `<div class="lead-head" aria-hidden="true"><span>Lead</span><span>Etapa</span><span class="h-num">Potencial</span><span>Próx. passo</span><span>Últ. contato</span></div>` + leads.map(l => leadCardHtml(l, query)).join("")
     : `<div class="empty-state">Nenhum lead encontrado.</div>`;
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
   if (document.getElementById("leads").classList.contains("active")) gravarUrl(urlParamsDaAbaAtual("leads"), false);
@@ -2111,34 +2123,46 @@ function highlight(text, term) {
   return escapeHtml(text.slice(0, idx)) + "<mark>" + escapeHtml(text.slice(idx, idx + term.length)) + "</mark>" + escapeHtml(text.slice(idx + term.length));
 }
 
+// Data relativa pra escanear rápido ("há 3 dias", "Hoje", "em 6 dias"); a data exata vai no
+// title. `futuro` = true pra prazos (próximo passo), false pra fatos passados (último contato).
+function dataRelativa(iso, futuro) {
+  if (!iso) return futuro ? "sem data" : "nunca";
+  const d = daysBetween(todayStr(), iso);
+  if (d === 0) return "Hoje";
+  if (d === 1) return "Amanhã";
+  if (d === -1) return "Ontem";
+  return d > 0 ? `em ${d} dias` : `há ${-d} dias`;
+}
+function formatTon(v) {
+  const n = Number(v);
+  if (!v || !isFinite(n)) return "—";
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " t";
+}
+
+// Linha densa (~56px) no lugar do card de ~190px: 12 a 14 leads por tela em vez de 3 a 4.
+// Urgência do próximo passo dita em palavra + cor, não num pontinho.
 function leadCardHtml(lead, query) {
-  const badge = lead.status !== "Ativo"
-    ? `<span class="badge ${badgeClassForLeadStatus(lead.status)}">${escapeHtml(lead.status)}</span>`
-    : `<span class="badge ${badgeClassForStage(lead.etapaFunil)}">${escapeHtml(lead.etapaFunil || "-")}</span>`;
   const contatos = contatosForClient(lead.id);
-  const ultimoContato = contatos.length ? formatDate(contatos[0].data) : "—";
   const ultimaEtapa = (lead.historicoEtapas || [])[(lead.historicoEtapas || []).length - 1];
   const diasNaEtapa = ultimaEtapa ? daysBetween(ultimaEtapa.data, todayStr()) : (lead.criadoEm ? daysBetween(lead.criadoEm, todayStr()) : null);
   const urgencia = urgenciaProximoPasso(lead);
-  const URGENCIA_TEXTO = { late: "atrasado", soon: "hoje ou amanhã", ok: "em dia", "sem-dado": "sem data" };
+  const ativo = lead.status === "Ativo";
+  const etapaTxt = ativo ? (lead.etapaFunil || "-") : lead.status;
+  const sub = [lead.fazenda, lead.municipio, lead.temperatura].filter(Boolean).map(escapeHtml).join(" · ");
+  const ultimo = contatos.length ? contatos[0].data : "";
   return `
-    <div class="card" data-client-id="${lead.id}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(lead.nome)}">
-      <div class="card-top">
-        <div class="lead-avatar-row">
-          <div class="lead-avatar" aria-hidden="true">${initials(lead.nome)}</div>
-          <div class="lead-avatar-text">
-            <div class="card-name">${highlight(lead.nome, query)}${lead.fazenda ? " · " + escapeHtml(lead.fazenda) : ""}</div>
-            <div class="card-sub">${escapeHtml(describeCategorias(lead))} ${lead.municipio ? "· " + escapeHtml(lead.municipio) : ""}${lead.temperatura ? " · " + escapeHtml(lead.temperatura) : ""}</div>
-          </div>
+    <div class="card lead-row" data-client-id="${lead.id}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(lead.nome)}">
+      <div class="lr-id">
+        <div class="lead-avatar" aria-hidden="true">${initials(lead.nome)}</div>
+        <div class="lr-txt">
+          <div class="lr-nome">${highlight(lead.nome, query)}</div>
+          ${sub ? `<div class="lr-sub">${sub}</div>` : ""}
         </div>
-        ${badge}
       </div>
-      <div class="client-meta">
-        <span class="cm"><span class="cm-l">Potencial</span><span class="cm-v">${lead.potencialTon ? lead.potencialTon + "t/mês" : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Próx. passo</span><span class="cm-v"><span class="lead-urgencia-dot ${urgencia}" role="img" aria-label="Próximo passo ${URGENCIA_TEXTO[urgencia]}" title="Próximo passo ${URGENCIA_TEXTO[urgencia]}"></span>${lead.dataProximoPasso ? formatDate(lead.dataProximoPasso) : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Últ. contato</span><span class="cm-v">${ultimoContato}</span></span>
-        <span class="cm"><span class="cm-l">Na etapa há</span><span class="cm-v">${diasNaEtapa != null ? diasNaEtapa + "d" : "—"}</span></span>
-      </div>
+      <div class="lr-etapa${ativo ? "" : " fora"}"><span class="lr-l">Etapa: </span>${escapeHtml(etapaTxt)}${diasNaEtapa != null ? `<small>há ${diasNaEtapa} dias nesta etapa</small>` : ""}</div>
+      <div class="lr-num"><span class="lr-l">Potencial: </span>${formatTon(lead.potencialTon)}</div>
+      <div class="lr-prox ${urgencia}" title="${lead.dataProximoPasso ? formatDate(lead.dataProximoPasso) : ""}"><span class="lr-l">Próximo passo: </span>${dataRelativa(lead.dataProximoPasso, true)}</div>
+      <div class="lr-contato" title="${ultimo ? formatDate(ultimo) : ""}"><span class="lr-l">Último contato: </span>${dataRelativa(ultimo, false)}</div>
     </div>`;
 }
 
