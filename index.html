@@ -20,14 +20,15 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
   <div class="app-shell">
-  <nav class="rail">
-    <div class="rail-brand"><img class="rail-logo" src="assets/brand-mark.png" alt="Manejo CRM"><div class="rail-brand-text"><span class="brand-name" id="rail-brand-name">Manejo</span><span class="brand-sub">CRM</span></div></div>
+  <nav class="rail" aria-label="Barra superior">
+    <div class="rail-brand"><img class="rail-logo" src="assets/brand-mark.png" alt="" width="48" height="48"><h1 class="rail-brand-text"><span class="brand-name" id="rail-brand-name">Manejo</span><span class="brand-sub">CRM</span></h1></div>
     <div class="appbar-search">
-      <input type="text" id="global-search" placeholder="Buscar cliente, fazenda, cidade...">
+      <input type="text" id="global-search" placeholder="Buscar cliente, fazenda, cidade…" aria-label="Buscar cliente, fazenda ou cidade" autocomplete="off" enterkeyhint="search">
     </div>
     <div class="quick-actions-menu">
-      <button class="btn-primary" id="btn-quick-actions" title="Ações rápidas">+ Novo</button>
+      <button type="button" class="btn-primary" id="btn-quick-actions" aria-label="Novo registro" aria-haspopup="true" aria-expanded="false" aria-controls="quick-actions-dropdown">+ Novo</button>
       <div class="quick-actions-dropdown hidden" id="quick-actions-dropdown">
         <button type="button" class="quick-action-item" id="qa-novo-lead">Novo lead</button>
         <button type="button" class="quick-action-item" id="qa-novo-compromisso">Novo compromisso</button>
@@ -36,32 +37,32 @@
         <button type="button" class="quick-action-item" id="qa-editar-layout">Editar layout do dashboard</button>
       </div>
     </div>
-    <button class="appbar-bell" id="appbar-bell" title="Notificações">
-      <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-      <span class="bell-badge" id="bell-badge" style="display:none">0</span>
+    <button type="button" class="appbar-bell" id="appbar-bell" aria-label="Notificações">
+      <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="bell-badge" id="bell-badge" style="display:none" aria-hidden="true">0</span>
     </button>
-    <button class="theme-toggle" id="theme-toggle" title="Alternar modo escuro">Dark</button>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Alternar modo escuro" aria-pressed="false">Dark</button>
   </nav>
 
   <div class="body-row">
-  <nav class="rail-side">
+  <nav class="rail-side" aria-label="Navegação principal">
     <div class="rail-side-nav">
-      <button class="tab-btn active" data-tab="dashboard" title="Dashboard"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span></button>
-      <button class="tab-btn" data-tab="pipeline" title="Pipeline"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span></button>
-      <button class="tab-btn" data-tab="clientes" title="Clientes"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></button>
-      <button class="tab-btn" data-tab="leads" title="Leads"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c0-4 2-6 2-10"/><path d="M9.5 9.4c-3-1-3.5-3.4-3.5-5.4 4 0 6 2 6.5 4"/><path d="M14.5 9.4c3-1 3.5-3.4 3.5-5.4-4 0-6 2-6.5 4"/></svg></span></button>
-      <button class="tab-btn" data-tab="agenda" title="Agenda"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span></button>
-      <button class="tab-btn" data-tab="competitiva" title="Intel. Competitiva"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span></button>
-      <button class="tab-btn" data-tab="relatorios" title="Relatórios"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span></button>
+      <button type="button" class="tab-btn active" data-tab="dashboard" aria-label="Dashboard" title="Dashboard"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span></button>
+      <button type="button" class="tab-btn" data-tab="pipeline" aria-label="Pipeline" title="Pipeline"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span></button>
+      <button type="button" class="tab-btn" data-tab="clientes" aria-label="Clientes" title="Clientes"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></button>
+      <button type="button" class="tab-btn" data-tab="leads" aria-label="Leads" title="Leads"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c0-4 2-6 2-10"/><path d="M9.5 9.4c-3-1-3.5-3.4-3.5-5.4 4 0 6 2 6.5 4"/><path d="M14.5 9.4c3-1 3.5-3.4 3.5-5.4-4 0-6 2-6.5 4"/></svg></span></button>
+      <button type="button" class="tab-btn" data-tab="agenda" aria-label="Agenda" title="Agenda"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span></button>
+      <button type="button" class="tab-btn" data-tab="competitiva" aria-label="Inteligência Competitiva" title="Inteligência Competitiva"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span></button>
+      <button type="button" class="tab-btn" data-tab="relatorios" aria-label="Relatórios" title="Relatórios"><span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span></button>
     </div>
     <div class="rail-side-profile">
-      <button type="button" class="rail-user" id="btn-rail-user" title="Meus dados">
-        <div class="avatar" id="rail-user-avatar">BS</div>
+      <button type="button" class="rail-user" id="btn-rail-user" aria-label="Meus dados e configurações" title="Meus dados">
+        <div class="avatar" id="rail-user-avatar" aria-hidden="true">BS</div>
       </button>
     </div>
   </nav>
 
-  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegação principal (celular)">
     <button type="button" class="mbn-btn active" data-tab="dashboard">
       <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>
       <span class="mbn-label">Hoje</span>
@@ -74,13 +75,13 @@
       <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
       <span class="mbn-label">Agenda</span>
     </button>
-    <button type="button" class="mbn-btn" id="mbn-mais">
-      <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+    <button type="button" class="mbn-btn" id="mbn-mais" aria-haspopup="true" aria-expanded="false" aria-controls="mbn-mais-sheet">
+      <span class="ico"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
       <span class="mbn-label">Mais</span>
     </button>
   </nav>
-  <div class="mbn-mais-sheet hidden" id="mbn-mais-sheet">
-    <div class="mbn-mais-backdrop" id="mbn-mais-backdrop"></div>
+  <div class="mbn-mais-sheet hidden" id="mbn-mais-sheet" role="dialog" aria-label="Mais opções de navegação">
+    <div class="mbn-mais-backdrop" id="mbn-mais-backdrop" aria-hidden="true"></div>
     <div class="mbn-mais-painel">
       <button type="button" class="mbn-mais-item" data-tab="pipeline">Pipeline</button>
       <button type="button" class="mbn-mais-item" data-tab="leads">Leads</button>
@@ -90,7 +91,7 @@
     </div>
   </div>
 
-  <main>
+  <main id="conteudo" tabindex="-1">
     <!-- ==================== DASHBOARD ==================== -->
     <section id="dashboard" class="tab-panel active">
       <div class="section-header">
@@ -104,11 +105,11 @@
     <section id="pipeline" class="tab-panel">
       <h2>Pipeline</h2>
       <p class="hint">Arraste os cards entre as etapas.</p>
-      <div class="pipeline-filters">
-        <select id="filtro-municipio"><option value="">Município (todos)</option></select>
-        <select id="filtro-categoria"><option value="">Categoria animal (todas)</option></select>
-        <select id="filtro-produto"><option value="">Produto (todos)</option></select>
-        <select id="filtro-temperatura">
+      <div class="pipeline-filters" role="group" aria-label="Filtros do pipeline">
+        <select id="filtro-municipio" aria-label="Filtrar por município"><option value="">Município (todos)</option></select>
+        <select id="filtro-categoria" aria-label="Filtrar por categoria animal"><option value="">Categoria animal (todas)</option></select>
+        <select id="filtro-produto" aria-label="Filtrar por produto"><option value="">Produto (todos)</option></select>
+        <select id="filtro-temperatura" aria-label="Filtrar por temperatura">
           <option value="">Temperatura (todas)</option>
           <option>Frio</option>
           <option>Morno</option>
@@ -123,12 +124,12 @@
       <div class="section-header">
         <h2>Clientes</h2>
       </div>
-      <p class="hint">Convertidos a partir do Fechamento do funil de Lead — não participam mais do funil de vendas. Para cadastrar um novo contato, use "+ Novo lead" na aba Leads.</p>
-      <div class="clientes-toggle" id="clientes-view-switch">
-        <button type="button" class="clientes-toggle-btn active" data-view="lista">Lista</button>
-        <button type="button" class="clientes-toggle-btn" data-view="matriz">Matriz</button>
+      <p class="hint">Convertidos a partir do Fechamento do funil de Lead — não participam mais do funil de vendas. Para cadastrar um novo contato, use “+ Novo lead” na aba Leads.</p>
+      <div class="clientes-toggle" id="clientes-view-switch" role="group" aria-label="Modo de visualização">
+        <button type="button" class="clientes-toggle-btn active" data-view="lista" aria-pressed="true">Lista</button>
+        <button type="button" class="clientes-toggle-btn" data-view="matriz" aria-pressed="false">Matriz</button>
       </div>
-      <input id="busca-cliente" type="text" placeholder="Buscar por nome, fazenda, cidade ou região..." class="search-input">
+      <input id="busca-cliente" type="text" placeholder="Buscar por nome, fazenda, cidade ou região…" class="search-input" aria-label="Buscar cliente" autocomplete="off" enterkeyhint="search">
       <div id="clientes-list" class="cards"></div>
       <div id="clientes-matriz" class="hidden"></div>
     </section>
@@ -139,7 +140,7 @@
         <h2>Leads</h2>
       </div>
       <p class="hint">Prospecção até Fechamento — ainda não convertidos em Cliente Ativo.</p>
-      <input id="busca-lead" type="text" placeholder="Buscar por nome, fazenda, cidade ou região..." class="search-input">
+      <input id="busca-lead" type="text" placeholder="Buscar por nome, fazenda, cidade ou região…" class="search-input" aria-label="Buscar lead" autocomplete="off" enterkeyhint="search">
       <div id="leads-list" class="cards"></div>
     </section>
 
@@ -150,25 +151,25 @@
       </div>
 
       <div class="agenda-toolbar">
-        <div class="view-switch">
-          <button class="view-switch-btn active" data-view="mes">Mês</button>
-          <button class="view-switch-btn" data-view="semana">Semana</button>
-          <button class="view-switch-btn" data-view="dia">Dia</button>
+        <div class="view-switch" role="group" aria-label="Período da agenda">
+          <button type="button" class="view-switch-btn active" data-view="mes" aria-pressed="true">Mês</button>
+          <button type="button" class="view-switch-btn" data-view="semana" aria-pressed="false">Semana</button>
+          <button type="button" class="view-switch-btn" data-view="dia" aria-pressed="false">Dia</button>
         </div>
-        <div class="agenda-filters" id="agenda-filters"></div>
+        <div class="agenda-filters" id="agenda-filters" role="group" aria-label="Tipos de evento"></div>
       </div>
 
       <div class="agenda-grid">
         <div class="dash-panel">
           <div class="calendar-head">
-            <button class="calendar-nav-btn" id="cal-prev">‹</button>
-            <span class="cal-title" id="cal-title"></span>
-            <button class="calendar-nav-btn" id="cal-next">›</button>
+            <button type="button" class="calendar-nav-btn" id="cal-prev" aria-label="Período anterior">‹</button>
+            <span class="cal-title" id="cal-title" aria-live="polite"></span>
+            <button type="button" class="calendar-nav-btn" id="cal-next" aria-label="Próximo período">›</button>
           </div>
           <div id="calendar-body"></div>
         </div>
         <div class="agenda-side">
-          <h4>Hoje</h4>
+          <h3>Hoje</h3>
           <div id="agenda-hoje-list"></div>
         </div>
       </div>
@@ -188,11 +189,11 @@
         <div class="ch-chips" id="competitiva-hero-chips"></div>
       </div>
 
-      <div class="detalhe-tabs" id="competitiva-subtabs">
-        <button class="detalhe-tab-btn active" data-ctab="geral">Visão geral</button>
-        <button class="detalhe-tab-btn" data-ctab="comparativo">Comparativo por concorrente</button>
-        <button class="detalhe-tab-btn" data-ctab="radar-mapa">Radar &amp; Mapa</button>
-        <button class="detalhe-tab-btn" data-ctab="pontos">Pontos fracos/fortes</button>
+      <div class="detalhe-tabs" id="competitiva-subtabs" role="group" aria-label="Seções da Inteligência Competitiva">
+        <button type="button" class="detalhe-tab-btn active" data-ctab="geral">Visão geral</button>
+        <button type="button" class="detalhe-tab-btn" data-ctab="comparativo">Comparativo por concorrente</button>
+        <button type="button" class="detalhe-tab-btn" data-ctab="radar-mapa">Radar &amp; Mapa</button>
+        <button type="button" class="detalhe-tab-btn" data-ctab="pontos">Pontos fracos/fortes</button>
       </div>
 
       <div class="competitiva-tabgrid" data-ctab-panel="geral">
@@ -255,7 +256,7 @@
     <section id="relatorios" class="tab-panel">
       <h2 class="no-print">Relatórios</h2>
       <div class="relatorios-layout">
-        <nav class="relatorios-menu no-print" id="relatorios-menu">
+        <nav class="relatorios-menu no-print" id="relatorios-menu" aria-label="Tipos de relatório">
           <button type="button" class="relatorios-menu-item" data-relview="overview">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             <span>Visão geral</span>
@@ -325,58 +326,58 @@
 
           <div id="report-cliente" class="report-panel">
             <div class="report-controls no-print">
-              <select id="relatorio-cliente-select"></select>
-              <button id="btn-imprimir-relatorio-cliente" class="btn-secondary">Imprimir / Salvar PDF</button>
+              <select id="relatorio-cliente-select" aria-label="Cliente do relatório"></select>
+              <button type="button" id="btn-imprimir-relatorio-cliente" class="btn-secondary">Imprimir / Salvar PDF</button>
             </div>
             <div id="relatorio-cliente-conteudo"></div>
           </div>
 
           <div id="report-cliente-periodo" class="report-panel">
             <div class="report-controls no-print">
-              <select id="relatorio-cliente-periodo-select"></select>
-              <input type="month" id="relatorio-cliente-periodo-mes">
-              <button id="btn-imprimir-relatorio-cliente-periodo" class="btn-secondary">Imprimir / Salvar PDF</button>
+              <select id="relatorio-cliente-periodo-select" aria-label="Cliente do relatório"></select>
+              <input type="month" id="relatorio-cliente-periodo-mes" aria-label="Mês do relatório">
+              <button type="button" id="btn-imprimir-relatorio-cliente-periodo" class="btn-secondary">Imprimir / Salvar PDF</button>
             </div>
             <div id="relatorio-cliente-periodo-conteudo"></div>
           </div>
 
           <div id="report-mensal" class="report-panel">
             <div class="report-controls no-print">
-              <input type="month" id="relatorio-mes-select">
-              <button id="btn-imprimir-relatorio-mensal" class="btn-secondary">Imprimir / Salvar PDF</button>
+              <input type="month" id="relatorio-mes-select" aria-label="Mês do relatório">
+              <button type="button" id="btn-imprimir-relatorio-mensal" class="btn-secondary">Imprimir / Salvar PDF</button>
             </div>
             <div id="relatorio-mensal-conteudo"></div>
           </div>
 
           <div id="report-visitas" class="report-panel">
             <div class="report-controls no-print" style="flex-wrap:wrap;">
-              <input type="text" id="visitas-busca" placeholder="Buscar por cliente...">
-              <input type="date" id="visitas-filtro-data">
-              <select id="visitas-filtro-objetivo"><option value="">Objetivo (todos)</option></select>
+              <input type="text" id="visitas-busca" placeholder="Buscar por cliente…" aria-label="Buscar visita por cliente" autocomplete="off">
+              <input type="date" id="visitas-filtro-data" aria-label="Filtrar por data da visita">
+              <select id="visitas-filtro-objetivo" aria-label="Filtrar por objetivo"><option value="">Objetivo (todos)</option></select>
             </div>
             <div class="no-print" style="overflow-x:auto; margin-bottom:20px;">
               <table class="mini" id="visitas-tabela">
-                <thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Objetivo</th><th>Condição</th><th></th></tr></thead>
+                <thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Objetivo</th><th>Condição</th><th><span class="sr-only">Ações</span></th></tr></thead>
                 <tbody id="visitas-tabela-body"></tbody>
               </table>
             </div>
 
             <div class="report-controls no-print">
-              <button id="btn-imprimir-visita" class="btn-secondary">Imprimir / Salvar PDF do relatório selecionado</button>
+              <button type="button" id="btn-imprimir-visita" class="btn-secondary">Imprimir / Salvar PDF do relatório selecionado</button>
             </div>
             <div id="visita-documento-conteudo"></div>
 
             <h3 class="no-print">Gerencial de visitas por período</h3>
             <div class="report-controls no-print">
-              <input type="month" id="visitas-gerencial-mes">
-              <button id="btn-imprimir-visitas-gerencial" class="btn-secondary">Imprimir / Salvar PDF</button>
+              <input type="month" id="visitas-gerencial-mes" aria-label="Mês do gerencial de visitas">
+              <button type="button" id="btn-imprimir-visitas-gerencial" class="btn-secondary">Imprimir / Salvar PDF</button>
             </div>
             <div id="visitas-gerencial-conteudo"></div>
           </div>
 
           <div id="report-funil" class="report-panel">
             <div class="report-controls no-print">
-              <button id="btn-imprimir-relatorio-funil" class="btn-secondary">Imprimir / Salvar PDF</button>
+              <button type="button" id="btn-imprimir-relatorio-funil" class="btn-secondary">Imprimir / Salvar PDF</button>
             </div>
             <div id="relatorio-funil-conteudo"></div>
           </div>
@@ -388,11 +389,11 @@
     <section id="meus-dados" class="tab-panel">
       <div class="perfil-grid">
         <div class="ficha-left" id="perfil-sidebar">
-          <div class="ficha-avatar" id="perfil-sidebar-avatar">BS</div>
-          <div class="fnome" id="perfil-sidebar-nome">Usuário</div>
+          <div class="ficha-avatar" id="perfil-sidebar-avatar" aria-hidden="true">BS</div>
+          <h2 class="fnome" id="perfil-sidebar-nome">Usuário</h2>
           <div class="card-sub" id="perfil-sidebar-cargo"></div>
-          <div class="ficha-actions">
-            <button type="button" class="btn-secondary ficha-secao-btn active" id="btn-perfil-secao-dados" data-secao="dados">Meus dados</button>
+          <div class="ficha-actions" role="group" aria-label="Seções">
+            <button type="button" class="btn-secondary ficha-secao-btn active" id="btn-perfil-secao-dados" data-secao="dados" aria-current="true">Meus dados</button>
             <button type="button" class="btn-secondary ficha-secao-btn" id="btn-perfil-secao-config" data-secao="config">Configurações</button>
             <div class="perfil-sair-wrap">
               <button type="button" class="btn-secondary" id="btn-logout">Sair</button>
@@ -415,19 +416,19 @@
                     </div>
                   </div>
                   <label>Nome
-                    <input type="text" id="perfil-nome-usuario" placeholder="Ex: Bruno Sasso">
+                    <input type="text" id="perfil-nome-usuario" placeholder="Ex: Bruno Sasso" autocomplete="name">
                   </label>
                   <label>Cargo
-                    <input type="text" id="perfil-cargo-usuario" placeholder="Ex: Gerente de Território">
+                    <input type="text" id="perfil-cargo-usuario" placeholder="Ex: Gerente de Território" autocomplete="organization-title">
                   </label>
                   <label>Celular
-                    <input type="text" id="perfil-whatsapp-usuario" placeholder="Ex: (66) 99999-0000">
+                    <input type="tel" id="perfil-whatsapp-usuario" placeholder="Ex: (66) 99999-0000" inputmode="tel" autocomplete="tel">
                   </label>
                   <label>E-mail
-                    <input type="email" id="perfil-email-usuario" placeholder="Ex: voce@empresa.com">
+                    <input type="email" id="perfil-email-usuario" placeholder="Ex: voce@empresa.com" autocomplete="email" spellcheck="false">
                   </label>
                   <div class="actions-row" style="margin-top:6px">
-                    <button type="button" class="btn-primary" id="btn-salvar-perfil">Salvar</button>
+                    <button type="button" class="btn-primary" id="btn-salvar-perfil">Salvar perfil</button>
                   </div>
                 </div>
               </div>
@@ -453,7 +454,7 @@
                 <div class="settings-card-title">Empresa e marca</div>
                 <div class="form">
                   <label>Empresa do representante/vendedor
-                    <input type="text" id="config-empresa-representante" placeholder="Ex: Bruno Sasso Nutrição Animal">
+                    <input type="text" id="config-empresa-representante" placeholder="Ex: Bruno Sasso Nutrição Animal" autocomplete="organization">
                   </label>
                   <label>Logo do representante
                     <input type="file" id="config-logo-representante-input" accept="image/*">
@@ -468,15 +469,15 @@
                 <div class="settings-card-title">Metas</div>
                 <label class="settings-inline">
                   Meta de visitas técnicas por mês
-                  <input type="number" id="input-meta-visitas" min="0" style="width:90px; margin-top:0;">
+                  <input type="number" id="input-meta-visitas" min="0" inputmode="numeric" style="width:90px; margin-top:0;">
                 </label>
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Aparência</div>
-                <label class="settings-inline">
-                  Modo escuro
-                  <button class="btn-secondary" id="btn-toggle-dark-settings">Alternar</button>
-                </label>
+                <div class="settings-inline">
+                  <span id="label-modo-escuro">Modo escuro</span>
+                  <button type="button" class="btn-secondary" id="btn-toggle-dark-settings" aria-labelledby="label-modo-escuro btn-toggle-dark-settings" aria-pressed="false">Alternar</button>
+                </div>
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Atalhos de teclado</div>
@@ -488,9 +489,9 @@
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Importar dados</div>
-                <p class="hint" style="margin-top:0">Selecione o JSON exportado (clientes ativos + leads) para mapear e importar automaticamente.</p>
-                <input type="file" id="import-json-file" accept="application/json">
-                <div id="import-json-status" class="hint" style="margin-top:8px"></div>
+                <p class="hint" style="margin-top:0" id="hint-import-json">Selecione o JSON exportado (clientes ativos + leads) para mapear e importar automaticamente.</p>
+                <input type="file" id="import-json-file" accept="application/json" aria-label="Arquivo JSON para importar" aria-describedby="hint-import-json">
+                <div id="import-json-status" class="hint" style="margin-top:8px" role="status" aria-live="polite"></div>
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Backup dos dados</div>
@@ -501,7 +502,7 @@
                     <input type="file" id="restore-backup-file" accept="application/json" style="display:none">
                   </label>
                 </div>
-                <div id="restore-backup-status" class="hint" style="margin-top:8px"></div>
+                <div id="restore-backup-status" class="hint" style="margin-top:8px" role="status" aria-live="polite"></div>
               </div>
             </div>
           </div>
@@ -512,35 +513,35 @@
     <!-- ==================== FICHA DO CLIENTE/LEAD ==================== -->
     <section id="ficha" class="tab-panel">
       <div class="section-header" style="margin-bottom:16px;">
-        <button class="btn-secondary" id="btn-ficha-voltar">&larr; Voltar</button>
+        <button type="button" class="btn-secondary" id="btn-ficha-voltar">&larr; Voltar</button>
       </div>
       <div class="ficha-grid">
         <div class="ficha-left" id="ficha-left"></div>
         <div class="ficha-right">
           <!-- Navegação da ficha de LEAD (inalterada) -->
-          <div class="detalhe-tabs" id="ficha-lead-nav">
-            <button class="detalhe-tab-btn active" data-dtab="produtivo">Perfil Produtivo</button>
-            <button class="detalhe-tab-btn" data-dtab="contatos">Follow-ups / Contatos</button>
-            <button class="detalhe-tab-btn" data-dtab="visitas">Visitas Técnicas</button>
-            <button class="detalhe-tab-btn" data-dtab="propostas">Funil de Vendas</button>
-            <button class="detalhe-tab-btn" data-dtab="concorrencia">Inteligência Competitiva</button>
+          <div class="detalhe-tabs" id="ficha-lead-nav" role="group" aria-label="Seções da ficha do lead">
+            <button type="button" class="detalhe-tab-btn active" data-dtab="produtivo">Perfil Produtivo</button>
+            <button type="button" class="detalhe-tab-btn" data-dtab="contatos">Follow-ups / Contatos</button>
+            <button type="button" class="detalhe-tab-btn" data-dtab="visitas">Visitas Técnicas</button>
+            <button type="button" class="detalhe-tab-btn" data-dtab="propostas">Funil de Vendas</button>
+            <button type="button" class="detalhe-tab-btn" data-dtab="concorrencia">Inteligência Competitiva</button>
           </div>
 
           <!-- Sub-navegação da ficha de CLIENTE ATIVO: preenchida conforme o botão (Histórico/Cadastro) selecionado no sidebar -->
-          <div class="detalhe-tabs hidden" id="ficha-sub-tabs"></div>
+          <div class="detalhe-tabs hidden" id="ficha-sub-tabs" role="group" aria-label="Seções da ficha do cliente"></div>
 
           <div id="ficha-conteudo"></div>
         </div>
       </div>
       <div class="ficha-fab hidden" id="ficha-fab">
-        <div class="ficha-fab-menu hidden" id="ficha-fab-menu">
+        <div class="ficha-fab-menu hidden" id="ficha-fab-menu" aria-label="Ações do cliente">
           <button type="button" class="ficha-fab-item" id="fab-acao-venda">Registrar Venda</button>
           <button type="button" class="ficha-fab-item" id="fab-acao-estoque">Registrar Estoque</button>
           <button type="button" class="ficha-fab-item" id="fab-acao-contato">Registrar Contato</button>
           <button type="button" class="ficha-fab-item" id="fab-acao-visita">Relatório de Visita Técnica</button>
           <button type="button" class="ficha-fab-item" id="fab-acao-sac">Registrar SAC</button>
         </div>
-        <button type="button" class="ficha-fab-btn" id="ficha-fab-btn" aria-label="Registrar ação">+</button>
+        <button type="button" class="ficha-fab-btn" id="ficha-fab-btn" aria-label="Registrar ação" aria-haspopup="true" aria-expanded="false" aria-controls="ficha-fab-menu">+</button>
       </div>
     </section>
 
@@ -548,28 +549,28 @@
     <section id="visita-relatorio" class="tab-panel">
       <div class="section-header no-print" style="margin-bottom:16px;">
         <div style="display:flex; align-items:center; gap:14px;">
-          <button class="btn-secondary" id="btn-visita-relatorio-voltar">&larr; Voltar</button>
+          <button type="button" class="btn-secondary" id="btn-visita-relatorio-voltar">&larr; Voltar</button>
           <h2 id="visita-relatorio-titulo" style="margin:0;">Relatório de Visita Técnica</h2>
         </div>
       </div>
       <div class="wizard-progress">
-        <div class="wizard-progress-bubbles">
-          <div class="wizard-bubble" data-bubble="1">1</div>
-          <div class="wizard-bubble" data-bubble="2">2</div>
-          <div class="wizard-bubble" data-bubble="3">3</div>
-          <div class="wizard-bubble" data-bubble="4">4</div>
-          <div class="wizard-bubble" data-bubble="5">5</div>
-          <div class="wizard-bubble" data-bubble="6">6</div>
+        <div class="wizard-progress-bubbles" role="list" aria-label="Etapas do relatório">
+          <div class="wizard-bubble" data-bubble="1" role="listitem" aria-label="Etapa 1: Identificação">1</div>
+          <div class="wizard-bubble" data-bubble="2" role="listitem" aria-label="Etapa 2: Objetivo da Visita">2</div>
+          <div class="wizard-bubble" data-bubble="3" role="listitem" aria-label="Etapa 3: Situação Encontrada">3</div>
+          <div class="wizard-bubble" data-bubble="4" role="listitem" aria-label="Etapa 4: Recomendações Técnicas">4</div>
+          <div class="wizard-bubble" data-bubble="5" role="listitem" aria-label="Etapa 5: Próximos Passos">5</div>
+          <div class="wizard-bubble" data-bubble="6" role="listitem" aria-label="Etapa 6: Dados Internos">6</div>
         </div>
-        <div class="wizard-progress-label" id="visita-wizard-label"></div>
+        <div class="wizard-progress-label" id="visita-wizard-label" aria-live="polite"></div>
       </div>
-      <form id="form-visita" class="form">
+      <form id="form-visita" class="form" autocomplete="off">
         <input type="hidden" id="visita-id">
 
         <div class="wizard-step" data-step="1">
           <label id="visita-cliente-busca-wrap">Cliente / lead
-            <input type="text" id="visita-cliente-busca" placeholder="Buscar cliente...">
-            <select id="visita-cliente" required style="margin-top:6px;"></select>
+            <input type="text" id="visita-cliente-busca" placeholder="Buscar cliente…" aria-label="Buscar cliente ou lead">
+            <select id="visita-cliente" required style="margin-top:6px;" aria-label="Cliente / lead"></select>
           </label>
           <div id="visita-cliente-info" class="visita-info-box"></div>
           <label>Data da visita
@@ -590,14 +591,14 @@
           <div class="actions-row" style="margin-top:6px;">
             <button type="button" class="btn-secondary" id="btn-capturar-gps-visita">Registrar localização da visita</button>
           </div>
-          <p class="hint" id="visita-localizacao-status"></p>
+          <p class="hint" id="visita-localizacao-status" role="status" aria-live="polite"></p>
           <input type="hidden" id="visita-localizacao-lat">
           <input type="hidden" id="visita-localizacao-lng">
           <input type="hidden" id="visita-localizacao-endereco">
         </div>
 
         <div class="wizard-step" data-step="2">
-          <div id="visita-objetivos-container" class="visita-checkbox-grid"></div>
+          <div id="visita-objetivos-container" class="visita-checkbox-grid" role="group" aria-label="Objetivos da visita"></div>
           <label>Detalhar objetivo (se necessário)
             <textarea id="visita-objetivo-detalhe" rows="2"></textarea>
           </label>
@@ -643,7 +644,7 @@
           <label>Resultados esperados (com prazo estimado)
             <textarea id="visita-resultados-esperados" rows="2"></textarea>
           </label>
-          <label>Fotos das recomendações (produto, rótulo, ponto de aplicação... até 10)
+          <label>Fotos das recomendações (produto, rótulo, ponto de aplicação… até 10)
             <input type="file" id="visita-fotos-recomendacoes-input" accept="image/*" capture="environment" multiple>
           </label>
           <div id="visita-fotos-recomendacoes-preview" class="visita-fotos-grid-legenda"></div>
@@ -722,20 +723,20 @@
     </section>
   </main>
 
-  <aside class="copiloto-painel" id="copiloto-painel">
+  <aside class="copiloto-painel" id="copiloto-painel" aria-label="Assistente do Manejo">
     <div class="copiloto-painel-inner">
       <div class="copiloto-head">
-        <span class="copiloto-mark">M</span>
+        <span class="copiloto-mark" aria-hidden="true">M</span>
         <span class="copiloto-titulo">Assistente do Manejo</span>
-        <button type="button" class="copiloto-colapsar" id="btn-copiloto-colapsar" title="Recolher/expandir">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <button type="button" class="copiloto-colapsar" id="btn-copiloto-colapsar" aria-label="Recolher painel do assistente" aria-expanded="true" aria-controls="copiloto-corpo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
-      <div class="copiloto-corpo" id="copiloto-corpo">
+      <div class="copiloto-corpo" id="copiloto-corpo" aria-live="polite">
         <div class="copiloto-vazio">Anote aqui o que aconteceu com um cliente. Por enquanto isso já abre um registro de contato pronto pra você revisar e salvar — em breve uma IA vai entender e organizar isso sozinha.</div>
       </div>
       <div class="copiloto-input-row">
-        <textarea id="copiloto-input" rows="2" placeholder="Ex: liguei pro Roberto da Montanha Encantada, ele quer aumentar o pedido..."></textarea>
+        <textarea id="copiloto-input" rows="2" placeholder="Ex: liguei pro Roberto da Montanha Encantada, ele quer aumentar o pedido…" aria-label="Anotação para o assistente"></textarea>
         <button type="button" class="btn-primary" id="btn-copiloto-enviar">Registrar contato</button>
       </div>
     </div>
@@ -743,16 +744,16 @@
   </div>
   </div>
 
-  <div class="toast-stack" id="toast-stack"></div>
+  <div class="toast-stack" id="toast-stack" role="status" aria-live="polite"></div>
 
   <!-- MODAL: novo/editar LEAD -->
   <div id="modal-cliente" class="modal-overlay hidden">
     <div class="modal modal-wide">
       <div class="modal-header">
         <h3 id="modal-cliente-titulo">Novo lead</h3>
-        <button class="btn-close" data-close-modal="modal-cliente">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-cliente">&times;</button>
       </div>
-      <form id="form-cliente" class="form form-grid">
+      <form id="form-cliente" class="form form-grid" autocomplete="off">
         <input type="hidden" id="cliente-id">
 
         <div class="detalhe-tabs">
@@ -777,7 +778,7 @@
             <input type="text" id="cliente-fazenda">
           </label>
           <label>CPF ou CNPJ
-            <input type="text" id="cliente-cpf-cnpj">
+            <input type="text" id="cliente-cpf-cnpj" inputmode="numeric" spellcheck="false">
           </label>
           <label>Rua
             <input type="text" id="cliente-endereco-rua">
@@ -798,7 +799,7 @@
             <input type="text" id="cliente-estado" maxlength="2" placeholder="Ex: MT">
           </label>
           <label>CEP
-            <input type="text" id="cliente-cep">
+            <input type="text" id="cliente-cep" inputmode="numeric" spellcheck="false">
           </label>
           <label>Como chegou até mim
             <select id="cliente-como-chegou">
@@ -816,7 +817,7 @@
           </label>
           <div style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px;">
             <button type="button" class="btn-secondary" id="btn-capturar-gps">Usar minha localização atual</button>
-            <span class="hint" id="cliente-localizacao-status"></span>
+            <span class="hint" id="cliente-localizacao-status" role="status" aria-live="polite"></span>
             <input type="hidden" id="cliente-lat"><input type="hidden" id="cliente-lng">
           </div>
         </fieldset>
@@ -939,10 +940,10 @@
             <input type="text" id="cliente-produto-proposta">
           </label>
           <label>Potencial estimado (toneladas/mês)
-            <input type="number" id="cliente-potencial-volume" min="0" step="any">
+            <input type="number" id="cliente-potencial-volume" min="0" step="any" inputmode="decimal">
           </label>
           <label>Valor potencial estimado (R$/mês)
-            <input type="number" id="cliente-potencial-valor" min="0" step="any">
+            <input type="number" id="cliente-potencial-valor" min="0" step="any" inputmode="decimal">
           </label>
           <div style="grid-column: 1 / -1;">
             <label style="margin-bottom:6px;">Objeções identificadas</label>
@@ -1017,9 +1018,9 @@
     <div class="modal modal-wide">
       <div class="modal-header">
         <h3>Editar Cliente Ativo</h3>
-        <button class="btn-close" data-close-modal="modal-cliente-ativo">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-cliente-ativo">&times;</button>
       </div>
-      <form id="form-cliente-ativo" class="form form-grid">
+      <form id="form-cliente-ativo" class="form form-grid" autocomplete="off">
         <input type="hidden" id="ca-id">
 
         <div class="detalhe-tabs">
@@ -1042,7 +1043,7 @@
             <input type="text" id="ca-fazenda">
           </label>
           <label>CPF ou CNPJ
-            <input type="text" id="ca-cpf-cnpj">
+            <input type="text" id="ca-cpf-cnpj" inputmode="numeric" spellcheck="false">
           </label>
           <label>Rua
             <input type="text" id="ca-endereco-rua">
@@ -1063,7 +1064,7 @@
             <input type="text" id="ca-estado" maxlength="2" placeholder="Ex: MT">
           </label>
           <label>CEP
-            <input type="text" id="ca-cep">
+            <input type="text" id="ca-cep" inputmode="numeric" spellcheck="false">
           </label>
           <label>Como chegou até mim
             <select id="ca-como-chegou">
@@ -1081,7 +1082,7 @@
           </label>
           <div style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px;">
             <button type="button" class="btn-secondary" id="btn-capturar-gps-ca">Usar minha localização atual</button>
-            <span class="hint" id="ca-localizacao-status"></span>
+            <span class="hint" id="ca-localizacao-status" role="status" aria-live="polite"></span>
             <input type="hidden" id="ca-lat"><input type="hidden" id="ca-lng">
           </div>
         </fieldset>
@@ -1156,13 +1157,13 @@
           <label>Avisar recompra quantos dias antes
             <input type="number" id="ca-alerta-recompra-dias" min="0" value="5">
           </label>
-          <label style="grid-column:1/-1;">Observações sobre o ciclo (sazonalidade, seca, monta...)
+          <label style="grid-column:1/-1;">Observações sobre o ciclo (sazonalidade, seca, monta…)
             <textarea id="ca-ciclo-obs" rows="2"></textarea>
           </label>
         </fieldset>
         </div>
 
-        <button type="submit" class="btn-primary" style="grid-column:1/-1;">Salvar</button>
+        <button type="submit" class="btn-primary" style="grid-column:1/-1;">Salvar cadastro</button>
       </form>
     </div>
   </div>
@@ -1172,9 +1173,9 @@
     <div class="modal modal-wide">
       <div class="modal-header">
         <h3>Nova versão de proposta</h3>
-        <button class="btn-close" data-close-modal="modal-proposta">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-proposta">&times;</button>
       </div>
-      <form id="form-proposta" class="form form-grid">
+      <form id="form-proposta" class="form form-grid" autocomplete="off">
         <input type="hidden" id="proposta-id">
         <input type="hidden" id="proposta-lead-id">
         <label>Data de envio
@@ -1184,7 +1185,7 @@
           <input type="date" id="proposta-validade">
         </label>
         <label>Volume total (toneladas)
-          <input type="number" id="proposta-volume-total" min="0" step="any">
+          <input type="number" id="proposta-volume-total" min="0" step="any" inputmode="decimal">
         </label>
         <label>Valor total dos produtos (R$)
           <input type="number" id="proposta-valor-total" readonly>
@@ -1219,9 +1220,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Encerrar lead</h3>
-        <button class="btn-close" data-close-modal="modal-encerrar-lead">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-encerrar-lead">&times;</button>
       </div>
-      <form id="form-encerrar-lead" class="form">
+      <form id="form-encerrar-lead" class="form" autocomplete="off">
         <input type="hidden" id="encerrar-lead-id">
         <label>Motivo do encerramento
           <select id="encerrar-motivo">
@@ -1246,9 +1247,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Inativar cliente</h3>
-        <button class="btn-close" data-close-modal="modal-inativar-cliente">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-inativar-cliente">&times;</button>
       </div>
-      <form id="form-inativar-cliente" class="form">
+      <form id="form-inativar-cliente" class="form" autocomplete="off">
         <input type="hidden" id="inativar-cliente-id">
         <label>Motivo da inativação
           <select id="inativar-motivo">
@@ -1272,9 +1273,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3 id="modal-fornecedor-titulo">Novo fornecedor</h3>
-        <button class="btn-close" data-close-modal="modal-fornecedor">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-fornecedor">&times;</button>
       </div>
-      <form id="form-fornecedor" class="form">
+      <form id="form-fornecedor" class="form" autocomplete="off">
         <input type="hidden" id="fornecedor-id">
         <label>Nome do fornecedor
           <input type="text" id="fornecedor-nome" required placeholder="Ex: ADM, Cargill, Tecnobeef, Bellman">
@@ -1299,9 +1300,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3 id="modal-consultor-titulo">Novo consultor/nutricionista</h3>
-        <button class="btn-close" data-close-modal="modal-consultor">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-consultor">&times;</button>
       </div>
-      <form id="form-consultor" class="form">
+      <form id="form-consultor" class="form" autocomplete="off">
         <input type="hidden" id="consultor-id">
         <label>Nome do consultor/nutricionista
           <input type="text" id="consultor-nome" required>
@@ -1310,13 +1311,13 @@
           <input type="text" id="consultor-empresa">
         </label>
         <label>WhatsApp
-          <input type="text" id="consultor-whatsapp">
+          <input type="tel" id="consultor-whatsapp" inputmode="tel" placeholder="Ex: (66) 99999-0000">
         </label>
         <label>Região de atuação
           <input type="text" id="consultor-regiao">
         </label>
         <label>Quantos clientes atende (estimativa)
-          <input type="number" id="consultor-estimativa-clientes" min="0">
+          <input type="number" id="consultor-estimativa-clientes" min="0" inputmode="numeric">
         </label>
         <label>Tem parceria/exclusividade com concorrente?
           <select id="consultor-parceria-concorrente">
@@ -1347,9 +1348,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Nova observação competitiva</h3>
-        <button class="btn-close" data-close-modal="modal-competitiva">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-competitiva">&times;</button>
       </div>
-      <form id="form-competitiva" class="form">
+      <form id="form-competitiva" class="form" autocomplete="off">
         <input type="hidden" id="competitiva-cliente-id">
         <label>Data da observação
           <input type="date" id="competitiva-data" required>
@@ -1398,9 +1399,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Registrar estoque</h3>
-        <button class="btn-close" data-close-modal="modal-estoque">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-estoque">&times;</button>
       </div>
-      <form id="form-estoque" class="form">
+      <form id="form-estoque" class="form" autocomplete="off">
         <input type="hidden" id="estoque-cliente-id">
         <label>Categoria animal
           <select id="estoque-categoria" required></select>
@@ -1409,7 +1410,7 @@
           <input type="date" id="estoque-data" required>
         </label>
         <label>Estoque atual (toneladas)
-          <input type="number" id="estoque-quantidade" min="0" step="any" required>
+          <input type="number" id="estoque-quantidade" min="0" step="any" required inputmode="decimal">
         </label>
         <label>Origem da informação
           <select id="estoque-origem">
@@ -1431,9 +1432,9 @@
     <div class="modal modal-wide">
       <div class="modal-header">
         <h3>Abrir SAC</h3>
-        <button class="btn-close" data-close-modal="modal-sac">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-sac">&times;</button>
       </div>
-      <form id="form-sac" class="form form-grid">
+      <form id="form-sac" class="form form-grid" autocomplete="off">
         <input type="hidden" id="sac-id">
         <input type="hidden" id="sac-cliente-id">
         <fieldset>
@@ -1503,9 +1504,9 @@
     <div class="modal modal-wide">
       <div class="modal-header">
         <h3>Registrar pedido</h3>
-        <button class="btn-close" data-close-modal="modal-pedido">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-pedido">&times;</button>
       </div>
-      <form id="form-pedido" class="form form-grid">
+      <form id="form-pedido" class="form form-grid" autocomplete="off">
         <input type="hidden" id="pedido-id">
         <fieldset>
           <legend>Identificação</legend>
@@ -1571,7 +1572,7 @@
             <input type="number" id="pedido-valor-produtos" readonly>
           </label>
           <label>Frete (R$)
-            <input type="number" id="pedido-frete" min="0" step="0.01" value="0">
+            <input type="number" id="pedido-frete" min="0" step="0.01" value="0" inputmode="decimal">
           </label>
           <label>Valor total com frete (R$)
             <input type="number" id="pedido-valor-com-frete" readonly>
@@ -1591,9 +1592,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Oportunidade de upsell</h3>
-        <button class="btn-close" data-close-modal="modal-upsell">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-upsell">&times;</button>
       </div>
-      <form id="form-upsell" class="form">
+      <form id="form-upsell" class="form" autocomplete="off">
         <input type="hidden" id="upsell-id">
         <input type="hidden" id="upsell-cliente-id">
         <label>Produto ou solução adicional
@@ -1603,7 +1604,7 @@
           <select id="upsell-categoria"><option value="">— Selecione —</option></select>
         </label>
         <label>Volume potencial adicional (toneladas)
-          <input type="number" id="upsell-volume" min="0" step="any">
+          <input type="number" id="upsell-volume" min="0" step="any" inputmode="decimal">
         </label>
         <label>Justificativa técnica
           <textarea id="upsell-justificativa" rows="2"></textarea>
@@ -1630,9 +1631,9 @@
     <div class="modal modal-wide">
       <div class="modal-header">
         <h3>Registrar contato</h3>
-        <button class="btn-close" data-close-modal="modal-contato">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-contato">&times;</button>
       </div>
-      <form id="form-contato" class="form form-grid">
+      <form id="form-contato" class="form form-grid" autocomplete="off">
         <input type="hidden" id="contato-id">
         <fieldset>
           <legend>Contato</legend>
@@ -1713,9 +1714,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Novo compromisso</h3>
-        <button class="btn-close" data-close-modal="modal-compromisso">&times;</button>
+        <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-compromisso">&times;</button>
       </div>
-      <form id="form-compromisso" class="form">
+      <form id="form-compromisso" class="form" autocomplete="off">
         <label>Cliente (opcional — deixe em branco para viagens/reuniões internas)
           <select id="compromisso-cliente"></select>
         </label>
@@ -1746,9 +1747,9 @@
   <!-- MODAL: pré-visualização de impressão (mostra capa/cabeçalho/rodapé/encerramento antes de
        abrir a caixa de impressão de verdade) -->
   <div id="modal-print-preview" class="modal-overlay hidden no-print">
-    <div class="print-preview-modal">
+    <div class="print-preview-modal" role="dialog" aria-modal="true" aria-labelledby="print-preview-titulo">
       <div class="print-preview-toolbar">
-        <div class="print-preview-toolbar-title">Pré-visualização de impressão</div>
+        <div class="print-preview-toolbar-title" id="print-preview-titulo">Pré-visualização de impressão</div>
         <div class="print-preview-toolbar-actions">
           <button type="button" class="btn-secondary" id="btn-print-preview-fechar">Fechar</button>
           <button type="button" class="btn-primary" id="btn-print-preview-imprimir">Imprimir / Salvar PDF</button>
@@ -1762,21 +1763,21 @@
 
   <!-- LOGIN: acesso ao Manejo CRM (fica visível até haver sessão ativa) -->
   <div id="modal-login" class="modal-overlay hidden">
-    <div class="modal" style="max-width:380px;">
+    <div class="modal" style="max-width:380px;" role="dialog" aria-modal="true" aria-labelledby="modal-login-titulo">
       <div class="modal-header">
-        <h3>Entrar no Manejo CRM</h3>
+        <h3 id="modal-login-titulo">Entrar no Manejo CRM</h3>
       </div>
 
       <!-- Entrar com e-mail e senha -->
       <form id="form-login" class="form">
         <label>E-mail
-          <input type="email" id="login-email" required placeholder="voce@empresa.com" autocomplete="email">
+          <input type="email" id="login-email" required placeholder="voce@empresa.com" autocomplete="email" inputmode="email" spellcheck="false">
         </label>
         <label>Senha
           <input type="password" id="login-senha" required placeholder="Sua senha" autocomplete="current-password">
         </label>
         <button type="submit" class="btn-primary" id="btn-login-enviar">Entrar</button>
-        <p class="hint" id="login-status" style="display:none;"></p>
+        <p class="hint" id="login-status" style="display:none;" role="alert"></p>
         <button type="button" class="btn-link" id="btn-login-ir-recuperar">Esqueci a senha / ainda não defini uma senha</button>
         <button type="button" class="btn-secondary" id="btn-login-continuar-offline" style="margin-top:4px;">Continuar sem entrar (só neste aparelho, sem sincronizar)</button>
       </form>
@@ -1785,10 +1786,10 @@
       <form id="form-login-recuperar" class="form hidden">
         <p class="hint">Digite seu e-mail — vamos mandar um link para você definir (ou redefinir) sua senha.</p>
         <label>E-mail
-          <input type="email" id="login-recuperar-email" required placeholder="voce@empresa.com" autocomplete="email">
+          <input type="email" id="login-recuperar-email" required placeholder="voce@empresa.com" autocomplete="email" inputmode="email" spellcheck="false">
         </label>
         <button type="submit" class="btn-primary" id="btn-login-recuperar-enviar">Enviar link</button>
-        <p class="hint" id="login-recuperar-status" style="display:none;"></p>
+        <p class="hint" id="login-recuperar-status" style="display:none;" role="status"></p>
         <p class="hint" style="margin-top:2px;">Abra o link no mesmo aparelho e navegador onde você quer usar o CRM.</p>
         <button type="button" class="btn-link" id="btn-login-voltar-entrar">Voltar para o login</button>
       </form>
@@ -1803,7 +1804,7 @@
           <input type="password" id="login-nova-senha-confirmar" required minlength="6" placeholder="Repita a senha" autocomplete="new-password">
         </label>
         <button type="submit" class="btn-primary" id="btn-login-nova-senha-salvar">Salvar senha e entrar</button>
-        <p class="hint" id="login-nova-senha-status" style="display:none;"></p>
+        <p class="hint" id="login-nova-senha-status" style="display:none;" role="alert"></p>
       </form>
     </div>
   </div>

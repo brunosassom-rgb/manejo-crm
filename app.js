@@ -517,7 +517,16 @@ function urgenciaProximoPasso(lead) {
   return "ok";
 }
 function addDays(dateStr, days) { const d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
-function formatDate(iso) { if (!iso) return "-"; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; }
+// Intl em vez de montar "dd/mm/aaaa" na mão: mesma saída de sempre em pt-BR, mas
+// respeita o locale do navegador se um dia for outro. Parse local (ano, mês-1, dia)
+// pra não cair no problema de "YYYY-MM-DD" ser lido como UTC e voltar o dia anterior.
+const DATE_FMT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+function formatDate(iso) {
+  if (!iso) return "-";
+  const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return String(iso);
+  return DATE_FMT.format(new Date(y, m - 1, d));
+}
 function formatMoney(v) { const n = Number(v) || 0; return "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 // Volume/quantidade com separador de milhar pt-BR — "v.toFixed(1)" cru vira "67500.0" (sem
 // separador e com ponto em vez de vírgula) pra volumes grandes; toLocaleString formata igual
@@ -668,13 +677,27 @@ function mostBoughtProduct(pedidos) {
 }
 
 // ---------- Toasts ----------
-function showToast(message) {
+// opcoes.acao = { label, onClick }: botão de ação dentro do toast (ex: "Desfazer" depois de
+// arrastar um card de etapa) — dá uma janela de arrependimento pra ações que antes eram
+// imediatas e sem volta. Com ação, o toast fica mais tempo na tela.
+function showToast(message, opcoes) {
   const stack = document.getElementById("toast-stack");
   const el = document.createElement("div");
   el.className = "toast";
-  el.textContent = message;
+  const texto = document.createElement("span");
+  texto.textContent = message;
+  el.appendChild(texto);
+  const acao = opcoes && opcoes.acao;
+  if (acao) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toast-acao";
+    btn.textContent = acao.label;
+    btn.addEventListener("click", () => { el.remove(); acao.onClick(); });
+    el.appendChild(btn);
+  }
   stack.appendChild(el);
-  setTimeout(() => el.remove(), 3200);
+  setTimeout(() => el.remove(), acao ? 7000 : 3200);
 }
 
 // ---------- Módulo 4 · Ciclo de recompra ----------
@@ -760,7 +783,7 @@ function agendarProximaVisitaAutomatica(clientId) {
 
 function classificacaoBadgeHtml(classe) {
   if (!classe) return "";
-  return `<span class="badge-classe badge-classe-${classe.toLowerCase()}" title="Classificação por potencial de volume — A é o maior potencial">${classe}</span>`;
+  return `<span class="badge-classe badge-classe-${classe.toLowerCase()}" role="img" aria-label="Classificação ${classe} por potencial de volume" title="Classificação por potencial de volume — A é o maior potencial">${classe}</span>`;
 }
 function classificarCicloStatus(daysSinceLast, cicloDias, favoriteProduct) {
   const ratio = daysSinceLast / cicloDias;
@@ -922,7 +945,7 @@ function computeAlerts() {
   state.leads.filter(l => l.status === "Ativo").forEach(l => {
     if (l.statusProximoPasso !== "Feito" && l.dataProximoPasso && l.dataProximoPasso < today) {
       alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Próximo passo vencido", severidade: "late",
-        mensagem: `"${l.proximoPassoTipo || "Próximo passo"}" venceu em ${formatDate(l.dataProximoPasso)}.` });
+        mensagem: `“${l.proximoPassoTipo || "Próximo passo"}” venceu em ${formatDate(l.dataProximoPasso)}.` });
     }
     const contatos = contatosForClient(l.id);
     const dias = contatos.length ? daysBetween(contatos[0].data, today) : null;
@@ -932,7 +955,7 @@ function computeAlerts() {
     }
     if (l.dataProximoPasso === today) {
       alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Follow-up hoje", severidade: "today",
-        mensagem: `"${l.proximoPassoTipo || "Próximo passo"}" agendado para hoje.` });
+        mensagem: `“${l.proximoPassoTipo || "Próximo passo"}” agendado para hoje.` });
     }
     contatos.forEach(ct => {
       if (ct.dataProximoContato === today) {
@@ -945,7 +968,7 @@ function computeAlerts() {
       const diasNaEtapa = ultimaMudanca ? daysBetween(ultimaMudanca.data, today) : null;
       if (diasNaEtapa !== null && diasNaEtapa > 3) {
         alerts.push({ clientId: l.id, clientName: l.nome, tipo: "Proposta sem atualização", severidade: "orange",
-          mensagem: `Há ${diasNaEtapa} dias em "Proposta enviada" sem atualização.` });
+          mensagem: `Há ${diasNaEtapa} dias em “Proposta enviada” sem atualização.` });
       }
     }
 
@@ -1032,7 +1055,7 @@ function computeAlerts() {
     upsellsForClient(c.id).filter(u => !["Convertida", "Descartada"].includes(u.status)).forEach(u => {
       const dias = daysBetween(u.dataIdentificacao, today);
       if (dias > 15) alerts.push({ clientId: c.id, clientName: c.nome, tipo: "Upsell sem avanço", severidade: "warn",
-        mensagem: `Oportunidade "${u.produto}" sem avanço há ${dias} dias.` });
+        mensagem: `Oportunidade “${u.produto}” sem avanço há ${dias} dias.` });
     });
 
     // Visita em atraso conforme a cadência da classificação A/B/C (potencial por volume) — cliente
@@ -1107,11 +1130,59 @@ function badgeClassForLeadStatus(status) {
   return "badge-neutral";
 }
 
+// ---------- Estado na URL (aba, filtros, cliente aberto) ----------
+// A URL reflete onde o usuário está (?tab=leads&q=..., ?tab=ficha&id=..., filtros do
+// pipeline, relatório aberto) — dá pra recarregar, voltar pelo botão do navegador e
+// mandar um link direto pra um cliente. Só navegação: nunca toca em dado salvo.
+// O hash é preservado sempre: o link de recuperação de senha do Supabase chega nele.
+let aplicandoUrl = false;
+const URL_TABS = ["dashboard", "pipeline", "clientes", "leads", "agenda", "competitiva", "relatorios", "meus-dados", "ficha"];
+function gravarUrl(params, push) {
+  if (aplicandoUrl) return;
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v && !(k === "tab" && v === "dashboard")) p.set(k, v);
+  const qs = p.toString();
+  const nova = location.pathname + (qs ? "?" + qs : "") + location.hash;
+  const atual = location.pathname + location.search + location.hash;
+  if (nova === atual) return;
+  try { push ? history.pushState(null, "", nova) : history.replaceState(null, "", nova); } catch { /* file:// ou sandbox sem history */ }
+}
+function urlParamsDaAbaAtual(tabName) {
+  const v = id => { const el = document.getElementById(id); return el ? el.value : ""; };
+  if (tabName === "pipeline") return { tab: tabName, mun: v("filtro-municipio"), cat: v("filtro-categoria"), prod: v("filtro-produto"), temp: v("filtro-temperatura") };
+  if (tabName === "leads") return { tab: tabName, q: v("busca-lead") };
+  if (tabName === "clientes") return { tab: tabName, q: v("busca-cliente") };
+  return { tab: tabName };
+}
+function aplicarEstadoDaUrl() {
+  const p = new URLSearchParams(location.search);
+  const tab = p.get("tab") || "dashboard";
+  aplicandoUrl = true;
+  try {
+    if (tab === "ficha" && p.get("id") && getEntidadeById(p.get("id"))) { openFicha(p.get("id"), true); return; }
+    if (!URL_TABS.includes(tab) || tab === "ficha") { switchMainTab("dashboard"); return; }
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val !== null) el.value = val; };
+    if (tab === "pipeline") { set("filtro-municipio", p.get("mun")); set("filtro-categoria", p.get("cat")); set("filtro-produto", p.get("prod")); set("filtro-temperatura", p.get("temp")); }
+    if (tab === "leads") set("busca-lead", p.get("q") || "");
+    if (tab === "clientes") set("busca-cliente", p.get("q") || "");
+    switchMainTab(tab);
+    if (tab === "relatorios" && p.get("rel")) mostrarRelatorioView(p.get("rel"));
+  } finally { aplicandoUrl = false; }
+}
+window.addEventListener("popstate", () => aplicarEstadoDaUrl());
+
 // ---------- Navegação principal ----------
 function switchMainTab(tabName, preselectClientId) {
   if (tabName !== "ficha") fichaNavStack = [];
-  document.querySelectorAll(".tab-btn, .mbn-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
+  document.querySelectorAll(".tab-btn, .mbn-btn").forEach(b => {
+    const ativo = b.dataset.tab === tabName;
+    b.classList.toggle("active", ativo);
+    if (ativo) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === tabName));
+  // URL primeiro (push = entrada no histórico do navegador); os renders abaixo só atualizam
+  // filtros/busca por replace, sem criar entrada nova.
+  if (tabName !== "ficha" && tabName !== "visita-relatorio") gravarUrl(urlParamsDaAbaAtual(tabName), true);
   if (tabName === "dashboard") { renderDashboardCanvas(); renderDashboard(); }
   if (tabName === "pipeline") renderPipeline();
   if (tabName === "clientes") renderClientList();
@@ -1125,21 +1196,25 @@ function switchMainTab(tabName, preselectClientId) {
 document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => switchMainTab(btn.dataset.tab)));
 
 // ---------- Navegação inferior do celular ("Painel de Campo") ----------
+function alternarSheetMais(abrir) {
+  const sheet = document.getElementById("mbn-mais-sheet");
+  const vai = abrir === undefined ? sheet.classList.contains("hidden") : abrir;
+  sheet.classList.toggle("hidden", !vai);
+  document.getElementById("mbn-mais").setAttribute("aria-expanded", String(vai));
+  if (vai) { const primeiro = sheet.querySelector("button"); if (primeiro) primeiro.focus(); }
+  else document.getElementById("mbn-mais").focus();
+}
 document.querySelectorAll(".mbn-btn[data-tab], .mbn-mais-item[data-tab]").forEach(btn => {
   btn.addEventListener("click", () => {
     switchMainTab(btn.dataset.tab);
-    document.getElementById("mbn-mais-sheet").classList.add("hidden");
+    if (!document.getElementById("mbn-mais-sheet").classList.contains("hidden")) alternarSheetMais(false);
   });
 });
-document.getElementById("mbn-mais").addEventListener("click", () => {
-  document.getElementById("mbn-mais-sheet").classList.toggle("hidden");
-});
-document.getElementById("mbn-mais-backdrop").addEventListener("click", () => {
-  document.getElementById("mbn-mais-sheet").classList.add("hidden");
-});
+document.getElementById("mbn-mais").addEventListener("click", () => alternarSheetMais());
+document.getElementById("mbn-mais-backdrop").addEventListener("click", () => alternarSheetMais(false));
 document.getElementById("mbn-mais-perfil").addEventListener("click", () => {
   switchMainTab("meus-dados");
-  document.getElementById("mbn-mais-sheet").classList.add("hidden");
+  alternarSheetMais(false);
 });
 
 // ---------- Copiloto lateral (painel de conversa fixo, desktop) ----------
@@ -1172,6 +1247,7 @@ function copilotoAdicionarBolha(texto, classe) {
 function copilotoFallbackManual(texto, clientId) {
   openContatoModal(clientId);
   document.getElementById("contato-resumo").value = texto;
+  document.getElementById("form-contato").dataset.sujo = "1"; // texto veio do usuário: fechar sem salvar deve avisar
 }
 
 async function copilotoChamarFuncao(payload) {
@@ -1225,7 +1301,10 @@ function copilotoMostrarConfirmacao(resultado, textoOriginal, fichaAtiva) {
 }
 
 document.getElementById("btn-copiloto-colapsar").addEventListener("click", () => {
-  document.getElementById("copiloto-painel").classList.toggle("recolhido");
+  const recolhido = document.getElementById("copiloto-painel").classList.toggle("recolhido");
+  const btn = document.getElementById("btn-copiloto-colapsar");
+  btn.setAttribute("aria-expanded", String(!recolhido));
+  btn.setAttribute("aria-label", recolhido ? "Expandir painel do assistente" : "Recolher painel do assistente");
 });
 document.getElementById("btn-copiloto-enviar").addEventListener("click", async () => {
   const input = document.getElementById("copiloto-input");
@@ -1256,6 +1335,7 @@ function applyTheme() {
   const dark = localStorage.getItem("crm-theme") === "dark";
   document.body.classList.toggle("theme-dark", dark);
   document.getElementById("theme-toggle").textContent = dark ? "Light" : "Dark";
+  ["theme-toggle", "btn-toggle-dark-settings"].forEach(id => { const b = document.getElementById(id); if (b) b.setAttribute("aria-pressed", String(dark)); });
 }
 function toggleTheme() {
   const dark = localStorage.getItem("crm-theme") === "dark";
@@ -1289,7 +1369,7 @@ function initConfiguracoesView() {
   renderLogoRepresentantePreview();
 }
 function mostrarPerfilView(view) {
-  document.querySelectorAll("#perfil-sidebar .ficha-secao-btn").forEach(b => b.classList.toggle("active", b.dataset.secao === view));
+  document.querySelectorAll("#perfil-sidebar .ficha-secao-btn").forEach(b => { const ativo = b.dataset.secao === view; b.classList.toggle("active", ativo); if (ativo) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
   document.getElementById("perfil-view-dados").classList.toggle("hidden", view !== "dados");
   document.getElementById("perfil-view-config").classList.toggle("hidden", view !== "config");
   if (view === "config") initConfiguracoesView();
@@ -1360,17 +1440,25 @@ document.getElementById("global-search").addEventListener("input", e => {
   }
 });
 // ---------- Menu "+ Novo" (ações rápidas) ----------
+function alternarQuickActions(abrir) {
+  const dropdown = document.getElementById("quick-actions-dropdown");
+  const btn = document.getElementById("btn-quick-actions");
+  const vai = abrir === undefined ? dropdown.classList.contains("hidden") : abrir;
+  dropdown.classList.toggle("hidden", !vai);
+  btn.setAttribute("aria-expanded", String(vai));
+  if (vai) { const primeiro = dropdown.querySelector("button"); if (primeiro) primeiro.focus(); }
+}
 document.getElementById("btn-quick-actions").addEventListener("click", e => {
   e.stopPropagation();
-  document.getElementById("quick-actions-dropdown").classList.toggle("hidden");
+  alternarQuickActions();
 });
 document.querySelectorAll("#quick-actions-dropdown .quick-action-item").forEach(btn => {
-  btn.addEventListener("click", () => document.getElementById("quick-actions-dropdown").classList.add("hidden"));
+  btn.addEventListener("click", () => alternarQuickActions(false));
 });
 document.addEventListener("click", e => {
   const dropdown = document.getElementById("quick-actions-dropdown");
   if (!dropdown.classList.contains("hidden") && !e.target.closest(".quick-actions-menu")) {
-    dropdown.classList.add("hidden");
+    alternarQuickActions(false);
   }
 });
 
@@ -1379,14 +1467,26 @@ document.addEventListener("keydown", e => {
     e.preventDefault();
     document.getElementById("global-search").focus();
   }
-  if (e.key === "n" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+  const emCampo = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName) || document.activeElement.isContentEditable;
+  if (e.key === "n" && !emCampo && !e.ctrlKey && !e.metaKey && !e.altKey && !document.querySelector(".modal-overlay:not(.hidden)")) {
     openClienteModal();
   }
   if (e.key === "Escape") {
+    // Menus abertos fecham primeiro (e devolvem o foco ao botão que os abriu)
+    if (!document.getElementById("quick-actions-dropdown").classList.contains("hidden")) { alternarQuickActions(false); document.getElementById("btn-quick-actions").focus(); return; }
+    if (!document.getElementById("mbn-mais-sheet").classList.contains("hidden")) { alternarSheetMais(false); return; }
+    const fab = document.getElementById("ficha-fab");
+    if (fab && fab.classList.contains("open")) { alternarFabMenu(false); document.getElementById("ficha-fab-btn").focus(); return; }
+    const dropdownFicha = document.querySelector(".ficha-action-dropdown:not(.hidden)");
+    if (dropdownFicha) { dropdownFicha.classList.add("hidden"); const b = dropdownFicha.closest(".ficha-action-menu").querySelector("button"); if (b) b.focus(); return; }
     // #modal-login fica de fora: só fecha por login concluído ou pelo botão
     // "Continuar sem entrar" — senão o usuário pode achar que "entrou" ao
     // simplesmente apertar Esc, e nunca perceber que a sincronização não está ativa.
-    document.querySelectorAll(".modal-overlay:not(.hidden):not(#modal-login)").forEach(m => m.classList.add("hidden"));
+    // Só o modal de cima fecha por Esc (um Esc = um passo), e passa pelo mesmo
+    // closeModal() do X, que avisa se há alteração não salva.
+    const abertos = [...document.querySelectorAll(".modal-overlay:not(.hidden):not(#modal-login)")];
+    const topo = abertos[abertos.length - 1];
+    if (topo) closeModal(topo.id);
   }
 });
 
@@ -1508,7 +1608,7 @@ function renderDashboardCanvas() {
     <div class="dash-widget ${w.id === "kpis" ? "dash-widget-flat" : ""}" data-widget-id="${w.id}" data-span="${w.span}" style="grid-column: span ${w.span};" ${dashboardEditMode ? 'draggable="true"' : ""}>
       <div class="dash-widget-head">
         <h3><span class="panel-ico tone-${tone}">${icon}</span>${escapeHtml(w.title)}</h3>
-        ${dashboardEditMode ? `<div class="widget-controls"><button type="button" class="btn-resize-widget" data-widget-id="${w.id}" title="Mudar tamanho">${ICONS.resize}</button><span class="drag-handle" title="Arrastar sobre outro widget pra trocar de lugar">${ICONS.gripVertical}</span></div>` : ""}
+        ${dashboardEditMode ? `<div class="widget-controls"><button type="button" class="btn-resize-widget btn-move-widget" data-widget-id="${w.id}" data-dir="-1" aria-label="Mover ${escapeHtml(w.title)} para antes">↑</button><button type="button" class="btn-resize-widget btn-move-widget" data-widget-id="${w.id}" data-dir="1" aria-label="Mover ${escapeHtml(w.title)} para depois">↓</button><button type="button" class="btn-resize-widget" data-widget-id="${w.id}" aria-label="Mudar tamanho de ${escapeHtml(w.title)}" title="Mudar tamanho">${ICONS.resize}</button><span class="drag-handle" title="Arrastar sobre outro widget pra trocar de lugar" aria-hidden="true">${ICONS.gripVertical}</span></div>` : ""}
       </div>
       ${WIDGET_INNER_HTML[w.id]}
     </div>`;
@@ -1548,13 +1648,30 @@ function attachDashboardEditHandlers() {
       renderDashboard();
     });
   });
-  canvas.querySelectorAll(".btn-resize-widget").forEach(btn => {
+  canvas.querySelectorAll(".btn-resize-widget:not(.btn-move-widget)").forEach(btn => {
     btn.addEventListener("click", () => {
       const widgetEl = canvas.querySelector(`.dash-widget[data-widget-id="${btn.dataset.widgetId}"]`);
       const nextSpan = (Number(widgetEl.dataset.span) % 3) + 1;
       widgetEl.dataset.span = nextSpan;
       widgetEl.style.gridColumn = `span ${nextSpan}`;
       persistDashboardLayoutFromDOM();
+    });
+  });
+  // Alternativa por teclado/toque ao arrastar: move o widget uma posição pra antes/depois
+  canvas.querySelectorAll(".btn-move-widget").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const layout = getDashboardLayout();
+      const idx = layout.findIndex(w => w.id === btn.dataset.widgetId);
+      const alvo = idx + Number(btn.dataset.dir);
+      if (idx < 0 || alvo < 0 || alvo >= layout.length) return;
+      const [moved] = layout.splice(idx, 1);
+      layout.splice(alvo, 0, moved);
+      state.dashboardLayout = layout;
+      saveState();
+      renderDashboardCanvas();
+      renderDashboard();
+      const novo = canvas.querySelector(`.btn-move-widget[data-widget-id="${btn.dataset.widgetId}"][data-dir="${btn.dataset.dir}"]`);
+      if (novo) novo.focus();
     });
   });
 }
@@ -1643,8 +1760,8 @@ function renderDashboard() {
   const alerts = computeAlerts();
   document.getElementById("alertas-list").innerHTML = alerts.length
     ? alerts.slice(0, 12).map(a => `
-        <div class="alert-item ${a.tipo === "Estoque baixo" ? "alert-item-destaque" : ""}" data-client-id="${a.clientId}">
-          <span class="alert-dot ${alertVisualClass(a.severidade)}"></span>
+        <div class="alert-item ${a.tipo === "Estoque baixo" ? "alert-item-destaque" : ""}" data-client-id="${a.clientId}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(a.clientName)}: ${escapeHtml(a.tipo)}">
+          <span class="alert-dot ${alertVisualClass(a.severidade)}" aria-hidden="true"></span>
           <div><div class="name">${escapeHtml(a.clientName)}</div><div class="msg">${escapeHtml(a.tipo)}</div></div>
         </div>`).join("")
     : `<div class="empty-state-plain">Nenhum alerta no momento.</div>`;
@@ -1707,28 +1824,33 @@ function renderDashboard() {
           const wa = waLinkForClient(a.clientId);
           const isEstoque = a.tipo === "Estoque baixo";
           return `<div class="roteiro-item ${isEstoque ? "roteiro-item-destaque" : ""}">
-            <span class="alert-dot ${alertVisualClass(a.severidade)}"></span>
-            <div class="roteiro-txt"><div class="roteiro-name">${escapeHtml(a.clientName)}</div><div class="roteiro-msg">${isEstoque ? `<span class="inline-ico">${ICONS.box}</span> ` : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
+            <span class="alert-dot ${alertVisualClass(a.severidade)}" aria-hidden="true"></span>
+            <div class="roteiro-txt"><div class="roteiro-name">${escapeHtml(a.clientName)}</div><div class="roteiro-msg">${isEstoque ? `<span class="inline-ico" aria-hidden="true">${ICONS.box}</span> ` : ""}${escapeHtml(a.tipo)} — ${escapeHtml(a.mensagem)}</div></div>
             <div class="roteiro-actions">
               ${isEstoque
-                ? `<button type="button" class="roteiro-lock-btn" data-client-id="${a.clientId || ""}" data-categoria-id="${a.categoriaAnimalId || ""}" data-data-leitura="${a.dataLeitura || ""}" title="Some quando o pedido for entregue — clique se perdeu essa venda">${ICONS.lock}</button>`
-                : `<button type="button" class="roteiro-feito-dot" data-compromisso-id="${a.compromissoId || ""}" data-client-id="${a.clientId || ""}" data-tipo="${escapeHtml(a.tipo)}" title="Marcar como feito">${ICONS.check}</button>`}
-              ${a.clientId ? `<button type="button" class="btn-mini roteiro-open" data-client-id="${a.clientId}">Abrir</button>` : ""}
-              ${wa ? `<a class="btn-mini btn-mini-wa" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+                ? `<button type="button" class="roteiro-lock-btn" data-client-id="${a.clientId || ""}" data-categoria-id="${a.categoriaAnimalId || ""}" data-data-leitura="${a.dataLeitura || ""}" aria-label="Marcar venda perdida para ${escapeHtml(a.clientName)}" title="Some quando o pedido for entregue — clique se perdeu essa venda">${ICONS.lock}</button>`
+                : `<button type="button" class="roteiro-feito-dot" data-compromisso-id="${a.compromissoId || ""}" data-client-id="${a.clientId || ""}" data-tipo="${escapeHtml(a.tipo)}" aria-label="Marcar como feito: ${escapeHtml(a.tipo)} de ${escapeHtml(a.clientName)}" title="Marcar como feito">${ICONS.check}</button>`}
+              ${a.clientId ? `<button type="button" class="btn-mini roteiro-open" data-client-id="${a.clientId}" aria-label="Abrir ficha de ${escapeHtml(a.clientName)}">Abrir</button>` : ""}
+              ${wa ? `<a class="btn-mini btn-mini-wa" href="${wa}" target="_blank" rel="noopener" aria-label="WhatsApp de ${escapeHtml(a.clientName)} (abre em nova aba)">WhatsApp</a>` : ""}
             </div>
           </div>`;
         }).join("") + `</div>`
       : `<div class="empty-state-plain">Tudo em dia — nenhuma ação pendente para hoje.</div>`);
     document.querySelectorAll("#roteiro-list .roteiro-open").forEach(b => b.addEventListener("click", () => openFicha(b.dataset.clientId)));
     document.querySelectorAll("#roteiro-list .roteiro-feito-dot").forEach(b => b.addEventListener("click", () => {
+      // Sai da lista na hora, mas com "Desfazer" no toast — antes não tinha volta.
+      let desfazer;
       if (b.dataset.compromissoId) {
         const compromisso = state.compromissos.find(c => c.id === b.dataset.compromissoId);
-        if (compromisso) compromisso.feito = true;
+        if (compromisso) { compromisso.feito = true; desfazer = () => { compromisso.feito = false; }; }
       } else {
+        const antes = (state.roteiroDispensados || []).slice();
         marcarRoteiroDispensadoHoje(b.dataset.clientId, b.dataset.tipo);
+        desfazer = () => { state.roteiroDispensados = antes; };
       }
       saveState();
       renderDashboard();
+      showToast("Marcado como feito.", { acao: { label: "Desfazer", onClick: () => { if (desfazer) desfazer(); saveState(); renderDashboard(); } } });
     }));
     document.querySelectorAll("#roteiro-list .roteiro-lock-btn").forEach(b => b.addEventListener("click", () => {
       if (confirm("Marcar que você perdeu essa venda (foi para a concorrência ou o cliente desistiu)? O alerta de estoque baixo desta categoria vai parar de aparecer até uma nova contagem de estoque.")) {
@@ -1800,17 +1922,17 @@ function renderPipeline() {
       const vencido = l.dataProximoPasso && l.dataProximoPasso < hoje && l.statusProximoPasso !== "Feito";
       const tempCls = l.temperatura === "Quente" ? "temp-quente" : l.temperatura === "Frio" ? "temp-frio" : l.temperatura === "Morno" ? "temp-morno" : "";
       return `
-        <div class="kanban-card ${tempCls}" draggable="true" data-client-id="${l.id}" style="${vencido ? "border-color:#a8441f;" : ""}">
-          <div class="kc-top"><span class="kc-name">${escapeHtml(l.nome)}</span>${l.temperatura ? `<span class="kc-temp ${tempCls}">${escapeHtml(l.temperatura)}</span>` : `<span class="kc-dot" style="background:${vencido ? "#a8441f" : STAGE_COLOR[stage]}"></span>`}</div>
+        <div class="kanban-card ${tempCls}" draggable="true" data-client-id="${l.id}" role="button" tabindex="0" aria-label="${escapeHtml(l.nome)}, etapa ${escapeHtml(stage)}${l.temperatura ? ", " + escapeHtml(l.temperatura.toLowerCase()) : ""}${vencido ? ", próximo passo vencido" : ""}. Abrir ficha" style="${vencido ? "border-color:#a8441f;" : ""}">
+          <div class="kc-top"><span class="kc-name">${escapeHtml(l.nome)}</span>${l.temperatura ? `<span class="kc-temp ${tempCls}">${escapeHtml(l.temperatura)}</span>` : `<span class="kc-dot" style="background:${vencido ? "#a8441f" : STAGE_COLOR[stage]}" aria-hidden="true"></span>`}</div>
           <div class="kc-sub">${escapeHtml(l.municipio || "-")} · ${escapeHtml(describeCategorias(l) || "sem categoria")}</div>
           <div class="kc-meta"><span class="kc-pot">${l.potencialTon ? l.potencialTon + "t" : "—"}</span><span class="${vencido ? "kc-vencido" : ""}">${l.dataProximoPasso ? formatDate(l.dataProximoPasso) : "sem próximo passo"}</span></div>
         </div>`;
     }).join("");
     return `
-      <div class="kanban-col" data-stage="${stage}">
+      <div class="kanban-col" data-stage="${stage}" role="region" aria-label="Etapa ${escapeHtml(stage)}: ${leadsNaEtapa.length} ${leadsNaEtapa.length === 1 ? "lead" : "leads"}, ${formatVolume(volumeTotal)} t de potencial">
         <div class="kanban-col-header">
           <div><div class="stage-name">${stage}</div><div class="stage-meta">${formatVolume(volumeTotal)}t potencial</div></div>
-          <span class="kanban-count">${leadsNaEtapa.length}</span>
+          <span class="kanban-count" aria-hidden="true">${leadsNaEtapa.length}</span>
         </div>
         <div class="kanban-drop" data-stage="${stage}">${cards}</div>
       </div>`;
@@ -1834,16 +1956,27 @@ function renderPipeline() {
       const dragging = document.querySelector(".kanban-card.dragging");
       if (!dragging) return;
       const lead = state.leads.find(l => l.id === dragging.dataset.clientId);
-      if (lead) {
+      if (lead && lead.etapaFunil !== drop.dataset.stage) {
+        const etapaAnterior = lead.etapaFunil;
         lead.etapaFunil = drop.dataset.stage;
         lead.historicoEtapas = lead.historicoEtapas || [];
         lead.historicoEtapas.push({ etapa: drop.dataset.stage, data: todayStr() });
         saveState();
-        showToast(`${lead.nome} movido para "${drop.dataset.stage}".`);
         renderPipeline();
+        // Arrastar é fácil de errar (soltar na coluna do lado) — "Desfazer" devolve o lead
+        // e tira a entrada que acabou de entrar no histórico de etapas.
+        showToast(`${lead.nome} movido para “${drop.dataset.stage}”.`, { acao: { label: "Desfazer", onClick: () => {
+          lead.etapaFunil = etapaAnterior;
+          const ultimo = lead.historicoEtapas[lead.historicoEtapas.length - 1];
+          if (ultimo && ultimo.etapa === drop.dataset.stage && ultimo.data === todayStr()) lead.historicoEtapas.pop();
+          saveState();
+          if (document.getElementById("pipeline").classList.contains("active")) renderPipeline();
+          showToast(`${lead.nome} voltou para “${etapaAnterior}”.`);
+        } } });
       }
     });
   });
+  gravarUrl(urlParamsDaAbaAtual("pipeline"), false);
 }
 
 // ============================================================
@@ -1870,6 +2003,7 @@ function renderClientList() {
     }).join("");
   }
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
+  if (document.getElementById("clientes").classList.contains("active")) gravarUrl(urlParamsDaAbaAtual("clientes"), false);
 }
 document.getElementById("busca-cliente").addEventListener("input", renderClientList);
 
@@ -1878,7 +2012,7 @@ function clienteMiniCardMatrizHtml(cliente, valor, riscoInfo, selo) {
   const seloHtml = selo === "eficiente" ? `<span class="matriz-selo matriz-selo-eficiente">⚡ eficiente</span>`
     : selo === "manutencao" ? `<span class="matriz-selo matriz-selo-manutencao">🔧 alta manutenção</span>` : "";
   return `
-    <div class="matriz-card" data-client-id="${cliente.id}">
+    <div class="matriz-card" data-client-id="${cliente.id}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(cliente.nome)}">
       <div class="matriz-card-nome">${escapeHtml(cliente.nome)}</div>
       <div class="matriz-card-linha"><span>${formatMoney(valor)}</span><span>${atividades} ativ.</span></div>
       <div class="matriz-card-linha"><span>Risco: ${riscoInfo.score}</span>${seloHtml}</div>
@@ -1945,8 +2079,9 @@ function renderClientesMatriz() {
 
 document.querySelectorAll("#clientes-view-switch button").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll("#clientes-view-switch button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("#clientes-view-switch button").forEach(b => { b.classList.remove("active"); b.setAttribute("aria-pressed", "false"); });
     btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
     const isMatriz = btn.dataset.view === "matriz";
     document.getElementById("busca-cliente").classList.toggle("hidden", isMatriz);
     document.getElementById("clientes-list").classList.toggle("hidden", isMatriz);
@@ -1965,6 +2100,7 @@ function renderLeadsList() {
   container.innerHTML = leads.length ? leads.map(l => leadCardHtml(l, query)).join("")
     : `<div class="empty-state">Nenhum lead encontrado.</div>`;
   container.querySelectorAll(".card").forEach(card => card.addEventListener("click", () => openFicha(card.dataset.clientId)));
+  if (document.getElementById("leads").classList.contains("active")) gravarUrl(urlParamsDaAbaAtual("leads"), false);
 }
 document.getElementById("busca-lead").addEventListener("input", renderLeadsList);
 
@@ -1984,12 +2120,13 @@ function leadCardHtml(lead, query) {
   const ultimaEtapa = (lead.historicoEtapas || [])[(lead.historicoEtapas || []).length - 1];
   const diasNaEtapa = ultimaEtapa ? daysBetween(ultimaEtapa.data, todayStr()) : (lead.criadoEm ? daysBetween(lead.criadoEm, todayStr()) : null);
   const urgencia = urgenciaProximoPasso(lead);
+  const URGENCIA_TEXTO = { late: "atrasado", soon: "hoje ou amanhã", ok: "em dia", "sem-dado": "sem data" };
   return `
-    <div class="card" data-client-id="${lead.id}">
+    <div class="card" data-client-id="${lead.id}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(lead.nome)}">
       <div class="card-top">
         <div class="lead-avatar-row">
-          <div class="lead-avatar">${initials(lead.nome)}</div>
-          <div>
+          <div class="lead-avatar" aria-hidden="true">${initials(lead.nome)}</div>
+          <div class="lead-avatar-text">
             <div class="card-name">${highlight(lead.nome, query)}${lead.fazenda ? " · " + escapeHtml(lead.fazenda) : ""}</div>
             <div class="card-sub">${escapeHtml(describeCategorias(lead))} ${lead.municipio ? "· " + escapeHtml(lead.municipio) : ""}${lead.temperatura ? " · " + escapeHtml(lead.temperatura) : ""}</div>
           </div>
@@ -1998,7 +2135,7 @@ function leadCardHtml(lead, query) {
       </div>
       <div class="client-meta">
         <span class="cm"><span class="cm-l">Potencial</span><span class="cm-v">${lead.potencialTon ? lead.potencialTon + "t/mês" : "—"}</span></span>
-        <span class="cm"><span class="cm-l">Próx. passo</span><span class="cm-v"><span class="lead-urgencia-dot ${urgencia}"></span>${lead.dataProximoPasso ? formatDate(lead.dataProximoPasso) : "—"}</span></span>
+        <span class="cm"><span class="cm-l">Próx. passo</span><span class="cm-v"><span class="lead-urgencia-dot ${urgencia}" role="img" aria-label="Próximo passo ${URGENCIA_TEXTO[urgencia]}" title="Próximo passo ${URGENCIA_TEXTO[urgencia]}"></span>${lead.dataProximoPasso ? formatDate(lead.dataProximoPasso) : "—"}</span></span>
         <span class="cm"><span class="cm-l">Últ. contato</span><span class="cm-v">${ultimoContato}</span></span>
         <span class="cm"><span class="cm-l">Na etapa há</span><span class="cm-v">${diasNaEtapa != null ? diasNaEtapa + "d" : "—"}</span></span>
       </div>
@@ -2008,8 +2145,8 @@ function leadCardHtml(lead, query) {
 function clienteAtivoCardHtml(cliente, query, classe) {
   const iniciais = initials(cliente.nome);
   return `
-    <div class="card client-card-simples" data-client-id="${cliente.id}">
-      <div class="ccs-avatar">${iniciais}</div>
+    <div class="card client-card-simples" data-client-id="${cliente.id}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(cliente.nome)}${classe ? ", classificação " + classe : ""}">
+      <div class="ccs-avatar" aria-hidden="true">${iniciais}</div>
       <div class="ccs-text">
         <span class="ccs-nome">${highlight(cliente.nome, query)}</span>
         <span class="ccs-fazenda">${cliente.fazenda ? escapeHtml(cliente.fazenda) : "—"}</span>
@@ -2047,7 +2184,7 @@ function renderConsultorList() {
   const container = document.getElementById("consultores-list");
   container.innerHTML = state.consultores.length
     ? state.consultores.map(cons => `
-        <div class="card" data-consultor-id="${cons.id}">
+        <div class="card" data-consultor-id="${cons.id}" role="button" tabindex="0" aria-label="Editar consultor ${escapeHtml(cons.nome)}">
           <div class="card-top">
             <div><div class="card-name">${escapeHtml(cons.nome)}${cons.empresa ? " · " + escapeHtml(cons.empresa) : ""}</div>
             <div class="card-sub">${escapeHtml(cons.regiao || "")} ${cons.whatsapp ? "· " + escapeHtml(cons.whatsapp) : ""}</div></div>
@@ -2137,19 +2274,19 @@ function renderContatosPessoasRowsGeneric(list, containerId, rerender) {
   container.innerHTML = list.map((p, i) => `
     <div class="contato-pessoa-card" data-idx="${i}">
       <div class="contato-pessoa-row">
-        <input type="text" class="cp-nome" placeholder="Nome completo" value="${escapeHtml(p.nome || "")}">
-        <input type="text" class="cp-cargo" placeholder="Cargo" value="${escapeHtml(p.cargo || "")}">
-        <select class="cp-papel">${PAPEL_CONTATO_OPCOES.map(o => `<option ${p.papel === o ? "selected" : ""}>${o}</option>`).join("")}</select>
-        ${list.length > 1 ? `<button type="button" class="btn-remove-cat btn-remove-contato" title="Remover">Remover</button>` : `<span></span>`}
+        <input type="text" class="cp-nome" placeholder="Nome completo" aria-label="Nome completo do contato ${i + 1}" value="${escapeHtml(p.nome || "")}">
+        <input type="text" class="cp-cargo" placeholder="Cargo" aria-label="Cargo do contato ${i + 1}" value="${escapeHtml(p.cargo || "")}">
+        <select class="cp-papel" aria-label="Papel do contato ${i + 1}">${PAPEL_CONTATO_OPCOES.map(o => `<option ${p.papel === o ? "selected" : ""}>${o}</option>`).join("")}</select>
+        ${list.length > 1 ? `<button type="button" class="btn-remove-cat btn-remove-contato" aria-label="Remover contato ${i + 1}">Remover</button>` : `<span></span>`}
       </div>
       <div class="contato-pessoa-row">
-        <input type="text" class="cp-whatsapp" placeholder="WhatsApp com DDD" value="${escapeHtml(p.whatsapp || "")}">
-        <input type="email" class="cp-email" placeholder="E-mail" value="${escapeHtml(p.email || "")}">
-        <select class="cp-canal">${CANAL_PREFERIDO_OPCOES.map(o => `<option ${p.canalPreferido === o ? "selected" : ""}>${o}</option>`).join("")}</select>
+        <input type="tel" inputmode="tel" class="cp-whatsapp" placeholder="WhatsApp com DDD" aria-label="WhatsApp do contato ${i + 1}" value="${escapeHtml(p.whatsapp || "")}">
+        <input type="email" inputmode="email" spellcheck="false" class="cp-email" placeholder="E-mail" aria-label="E-mail do contato ${i + 1}" value="${escapeHtml(p.email || "")}">
+        <select class="cp-canal" aria-label="Canal preferido do contato ${i + 1}">${CANAL_PREFERIDO_OPCOES.map(o => `<option ${p.canalPreferido === o ? "selected" : ""}>${o}</option>`).join("")}</select>
         <label class="cp-principal-label"><input type="radio" name="cp-principal-${containerId}" class="cp-principal" ${p.principal ? "checked" : ""}> Principal</label>
       </div>
       <label class="cp-nasc-label">Data de nascimento <input type="date" class="cp-nascimento" value="${escapeHtml(p.dataNascimento || "")}"></label>
-      <input type="text" class="cp-obs" placeholder="Observação sobre esse contato" value="${escapeHtml(p.obs || "")}">
+      <input type="text" class="cp-obs" placeholder="Observação sobre esse contato" aria-label="Observação sobre o contato ${i + 1}" value="${escapeHtml(p.obs || "")}">
       ${onlyDigits(p.whatsapp) ? `<a class="btn-secondary cp-wa-link" href="https://wa.me/55${onlyDigits(p.whatsapp)}" target="_blank" rel="noopener">Abrir WhatsApp</a>` : ""}
     </div>
   `).join("");
@@ -2193,8 +2330,8 @@ function renderObjecoesRows() {
   const container = document.getElementById("cliente-objecoes-list");
   container.innerHTML = currentObjecoes.map((texto, i) => `
     <div class="objecao-row" data-idx="${i}">
-      <input type="text" class="obj-texto" placeholder="Objeção identificada" value="${escapeHtml(texto)}">
-      <button type="button" class="btn-remove-cat" title="Remover">Remover</button>
+      <input type="text" class="obj-texto" placeholder="Objeção identificada" aria-label="Objeção ${i + 1}" value="${escapeHtml(texto)}">
+      <button type="button" class="btn-remove-cat" aria-label="Remover objeção ${i + 1}">Remover</button>
     </div>`).join("");
   container.querySelectorAll(".objecao-row").forEach(row => {
     const idx = Number(row.dataset.idx);
@@ -2243,16 +2380,16 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
     return `
     <div class="categoria-card" data-idx="${i}">
       <div class="categoria-animal-row">
-        <select class="cat-tipo">
+        <select class="cat-tipo" aria-label="Tipo de animal da categoria ${i + 1}">
           <option value="">— Tipo de animal —</option>
           ${TIPO_ANIMAL_OPCOES.map(o => `<option value="${o}" ${row.tipoAnimal === o ? "selected" : ""}>${o}</option>`).join("")}
         </select>
-        <select class="cat-fase" ${!fases.length ? "disabled" : ""}>
+        <select class="cat-fase" aria-label="Fase de produção da categoria ${i + 1}" ${!fases.length ? "disabled" : ""}>
           <option value="">${fases.length ? "— Fase —" : "—"}</option>
           ${fases.map(o => `<option value="${o}" ${row.faseProducao === o ? "selected" : ""}>${o}</option>`).join("")}
         </select>
-        <input type="number" class="cat-qty" min="0" placeholder="Quantidade" value="${escapeHtml(row.quantidade || "")}">
-        ${list.length > 1 ? `<button type="button" class="btn-remove-cat" title="Remover">Remover</button>` : `<span></span>`}
+        <input type="number" class="cat-qty" min="0" inputmode="numeric" placeholder="Quantidade" aria-label="Quantidade de animais da categoria ${i + 1}" value="${escapeHtml(row.quantidade || "")}">
+        ${list.length > 1 ? `<button type="button" class="btn-remove-cat" aria-label="Remover categoria ${i + 1}">Remover</button>` : `<span></span>`}
       </div>
       <label class="cat-sistema-label">Sistema de produção
         <select class="cat-sistema">
@@ -2261,22 +2398,22 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
         </select>
       </label>
       <details class="categoria-situacao">
-        <summary>Situação atual (fornecedor, produto, satisfação...)</summary>
+        <summary>Situação atual (fornecedor, produto, satisfação…)</summary>
         <div class="categoria-situacao-grid">
-          <select class="cat-fornecedor">${fornecedorOptionsHtml(row.fornecedorAtual)}</select>
-          <input type="text" class="cat-produto" placeholder="Produto que usa hoje" value="${escapeHtml(row.produtoAtual || "")}">
+          <select class="cat-fornecedor" aria-label="Fornecedor atual da categoria ${i + 1}">${fornecedorOptionsHtml(row.fornecedorAtual)}</select>
+          <input type="text" class="cat-produto" placeholder="Produto que usa hoje" aria-label="Produto que usa hoje na categoria ${i + 1}" value="${escapeHtml(row.produtoAtual || "")}">
           <div class="cat-consumo-wrap">
-            <input type="number" class="cat-consumo-animal" min="0" step="any" placeholder="Consumo por animal (kg/dia)" value="${escapeHtml(row.consumoPorAnimalDia || "")}">
+            <input type="number" class="cat-consumo-animal" min="0" step="any" inputmode="decimal" placeholder="Consumo por animal (kg/dia)" aria-label="Consumo por animal em kg por dia, categoria ${i + 1}" value="${escapeHtml(row.consumoPorAnimalDia || "")}">
             <span class="cat-volume-calc">${formatVolume(calcVolumeMensalEstimado(row.quantidade, row.consumoPorAnimalDia))} t/mês estimado</span>
           </div>
-          <input type="text" class="cat-prazo" placeholder="Prazo de pagamento" value="${escapeHtml(row.prazoPagamento || "")}">
-          <select class="cat-frete"><option value="FOB" ${row.tipoFrete === "FOB" ? "selected" : ""}>FOB</option><option value="CIF" ${row.tipoFrete === "CIF" ? "selected" : ""}>CIF</option></select>
-          <select class="cat-satisfacao">
+          <input type="text" class="cat-prazo" placeholder="Prazo de pagamento" aria-label="Prazo de pagamento da categoria ${i + 1}" value="${escapeHtml(row.prazoPagamento || "")}">
+          <select class="cat-frete" aria-label="Tipo de frete da categoria ${i + 1}"><option value="FOB" ${row.tipoFrete === "FOB" ? "selected" : ""}>FOB</option><option value="CIF" ${row.tipoFrete === "CIF" ? "selected" : ""}>CIF</option></select>
+          <select class="cat-satisfacao" aria-label="Satisfação com o fornecedor da categoria ${i + 1}">
             <option value="">— Satisfação —</option>
             ${SATISFACAO_FORNECEDOR_OPCOES.map(o => `<option value="${o}" ${row.satisfacao === o ? "selected" : ""}>${o}</option>`).join("")}
           </select>
-          <input type="text" class="cat-tempo-uso" placeholder="Há quanto tempo usa" value="${escapeHtml(row.tempoDeUso || "")}">
-          <textarea class="cat-reclamacoes" placeholder="Reclamações / pontos fracos relatados" rows="2">${escapeHtml(row.reclamacoes || "")}</textarea>
+          <input type="text" class="cat-tempo-uso" placeholder="Há quanto tempo usa" aria-label="Há quanto tempo usa o produto, categoria ${i + 1}" value="${escapeHtml(row.tempoDeUso || "")}">
+          <textarea class="cat-reclamacoes" placeholder="Reclamações / pontos fracos relatados" aria-label="Reclamações relatadas na categoria ${i + 1}" rows="2">${escapeHtml(row.reclamacoes || "")}</textarea>
         </div>
       </details>
     </div>
@@ -2354,14 +2491,14 @@ function categoriasTableHtml(categoriasAnimais, clientId) {
     atencao.length ? `<div class="info-alert info-alert-atencao"><div><strong>Estoque de atenção:</strong> ${listaCategorias(atencao)}.</div></div>` : ""
   ].join("");
 
-  const rebanhoHtml = `<div class="info-card"><h5>Rebanho por categoria</h5>
+  const rebanhoHtml = `<div class="info-card"><h4>Rebanho por categoria</h4>
     <table class="mini"><thead><tr><th>Categoria</th><th>Sistema</th><th>Quantidade</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.sistemaProducao || "-")}</td><td>${formatInt(r.quantidade)}</td></tr>`).join("")}
       <tr><td colspan="2"><strong>Total</strong></td><td><strong>${formatInt(total)}</strong></td></tr>
     </tbody></table>
   </div>`;
 
-  const fornecimentoHtml = situacaoRows.length ? `<div class="info-card"><h5>Fornecimento atual por categoria</h5>
+  const fornecimentoHtml = situacaoRows.length ? `<div class="info-card"><h4>Fornecimento atual por categoria</h4>
     <table class="mini"><thead><tr><th>Categoria</th><th>Fornecedor</th><th>Produto</th><th>Volume</th><th>Satisfação</th></tr></thead><tbody>
       ${situacaoRows.map(r => `<tr><td>${escapeHtml(categoriaRowLabel(r))}</td><td>${escapeHtml(r.fornecedorAtual || "-")}</td><td>${escapeHtml(r.produtoAtual || "-")}</td><td>${r.volumeMensalEstimado ? formatVolume(r.volumeMensalEstimado) + " t/mês" : "-"}</td><td>${escapeHtml(r.satisfacao || "-")}</td></tr>`).join("")}
     </tbody></table>
@@ -2381,7 +2518,7 @@ function categoriasTableHtml(categoriasAnimais, clientId) {
     { v: criticos.length, l: "Críticas (≤20 dias)" },
     { v: atencao.length, l: "Atenção (21-40 dias)" }
   ]);
-  const previsaoHtml = forecastRows.length ? `<div class="info-card"><h5>Previsão de estoque por categoria</h5>
+  const previsaoHtml = forecastRows.length ? `<div class="info-card"><h4>Previsão de estoque por categoria</h4>
     ${forecastRows.length > 4 ? resumoDetalheHtml(forecastResumo, forecastTabela, `Ver previsão completa (${forecastRows.length} categorias)`) : forecastTabela}
   </div>` : "";
 
@@ -2412,25 +2549,29 @@ document.getElementById("form-cliente").addEventListener("submit", e => {
   // Validado aqui em vez de usar "required" nativo no input: o campo Nome fica em uma aba que pode
   // estar escondida (display:none) no momento do envio, e o navegador bloqueia o submit sem mostrar
   // nenhum aviso quando o campo inválido não está visível. Validação manual sempre avisa o usuário.
+  limparErrosCampo(document.getElementById("form-cliente"));
   if (!data.nome) {
-    showToast("Informe o nome do produtor / razão social.");
     ativarAbaLead("identificacao");
+    marcarErroCampo("cliente-nome", "Informe o nome do produtor ou a razão social para salvar.");
     return;
   }
   if (!data.proximoPassoTipo || !document.getElementById("cliente-data-proximo-passo").value) {
-    showToast("Todo lead precisa ter um próximo passo (tipo e data) definido.");
     ativarAbaLead("comercial");
+    marcarErroCampo(!data.proximoPassoTipo ? "cliente-proximo-passo-tipo" : "cliente-data-proximo-passo", "Todo lead precisa de um próximo passo: escolha o tipo e a data.");
     return;
   }
   if (data.statusEspecial && !data.statusEspecialObs) {
-    showToast("Descreva o motivo do status especial / bloqueio.");
     ativarAbaLead("comercial");
+    marcarErroCampo("cliente-status-especial-obs", "Descreva o motivo do status especial ou bloqueio.");
     return;
   }
   const categoriaSemVolume = currentCategoriasAnimais.find(c => c.tipoAnimal && c.produtoAtual && !c.volumeMensalEstimado);
   if (categoriaSemVolume) {
-    showToast(`Informe o volume mensal estimado de "${categoriaRowLabel(categoriaSemVolume)}" — obrigatório quando há produto atual preenchido (é a base da previsão de estoque).`);
+    showToast(`Informe o consumo por animal de “${categoriaRowLabel(categoriaSemVolume)}” — obrigatório quando há produto atual preenchido (é a base da previsão de estoque).`);
     ativarAbaLead("produtivo");
+    const idxCat = currentCategoriasAnimais.indexOf(categoriaSemVolume);
+    const card = document.querySelectorAll("#cliente-categorias-list .categoria-card")[idxCat];
+    if (card) { const det = card.querySelector("details"); if (det) det.open = true; const inp = card.querySelector(".cat-consumo-animal"); if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } }
     return;
   }
 
@@ -2528,7 +2669,7 @@ function openClienteModal(clientId) {
 function capturarLocalizacao(latId, lngId, statusId) {
   const statusEl = document.getElementById(statusId);
   if (!navigator.geolocation) { statusEl.textContent = "Geolocalização não suportada neste navegador."; return; }
-  statusEl.textContent = "Capturando localização...";
+  statusEl.textContent = "Capturando localização…";
   navigator.geolocation.getCurrentPosition(
     pos => {
       const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
@@ -2551,13 +2692,13 @@ document.getElementById("btn-capturar-gps-ca").addEventListener("click", () => c
 function capturarLocalizacaoComEndereco(latId, lngId, enderecoId, statusId) {
   const statusEl = document.getElementById(statusId);
   if (!navigator.geolocation) { statusEl.textContent = "Geolocalização não suportada neste navegador."; return; }
-  statusEl.textContent = "Capturando localização...";
+  statusEl.textContent = "Capturando localização…";
   navigator.geolocation.getCurrentPosition(
     async pos => {
       const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
       document.getElementById(latId).value = lat;
       document.getElementById(lngId).value = lng;
-      statusEl.textContent = `Localização capturada: ${lat}, ${lng} — buscando endereço...`;
+      statusEl.textContent = `Localização capturada: ${lat}, ${lng} — buscando endereço…`;
       try {
         const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
         const data = await resp.json();
@@ -2719,13 +2860,13 @@ function renderPedidoProdutosRows() {
   const container = document.getElementById("pedido-produtos-list");
   container.innerHTML = currentPedidoProdutos.map((p, i) => `
     <div class="produto-pedido-row" data-idx="${i}">
-      <input type="text" class="pp-nome" placeholder="Produto" value="${escapeHtml(p.nome || "")}">
-      <input type="text" class="pp-codigo" placeholder="Código" value="${escapeHtml(p.codigo || "")}">
-      <input type="number" class="pp-sacos" min="0" placeholder="Sacos" value="${escapeHtml(p.quantidadeSacos || "")}">
-      <input type="number" class="pp-peso" min="0" step="any" placeholder="Peso (ton)" value="${escapeHtml(p.pesoToneladas || "")}">
-      <input type="number" class="pp-valor-unit" min="0" step="0.01" placeholder="Valor unitário" value="${escapeHtml(p.valorUnitario || "")}">
-      <input type="number" class="pp-valor-total" placeholder="Valor total" readonly value="${escapeHtml(p.valorTotal || "")}">
-      ${currentPedidoProdutos.length > 1 ? `<button type="button" class="btn-remove-cat" title="Remover">Remover</button>` : `<span></span>`}
+      <input type="text" class="pp-nome" placeholder="Produto" aria-label="Nome do produto ${i + 1}" value="${escapeHtml(p.nome || "")}">
+      <input type="text" class="pp-codigo" placeholder="Código" aria-label="Código do produto ${i + 1}" spellcheck="false" value="${escapeHtml(p.codigo || "")}">
+      <input type="number" class="pp-sacos" min="0" inputmode="numeric" placeholder="Sacos" aria-label="Quantidade de sacos do produto ${i + 1}" value="${escapeHtml(p.quantidadeSacos || "")}">
+      <input type="number" class="pp-peso" min="0" step="any" inputmode="decimal" placeholder="Peso (ton)" aria-label="Peso em toneladas do produto ${i + 1}" value="${escapeHtml(p.pesoToneladas || "")}">
+      <input type="number" class="pp-valor-unit" min="0" step="0.01" inputmode="decimal" placeholder="Valor unitário" aria-label="Valor unitário do produto ${i + 1}" value="${escapeHtml(p.valorUnitario || "")}">
+      <input type="number" class="pp-valor-total" placeholder="Valor total" aria-label="Valor total do produto ${i + 1} (calculado)" readonly value="${escapeHtml(p.valorTotal || "")}">
+      ${currentPedidoProdutos.length > 1 ? `<button type="button" class="btn-remove-cat" aria-label="Remover produto ${i + 1}">Remover</button>` : `<span></span>`}
     </div>
   `).join("");
 
@@ -2849,7 +2990,7 @@ document.getElementById("form-pedido").addEventListener("submit", e => {
   showToast("Pedido registrado.");
 
   if (status === "Com ocorrência") {
-    showToast("Status 'Com ocorrência' — abrindo SAC vinculado.");
+    showToast("Status “Com ocorrência” — abrindo SAC vinculado.");
     openSacModal(clientId, id);
   }
 });
@@ -2945,10 +3086,10 @@ document.getElementById("form-contato").addEventListener("submit", e => {
       const idxTemp = TEMPERATURA_ORDEM.indexOf(lead.temperatura);
       if (resultado === "Avançou" && idxTemp >= 0 && idxTemp < TEMPERATURA_ORDEM.length - 1) {
         const novaTemp = TEMPERATURA_ORDEM[idxTemp + 1];
-        if (confirm(`Resultado "Avançou". Atualizar a temperatura de ${lead.nome} de "${lead.temperatura}" para "${novaTemp}"?`)) lead.temperatura = novaTemp;
+        if (confirm(`Resultado “Avançou”. Atualizar a temperatura de ${lead.nome} de “${lead.temperatura}” para “${novaTemp}”?`)) lead.temperatura = novaTemp;
       } else if (resultado === "Regrediu" && idxTemp > 0) {
         const novaTemp = TEMPERATURA_ORDEM[idxTemp - 1];
-        if (confirm(`Resultado "Regrediu". Atualizar a temperatura de ${lead.nome} de "${lead.temperatura}" para "${novaTemp}"?`)) lead.temperatura = novaTemp;
+        if (confirm(`Resultado “Regrediu”. Atualizar a temperatura de ${lead.nome} de “${lead.temperatura}” para “${novaTemp}”?`)) lead.temperatura = novaTemp;
       }
     }
   }
@@ -3024,6 +3165,7 @@ function openFicha(clientId, isBackNav) {
   renderFichaLeft();
   renderFichaTab();
   activateFichaPanel();
+  gravarUrl({ tab: "ficha", id: clientId }, !isBackNav);
 }
 
 function sairDaFicha(fallbackTab) {
@@ -3043,11 +3185,27 @@ document.getElementById("btn-ficha-voltar").addEventListener("click", voltarDaFi
 function toggleFichaDropdown(dropdown) {
   const wasHidden = dropdown.classList.contains("hidden");
   dropdown.classList.toggle("hidden");
+  const gatilho = dropdown.closest(".ficha-action-menu") && dropdown.closest(".ficha-action-menu").querySelector("button");
+  if (gatilho) gatilho.setAttribute("aria-expanded", String(wasHidden));
   if (wasHidden) {
     const rect = dropdown.getBoundingClientRect();
     const estouraEmbaixo = rect.bottom > window.innerHeight;
     dropdown.classList.toggle("abre-pra-cima", estouraEmbaixo);
+    const primeiro = dropdown.querySelector("button");
+    if (primeiro) primeiro.focus();
   }
+}
+
+function alternarFabMenu(abrir) {
+  const fab = document.getElementById("ficha-fab");
+  const fabMenu = document.getElementById("ficha-fab-menu");
+  const fabBtn = document.getElementById("ficha-fab-btn");
+  const vai = abrir === undefined ? !fab.classList.contains("open") : abrir;
+  fab.classList.toggle("open", vai);
+  fabMenu.classList.toggle("hidden", !vai);
+  fabBtn.setAttribute("aria-expanded", String(vai));
+  fabBtn.setAttribute("aria-label", vai ? "Fechar menu de ações" : "Registrar ação");
+  if (vai) { const primeiro = fabMenu.querySelector("button"); if (primeiro) primeiro.focus(); }
 }
 
 function renderFichaLeft() {
@@ -3079,24 +3237,24 @@ function renderFichaLeft() {
       ? `https://www.google.com/maps?q=${encodeURIComponent([entidade.enderecoRua, entidade.enderecoNumero, entidade.municipio, entidade.estado].filter(Boolean).join(", "))}` : "";
 
   container.innerHTML = `
-    <div class="ficha-avatar">${initials(entidade.nome)}</div>
-    <div class="fnome">${escapeHtml(entidade.nome)}</div>
+    <div class="ficha-avatar" aria-hidden="true">${initials(entidade.nome)}</div>
+    <h2 class="fnome">${escapeHtml(entidade.nome)}</h2>
     <div class="card-sub">${escapeHtml(entidade.fazenda || "")}</div>
     ${badge}${classeBadge}
-    ${podeAvancarEtapa ? `<button class="btn-secondary" id="btn-ficha-avancar-etapa" style="width:100%; margin-top:8px;">Avançar para "${escapeHtml(proximaEtapaLead)}"</button>` : ""}
+    ${podeAvancarEtapa ? `<button type="button" class="btn-secondary" id="btn-ficha-avancar-etapa" style="width:100%; margin-top:8px;">Avançar para “${escapeHtml(proximaEtapaLead)}”</button>` : ""}
     <div class="ficha-contacts">
-      ${wa ? `<a class="ficha-contact-circle wa" href="https://wa.me/55${wa}" target="_blank" rel="noopener" title="WhatsApp: ${escapeHtml(entidade.whatsappDecisor)}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.38 5.07L2 22l5.07-1.38A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg></a>` : ""}
-      ${wa ? `<a class="ficha-contact-circle" href="tel:${wa}" title="Ligar: ${escapeHtml(entidade.whatsappDecisor)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a>` : ""}
-      ${mapsUrl ? `<a class="ficha-contact-circle" href="${mapsUrl}" target="_blank" rel="noopener" title="Abrir no Google Maps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></a>` : ""}
-      ${wazeUrl ? `<a class="ficha-contact-circle" href="${wazeUrl}" target="_blank" rel="noopener" title="Abrir no Waze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></a>` : ""}
+      ${wa ? `<a class="ficha-contact-circle wa" href="https://wa.me/55${wa}" target="_blank" rel="noopener" aria-label="WhatsApp ${escapeHtml(entidade.whatsappDecisor)} (abre em nova aba)" title="WhatsApp: ${escapeHtml(entidade.whatsappDecisor)}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.38 5.07L2 22l5.07-1.38A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg></a>` : ""}
+      ${wa ? `<a class="ficha-contact-circle" href="tel:${wa}" aria-label="Ligar para ${escapeHtml(entidade.whatsappDecisor)}" title="Ligar: ${escapeHtml(entidade.whatsappDecisor)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a>` : ""}
+      ${mapsUrl ? `<a class="ficha-contact-circle" href="${mapsUrl}" target="_blank" rel="noopener" aria-label="Abrir no Google Maps (abre em nova aba)" title="Abrir no Google Maps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></a>` : ""}
+      ${wazeUrl ? `<a class="ficha-contact-circle" href="${wazeUrl}" target="_blank" rel="noopener" aria-label="Abrir no Waze (abre em nova aba)" title="Abrir no Waze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></a>` : ""}
     </div>
     ${!wa ? `<div class="hint">Sem WhatsApp/telefone cadastrado.</div>` : ""}
     ${potencialBox}
     <div class="ficha-actions">
-      ${podeConverter ? `<button class="btn-primary" id="btn-ficha-converter">Converter em Cliente Ativo</button>` : ""}
-      ${isLead ? `<button class="btn-secondary" id="btn-ficha-editar">Editar lead</button>
+      ${podeConverter ? `<button type="button" class="btn-primary" id="btn-ficha-converter">Converter em Cliente Ativo</button>` : ""}
+      ${isLead ? `<button type="button" class="btn-secondary" id="btn-ficha-editar">Editar lead</button>
       <div class="ficha-action-menu">
-        <button class="btn-secondary" id="btn-ficha-registrar-acao">Registrar ação</button>
+        <button type="button" class="btn-secondary" id="btn-ficha-registrar-acao" aria-haspopup="true" aria-expanded="false" aria-controls="ficha-action-dropdown">Registrar ação</button>
         <div class="ficha-action-dropdown hidden" id="ficha-action-dropdown">
           <button type="button" class="ficha-action-item" id="btn-ficha-mensagem">Registrar Mensagem</button>
           <button type="button" class="ficha-action-item" id="btn-ficha-visita">Registrar Visita</button>
@@ -3104,19 +3262,20 @@ function renderFichaLeft() {
           <button type="button" class="ficha-action-item" id="btn-ficha-relatorio-visita">Relatório de Visita Técnica</button>
         </div>
       </div>` : ""}
-      ${!isLead ? `<button class="btn-secondary ficha-secao-btn active" id="btn-ficha-secao-metricas" data-secao="metricas">Métricas</button>
-      <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-historico" data-secao="historico">Histórico</button>
-      <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-cadastro" data-secao="cadastro">Cadastro</button>
-      <button class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-relatorio" data-secao="relatorio">Relatório Gerencial</button>` : ""}
-      ${!isLead && clienteInativo ? `<button class="btn-secondary" id="btn-reativar-cliente">Reativar cliente</button>` : ""}
+      ${!isLead ? `<div role="group" aria-label="Seções da ficha" style="display:contents">
+      <button type="button" class="btn-secondary ficha-secao-btn active" id="btn-ficha-secao-metricas" data-secao="metricas" aria-current="true">Métricas</button>
+      <button type="button" class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-historico" data-secao="historico">Histórico</button>
+      <button type="button" class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-cadastro" data-secao="cadastro">Cadastro</button>
+      <button type="button" class="btn-secondary ficha-secao-btn" id="btn-ficha-secao-relatorio" data-secao="relatorio">Relatório Gerencial</button></div>` : ""}
+      ${!isLead && clienteInativo ? `<button type="button" class="btn-secondary" id="btn-reativar-cliente">Reativar cliente</button>` : ""}
       ${!isLead ? `<div class="ficha-action-menu">
-        <button class="btn-secondary" id="btn-ficha-mais-opcoes">⋯ Mais opções</button>
+        <button type="button" class="btn-secondary" id="btn-ficha-mais-opcoes" aria-haspopup="true" aria-expanded="false" aria-controls="ficha-mais-opcoes-dropdown">⋯ Mais opções</button>
         <div class="ficha-action-dropdown hidden" id="ficha-mais-opcoes-dropdown">
           ${!clienteInativo ? `<button type="button" class="ficha-action-item" id="btn-inativar-cliente" style="color:var(--late-text);">Inativar cliente</button>` : ""}
           <button type="button" class="ficha-action-item" id="btn-cliente-excluir" style="color:var(--late-text);">Excluir cliente</button>
         </div>
       </div>` : ""}
-      ${isLead ? `<button class="btn-secondary" id="btn-ficha-excluir" style="color:var(--late-text); border-color:var(--late-text);">Excluir lead</button>` : ""}
+      ${isLead ? `<button type="button" class="btn-secondary" id="btn-ficha-excluir" style="color:var(--late-text); border-color:var(--late-text);">Excluir lead</button>` : ""}
     </div>
   `;
   const abrirContatoComTipo = tipo => { openContatoModal(entidade.id); document.getElementById("contato-tipo").value = tipo; };
@@ -3125,7 +3284,7 @@ function renderFichaLeft() {
   const btnAvancarEtapa = document.getElementById("btn-ficha-avancar-etapa");
   if (btnAvancarEtapa) {
     btnAvancarEtapa.addEventListener("click", () => {
-      if (confirm(`Critério da próxima etapa "${proximaEtapaLead}": ${LEAD_STAGE_CRITERIA[proximaEtapaLead]}.\n\nAvançar ${entidade.nome} de "${entidade.etapaFunil}" para "${proximaEtapaLead}"?`)) {
+      if (confirm(`Critério da próxima etapa “${proximaEtapaLead}”: ${LEAD_STAGE_CRITERIA[proximaEtapaLead]}.\n\nAvançar ${entidade.nome} de “${entidade.etapaFunil}” para “${proximaEtapaLead}”?`)) {
         entidade.etapaFunil = proximaEtapaLead;
         entidade.historicoEtapas = entidade.historicoEtapas || [];
         entidade.historicoEtapas.push({ etapa: proximaEtapaLead, data: todayStr() });
@@ -3133,7 +3292,7 @@ function renderFichaLeft() {
         renderFichaLeft();
         renderFichaTab();
         refreshClientSelects(); renderClientList(); renderLeadsList(); renderDashboard();
-        showToast(`Etapa atualizada para "${proximaEtapaLead}".`);
+        showToast(`Etapa atualizada para “${proximaEtapaLead}”.`);
       }
     });
   }
@@ -3155,7 +3314,7 @@ function renderFichaLeft() {
     document.querySelectorAll(".ficha-secao-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         currentFichaSecao = btn.dataset.secao;
-        document.querySelectorAll(".ficha-secao-btn").forEach(b => b.classList.toggle("active", b === btn));
+        document.querySelectorAll(".ficha-secao-btn").forEach(b => { const ativo = b === btn; b.classList.toggle("active", ativo); if (ativo) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
         renderFichaClienteSubTabs();
         renderFichaTab();
       });
@@ -3173,9 +3332,8 @@ function renderFichaLeft() {
   fab.classList.toggle("hidden", isLead);
   if (!isLead) {
     const fabBtn = document.getElementById("ficha-fab-btn");
-    const fabMenu = document.getElementById("ficha-fab-menu");
-    fabBtn.onclick = () => { fab.classList.toggle("open"); fabMenu.classList.toggle("hidden"); };
-    const onFab = (id, fn) => { document.getElementById(id).onclick = () => { fn(); fab.classList.remove("open"); fabMenu.classList.add("hidden"); }; };
+    fabBtn.onclick = () => alternarFabMenu();
+    const onFab = (id, fn) => { document.getElementById(id).onclick = () => { alternarFabMenu(false); fn(); }; };
     onFab("fab-acao-venda", () => openPedidoModal(entidade.id));
     onFab("fab-acao-estoque", () => openEstoqueModal(entidade.id));
     onFab("fab-acao-contato", () => openContatoModal(entidade.id));
@@ -3196,13 +3354,12 @@ document.addEventListener("click", e => {
   document.querySelectorAll(".ficha-action-dropdown").forEach(dropdown => {
     if (!dropdown.classList.contains("hidden") && !e.target.closest(".ficha-action-menu")) {
       dropdown.classList.add("hidden");
+      const gatilho = dropdown.closest(".ficha-action-menu").querySelector("button");
+      if (gatilho) gatilho.setAttribute("aria-expanded", "false");
     }
   });
   const fab = document.getElementById("ficha-fab");
-  if (fab && fab.classList.contains("open") && !e.target.closest(".ficha-fab")) {
-    fab.classList.remove("open");
-    document.getElementById("ficha-fab-menu").classList.add("hidden");
-  }
+  if (fab && fab.classList.contains("open") && !e.target.closest(".ficha-fab")) alternarFabMenu(false);
 });
 
 function irParaAbaLead(tab) {
@@ -3240,7 +3397,7 @@ function renderFichaClienteSubTabs() {
   bar.classList.remove("hidden");
   const subtabs = currentFichaSecao === "historico" ? HISTORICO_SUBTABS : CADASTRO_SUBTABS;
   currentFichaTab = subtabs[0].key;
-  bar.innerHTML = subtabs.map((t, i) => `<button class="detalhe-tab-btn ${i === 0 ? "active" : ""}" data-dtab="${t.key}">${t.label}</button>`).join("");
+  bar.innerHTML = subtabs.map((t, i) => `<button type="button" class="detalhe-tab-btn ${i === 0 ? "active" : ""}" data-dtab="${t.key}">${t.label}</button>`).join("");
   bar.querySelectorAll(".detalhe-tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       bar.querySelectorAll(".detalhe-tab-btn").forEach(b => b.classList.remove("active"));
@@ -3365,7 +3522,7 @@ document.addEventListener("click", e => {
 function converterLeadEmCliente(leadId) {
   const lead = state.leads.find(l => l.id === leadId);
   if (!lead) return;
-  if (!confirm(`Converter ${lead.nome} em Cliente Ativo? O lead será arquivado (status "Convertido") e o histórico de follow-ups fica vinculado ao cliente.`)) return;
+  if (!confirm(`Converter ${lead.nome} em Cliente Ativo? O lead será arquivado (status “Convertido”) e o histórico de follow-ups fica vinculado ao cliente.`)) return;
 
   const novoCliente = {
     id: uid(), leadOrigemId: lead.id,
@@ -3461,15 +3618,19 @@ document.getElementById("form-cliente-ativo").addEventListener("submit", e => {
   e.preventDefault();
   const cliente = state.clientesAtivos.find(c => c.id === document.getElementById("ca-id").value);
   if (!cliente) return;
+  limparErrosCampo(document.getElementById("form-cliente-ativo"));
   if (!document.getElementById("ca-nome").value.trim()) {
-    showToast("Informe o nome do cliente.");
     ativarAbaClienteAtivo("identificacao");
+    marcarErroCampo("ca-nome", "Informe o nome do cliente para salvar.");
     return;
   }
   const categoriaSemVolumeCA = currentCategoriasAnimaisCA.find(c => c.tipoAnimal && c.produtoAtual && !c.volumeMensalEstimado);
   if (categoriaSemVolumeCA) {
-    showToast(`Informe o volume mensal estimado de "${categoriaRowLabel(categoriaSemVolumeCA)}" — obrigatório quando há produto atual preenchido (é a base da previsão de estoque).`);
+    showToast(`Informe o consumo por animal de “${categoriaRowLabel(categoriaSemVolumeCA)}” — obrigatório quando há produto atual preenchido (é a base da previsão de estoque).`);
     ativarAbaClienteAtivo("produtivo");
+    const idxCat = currentCategoriasAnimaisCA.indexOf(categoriaSemVolumeCA);
+    const card = document.querySelectorAll("#ca-categorias-list .categoria-card")[idxCat];
+    if (card) { const det = card.querySelector("details"); if (det) det.open = true; const inp = card.querySelector(".cat-consumo-animal"); if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } }
     return;
   }
   CLIENTE_ATIVO_FIELD_MAP.forEach(([domId, key]) => { cliente[key] = document.getElementById(domId).value.trim(); });
@@ -3495,11 +3656,11 @@ function renderPropostaProdutosRows() {
   const container = document.getElementById("proposta-produtos-list");
   container.innerHTML = currentPropostaProdutos.map((p, i) => `
     <div class="produto-proposta-row" data-idx="${i}">
-      <input type="text" class="prop-nome" placeholder="Produto" value="${escapeHtml(p.nome || "")}">
-      <input type="number" class="prop-qtd" min="0" step="any" placeholder="Quantidade" value="${escapeHtml(p.quantidade || "")}">
-      <input type="number" class="prop-valor-unit" min="0" step="0.01" placeholder="Valor unitário" value="${escapeHtml(p.valorUnitario || "")}">
-      <input type="number" class="prop-valor-total" placeholder="Valor total" readonly value="${escapeHtml(p.valorTotal || "")}">
-      ${currentPropostaProdutos.length > 1 ? `<button type="button" class="btn-remove-cat" title="Remover">Remover</button>` : `<span></span>`}
+      <input type="text" class="prop-nome" placeholder="Produto" aria-label="Nome do produto ${i + 1}" value="${escapeHtml(p.nome || "")}">
+      <input type="number" class="prop-qtd" min="0" step="any" inputmode="decimal" placeholder="Quantidade" aria-label="Quantidade do produto ${i + 1}" value="${escapeHtml(p.quantidade || "")}">
+      <input type="number" class="prop-valor-unit" min="0" step="0.01" inputmode="decimal" placeholder="Valor unitário" aria-label="Valor unitário do produto ${i + 1}" value="${escapeHtml(p.valorUnitario || "")}">
+      <input type="number" class="prop-valor-total" placeholder="Valor total" aria-label="Valor total do produto ${i + 1} (calculado)" readonly value="${escapeHtml(p.valorTotal || "")}">
+      ${currentPropostaProdutos.length > 1 ? `<button type="button" class="btn-remove-cat" aria-label="Remover produto ${i + 1}">Remover</button>` : `<span></span>`}
     </div>
   `).join("");
   container.querySelectorAll(".produto-proposta-row").forEach(row => {
@@ -3671,9 +3832,17 @@ function renderFichaTab() {
   const container = document.getElementById("ficha-conteudo");
   if (!entidade) { container.innerHTML = ""; return; }
 
+  // Título da aba só pra leitor de tela: fecha a hierarquia h2 (nome, na sidebar) → h3 (aba) →
+  // h4 (seções do conteúdo). Visualmente a aba ativa já está marcada nas pílulas.
+  const tituloAba = () => {
+    const btn = document.querySelector(`#ficha-lead-nav .detalhe-tab-btn[data-dtab="${currentFichaTab}"], #ficha-sub-tabs .detalhe-tab-btn[data-dtab="${currentFichaTab}"]`);
+    const fixos = { metricas: "Métricas", relatorio: "Relatório Gerencial" };
+    return `<h3 class="sr-only">${escapeHtml(btn ? btn.textContent.trim() : (fixos[currentFichaTab] || currentFichaTab))}</h3>`;
+  };
+
   if (currentFichaTipo === "lead") {
     const renderers = { produtivo: renderProdutivoTab, contatos: renderContatosTimelineTab, visitas: renderVisitasFichaTab, propostas: renderFunilTab, concorrencia: renderFornecedorTab };
-    container.innerHTML = renderers[currentFichaTab](entidade);
+    container.innerHTML = tituloAba() + renderers[currentFichaTab](entidade);
     attachFichaEvents(entidade);
     if (currentFichaTab === "visitas") attachVisitasFichaEvents(entidade);
     return;
@@ -3692,7 +3861,7 @@ function renderFichaTab() {
     produtivo: renderCadastroProdutivoTab,
     "historico-lead": renderHistoricoLeadTab
   };
-  container.innerHTML = renderers[currentFichaTab](entidade);
+  container.innerHTML = tituloAba() + renderers[currentFichaTab](entidade);
   attachFichaEvents(entidade);
   if (currentFichaTab === "visitas") attachVisitasFichaEvents(entidade);
   if (currentFichaTab === "vendas") attachHistoricoVendasEvents(entidade);
@@ -3853,7 +4022,7 @@ function renderContatosPessoasSection(entidade) {
 function renderContatosTimelineTab(client, { showContatosPessoas = true, showRegistrarButton = true } = {}) {
   const contatos = contatosForClient(client.id);
   const items = contatos.map(c => `
-    <div class="timeline-item ${RESULTADO_CLASS[c.resultado] || "r-manteve"}" data-contato-id="${c.id}" style="cursor:pointer">
+    <div class="timeline-item ${RESULTADO_CLASS[c.resultado] || "r-manteve"}" data-contato-id="${c.id}" role="button" tabindex="0" aria-label="Editar contato de ${formatDate(c.data)}: ${escapeHtml(c.tipo)}${c.resultado ? ", resultado " + escapeHtml(c.resultado.toLowerCase()) : ""}" style="cursor:pointer">
       <div class="timeline-body">
         <div class="timeline-head"><span class="t-tipo">${escapeHtml(c.tipo)}${c.comQuem ? " · " + escapeHtml(c.comQuem) : ""}</span><span class="t-data">${formatDate(c.data)}</span></div>
         ${c.resumo ? `<div class="timeline-resumo">${escapeHtml(c.resumo)}</div>` : ""}
@@ -3864,7 +4033,7 @@ function renderContatosTimelineTab(client, { showContatosPessoas = true, showReg
   return `
     ${showContatosPessoas ? renderContatosPessoasSection(client) : ""}
     <div class="timeline">${items || `<div class="empty-state">Nenhum contato registrado.</div>`}</div>
-    ${showRegistrarButton ? `<div class="actions-row"><button class="btn-secondary" id="btn-novo-contato-cliente">+ Registrar contato</button></div>` : ""}
+    ${showRegistrarButton ? `<div class="actions-row"><button type="button" class="btn-secondary" id="btn-novo-contato-cliente">+ Registrar contato</button></div>` : ""}
   `;
 }
 
@@ -3970,7 +4139,7 @@ function renderVendasTab(cliente) {
   const statusOpcoes = ["Em processamento", "Carregado", "Em trânsito", "Entregue", "Com ocorrência", "Cancelado"];
   const cardsHtml = filtrados.length
     ? `<div class="pedidos-cards">${filtrados.map(p => `
-      <div class="pedido-card" data-pedido-id="${p.id}">
+      <div class="pedido-card" data-pedido-id="${p.id}" role="button" tabindex="0" aria-label="Editar pedido ${escapeHtml(p.numeroPedidoADM || formatDate(p.dataPedido))}">
         <div class="pedido-card-head">
           <span class="pedido-num">Pedido ${escapeHtml(p.numeroPedidoADM || "-")}</span>
           <span class="pedido-data">${formatDate(p.dataPedido)} <span class="badge ${badgeClassForPedidoStatus(p.status)}">${escapeHtml(p.status || "-")}</span></span>
@@ -3999,16 +4168,16 @@ function renderVendasTab(cliente) {
 
   return `
     ${filtrados.length >= 2 ? `<h4>Volume mensal (últimos 12 meses)</h4>${barsHtml}` : ""}
-    <div class="actions-row no-print" style="margin-bottom:10px;">
-      <input type="month" id="vendas-filtro-periodo" value="${vendasFiltro.periodo}">
-      <select id="vendas-filtro-produto"><option value="">Produto (todos)</option>${produtosUnicos.map(p => `<option ${vendasFiltro.produto === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select>
-      <select id="vendas-filtro-status"><option value="">Status (todos)</option>${statusOpcoes.map(s => `<option ${vendasFiltro.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
+    <div class="actions-row no-print" style="margin-bottom:10px;" role="group" aria-label="Filtros de pedidos">
+      <input type="month" id="vendas-filtro-periodo" aria-label="Filtrar pedidos por mês" value="${vendasFiltro.periodo}">
+      <select id="vendas-filtro-produto" aria-label="Filtrar pedidos por produto"><option value="">Produto (todos)</option>${produtosUnicos.map(p => `<option ${vendasFiltro.produto === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select>
+      <select id="vendas-filtro-status" aria-label="Filtrar pedidos por status"><option value="">Status (todos)</option>${statusOpcoes.map(s => `<option ${vendasFiltro.status === s ? "selected" : ""}>${s}</option>`).join("")}</select>
     </div>
     ${filtrados.length > 6 ? resumoDetalheHtml(resumoHtml, cardsHtml, `Ver todos os ${filtrados.length} pedidos`) : cardsHtml}
     <div class="hint no-print" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px;">
-      <span>Pagamento padrão:</span>
+      <label for="vendas-condicao-pagamento-padrao" style="display:inline; text-transform:none; letter-spacing:0; font-size:inherit; font-weight:inherit; color:inherit;">Pagamento padrão:</label>
       <input type="text" id="vendas-condicao-pagamento-padrao" value="${escapeHtml(cliente.condicaoPagamentoDias || "")}" placeholder="Ex: 30/60/90 dias" style="width:130px;">
-      <span>· Frete padrão:</span>
+      <label for="vendas-tipo-frete-padrao" style="display:inline; text-transform:none; letter-spacing:0; font-size:inherit; font-weight:inherit; color:inherit;">· Frete padrão:</label>
       <select id="vendas-tipo-frete-padrao">
         <option ${cliente.tipoFrete === "FOB" || !cliente.tipoFrete ? "selected" : ""}>FOB</option>
         <option ${cliente.tipoFrete === "CIF" ? "selected" : ""}>CIF</option>
@@ -4046,11 +4215,11 @@ function renderRecompraTab(client) {
   const origemLabel = insight.cicloOrigem === "consumo" ? "estimado pelo consumo declarado" : insight.cicloOrigem === "historico" ? "calculado pelo histórico de pedidos" : "";
   const consumosHtml = (insight.consumosPorProduto || []).length
     ? `<div class="detalhe-grid">${insight.consumosPorProduto.map(c => field(c.produto, formatVolume(c.consumoMensal) + " t/mês")).join("")}</div>`
-    : `<p class="hint">Sem consumo mensal declarado — em cada categoria animal, na aba Perfil Produtivo, informe "Produto que usa hoje" e "Volume mensal estimado" para o sistema estimar a recompra desse produto mesmo sem histórico de pedidos.</p>`;
+    : `<p class="hint">Sem consumo mensal declarado — em cada categoria animal, na aba Perfil Produtivo, informe “Produto que usa hoje” e “Consumo por animal” para o sistema estimar a recompra desse produto mesmo sem histórico de pedidos.</p>`;
   return `
     <div class="info-alert info-alert-${ALERTA_TONE_POR_STATUS_CICLO[insight.status] || "ok"}"><div><strong>${insight.statusLabel}.</strong> ${escapeHtml(insight.tip)}</div></div>
     ${barra}
-    <div class="info-card"><h5>Detalhes do ciclo</h5>
+    <div class="info-card"><h4>Detalhes do ciclo</h4>
       <div class="detalhe-grid">
         ${reportField(`Ciclo médio${origemLabel ? " (" + origemLabel + ")" : ""}`, insight.avgInterval ? insight.avgInterval + " dias" : "")}
         ${reportField("Volume médio por pedido", insight.avgVolume ? formatVolume(insight.avgVolume) + " t" : "")}
@@ -4085,7 +4254,7 @@ function renderSacTab(client) {
   const alertaHtml = criticos.length
     ? `<div class="info-alert info-alert-critico"><div><strong>${criticos.length} SAC${criticos.length === 1 ? "" : "s"} aberto${criticos.length === 1 ? "" : "s"} há mais de 5 dias:</strong> ${criticos.map(s => `${escapeHtml(s.numero)} (${daysBetween(s.data, hoje)} dias)`).join(", ")}.</div></div>`
     : "";
-  const rows = sacs.map(s => `<tr data-sac-id="${s.id}" style="cursor:pointer">
+  const rows = sacs.map(s => `<tr data-sac-id="${s.id}" tabindex="0" aria-label="Editar ${escapeHtml(s.numero)}" style="cursor:pointer">
     <td>${escapeHtml(s.numero)}</td><td>${formatDate(s.data)}</td><td>${escapeHtml(s.tipo)}</td>
     <td>${escapeHtml(s.produto || "-")}</td><td>${escapeHtml(s.responsavel || "-")}</td>
     <td><span class="badge ${badgeClassForSacStatus(s.status)}">${escapeHtml(s.status)}</span></td>
@@ -4167,7 +4336,7 @@ function renderUpsellTab(client) {
   const alertaHtml = abertas.length
     ? `<div class="info-alert info-alert-ok"><div><strong>${abertas.length} oportunidade${abertas.length === 1 ? "" : "s"} em aberto</strong>${potencialAberto ? ` — ${formatVolume(potencialAberto)} t de potencial.` : "."}</div></div>`
     : "";
-  const rows = upsells.map(u => `<tr data-upsell-id="${u.id}" style="cursor:pointer">
+  const rows = upsells.map(u => `<tr data-upsell-id="${u.id}" tabindex="0" aria-label="Editar oportunidade ${escapeHtml(u.produto || "")}" style="cursor:pointer">
     <td>${escapeHtml(u.produto || "-")}</td><td>${escapeHtml(u.categoria || "-")}</td>
     <td>${u.volumePotencial ? formatVolume(u.volumePotencial) + " t" : "-"}</td>
     <td>${formatDate(u.dataIdentificacao)}</td>
@@ -4287,26 +4456,30 @@ function getAllAgendaEvents() {
 
 function renderAgendaFilters() {
   const container = document.getElementById("agenda-filters");
+  // Botão de alternância de verdade (aria-pressed) em vez de <label> com checkbox
+  // escondido: o checkbox display:none nunca recebia foco, então os filtros eram
+  // inalcançáveis por teclado.
   container.innerHTML = Object.entries(EVENT_TYPES).map(([classe, info]) => `
-    <label class="agenda-filter-chip ${agendaActiveFilters.has(classe) ? "active" : ""}" data-classe="${classe}">
-      <input type="checkbox" ${agendaActiveFilters.has(classe) ? "checked" : ""}>
-      <span class="dot" style="background:var(${info.colorVar})"></span>${info.label}
-    </label>
+    <button type="button" class="agenda-filter-chip ${agendaActiveFilters.has(classe) ? "active" : ""}" data-classe="${classe}" aria-pressed="${agendaActiveFilters.has(classe)}">
+      <span class="dot" style="background:var(${info.colorVar})" aria-hidden="true"></span>${info.label}
+    </button>
   `).join("");
   container.querySelectorAll(".agenda-filter-chip").forEach(chip => {
-    chip.addEventListener("click", e => {
-      e.preventDefault();
+    chip.addEventListener("click", () => {
       const classe = chip.dataset.classe;
       if (agendaActiveFilters.has(classe)) agendaActiveFilters.delete(classe); else agendaActiveFilters.add(classe);
       renderAgenda();
+      const novo = container.querySelector(`.agenda-filter-chip[data-classe="${classe}"]`);
+      if (novo) novo.focus();
     });
   });
 }
 
 document.querySelectorAll(".view-switch-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".view-switch-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".view-switch-btn").forEach(b => { b.classList.remove("active"); b.setAttribute("aria-pressed", "false"); });
     btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
     calendarView = btn.dataset.view;
     renderAgenda();
   });
@@ -4351,7 +4524,7 @@ function renderMonthView(events, body) {
     const extra = dayEvents.length - shown.length;
     return `<div class="calendar-cell ${cell.out ? "out" : ""} ${isToday ? "today" : ""}" data-date="${dateStr || ""}">
       <div class="calendar-daynum">${cell.day}</div>
-      ${shown.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}>${escapeHtml(e.label)}</div>`).join("")}
+      ${shown.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}${e.clientId ? ` role="button" tabindex="0" aria-label="${escapeHtml(e.label)}, dia ${cell.day}. Abrir ficha"` : ""}>${escapeHtml(e.label)}</div>`).join("")}
       ${extra > 0 ? `<div class="calendar-evt" style="background:transparent;color:var(--text-faint);">+${extra}</div>` : ""}
     </div>`;
   }).join("");
@@ -4373,7 +4546,7 @@ function renderWeekView(events, body) {
     const isToday = dateStr === todayStr();
     const dayEvents = events.filter(e => e.data === dateStr).sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
     return `<div class="calendar-cell calendar-week-col ${isToday ? "today" : ""}" data-date="${dateStr}">
-      ${dayEvents.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}>${e.hora ? escapeHtml(e.hora) + " " : ""}${escapeHtml(e.label)}</div>`).join("") || `<span class="hint" style="font-size:0.68rem;">-</span>`}
+      ${dayEvents.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}${e.clientId ? ` role="button" tabindex="0" aria-label="${escapeHtml(e.label)}, ${formatDate(dateStr)}. Abrir ficha"` : ""}>${e.hora ? escapeHtml(e.hora) + " " : ""}${escapeHtml(e.label)}</div>`).join("") || `<span class="hint" style="font-size:0.68rem;">-</span>`}
     </div>`;
   }).join("");
 
@@ -4433,10 +4606,16 @@ document.getElementById("calendar-body").addEventListener("drop", e => {
   e.preventDefault();
   const compromissoId = e.dataTransfer.getData("text/plain");
   const compromisso = state.compromissos.find(c => c.id === compromissoId);
-  if (!compromisso) return;
+  if (!compromisso || compromisso.data === cell.dataset.date) return;
+  const dataAnterior = compromisso.data;
   compromisso.data = cell.dataset.date;
   saveState();
   renderAgenda();
+  showToast(`Remarcado para ${formatDate(compromisso.data)}.`, { acao: { label: "Desfazer", onClick: () => {
+    compromisso.data = dataAnterior;
+    saveState();
+    if (document.getElementById("agenda").classList.contains("active")) renderAgenda();
+  } } });
 });
 
 // ============================================================
@@ -4499,7 +4678,7 @@ function renderCarteiraFornecedor() {
         const classificacao = classe === "casa" ? `<span class="badge badge-ok">${escapeHtml((state.config && state.config.nomeEmpresa) || "Empresa")}</span>`
           : classe === "concorrente" ? `<span class="badge badge-late">Concorrente</span>`
           : `<span class="badge badge-neutral">Sem informação</span>`;
-        return `<tr data-client-id="${entidade.id}" style="cursor:pointer">
+        return `<tr data-client-id="${entidade.id}" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(entidade.nome)}" style="cursor:pointer">
           <td>${escapeHtml(entidade.nome)} <span class="badge badge-neutral" style="font-size:0.65rem;">${tipo}</span></td>
           <td>${escapeHtml(categoriaRowLabel(cat))}</td>
           <td>${escapeHtml(entidade.municipio || "-")}</td>
@@ -4518,7 +4697,7 @@ function renderFornecedoresList() {
   const container = document.getElementById("fornecedores-list");
   container.innerHTML = state.fornecedores.length
     ? state.fornecedores.map(f => `
-        <div class="card" data-fornecedor-id="${f.id}">
+        <div class="card" data-fornecedor-id="${f.id}" role="button" tabindex="0" aria-label="Editar fornecedor ${escapeHtml(f.nome)}">
           <div class="card-top">
             <div><div class="card-name">${escapeHtml(f.nome)}</div>${f.obs ? `<div class="card-sub">${escapeHtml(f.obs)}</div>` : ""}</div>
             <span class="badge ${f.ehCasa ? "badge-ok" : "badge-late"}">${f.ehCasa ? escapeHtml((state.config && state.config.nomeEmpresa) || "Empresa") : "Concorrente"}</span>
@@ -4612,7 +4791,7 @@ function renderCompetitivaPage() {
 
   document.getElementById("competitiva-tabela-body").innerHTML = rows.length
     ? rows.map(o => `<tr><td>${escapeHtml(o.concorrente || "-")}</td><td>${escapeHtml(o.produtoConcorrente || "-")}</td><td>${escapeHtml(o.preco || "-")}</td><td>${escapeHtml(o.canalVenda || "-")}</td><td>${escapeHtml(o.prazoPagamento || "-")}</td><td>${escapeHtml(o.frete || "-")}</td><td>${escapeHtml(o.bonificacoes || "-")}</td><td>${escapeHtml(o.regiao)}</td></tr>`).join("")
-    : `<tr><td colspan="8">Nenhuma observação registrada ainda. Adicione pela ficha do cliente, aba "Intel. Competitiva".</td></tr>`;
+    : `<tr><td colspan="8">Nenhuma observação registrada ainda. Adicione pela ficha do cliente, aba “Inteligência Competitiva”.</td></tr>`;
 
   renderRadar();
 
@@ -4631,13 +4810,13 @@ function renderCompetitivaPage() {
         const bg = `rgba(147,160,106,${0.25 + intensity * 0.65})`;
         return `<div class="heatmap-cell" style="background:${bg}; color:${intensity > 0.5 ? "#fff" : "#1a1a1a"}"><div class="hm-n">${set.size}</div>${escapeHtml(mun)}</div>`;
       }).join("")
-    : `<div class="empty-state">Nenhuma observação competitiva registrada ainda. Adicione pela ficha do cliente → Inteligência Competitiva → "Nova observação competitiva" para ver o mapa por município.</div>`;
+    : `<div class="empty-state">Nenhuma observação competitiva registrada ainda. Adicione pela ficha do cliente → Inteligência Competitiva → “Nova observação” para ver o mapa por município.</div>`;
 
   const pontosFracos = state.competitivas.filter(o => o.pontoFraco).sort((a, b) => new Date(b.data) - new Date(a.data));
   document.getElementById("pontos-fracos-list").innerHTML = pontosFracos.length
     ? pontosFracos.map(o => {
         const cli = getEntidadeById(o.clientId);
-        return `<div class="card" data-client-id="${o.clientId}"><div class="card-top"><div class="card-name">${escapeHtml(o.concorrente || "Concorrente")}</div><span class="card-sub">${formatDate(o.data)}</span></div><div class="card-tip">${escapeHtml(o.pontoFraco)} ${cli ? "— relatado por " + escapeHtml(cli.nome) : ""}</div></div>`;
+        return `<div class="card" data-client-id="${o.clientId}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(cli ? cli.nome : "cliente")}"><div class="card-top"><div class="card-name">${escapeHtml(o.concorrente || "Concorrente")}</div><span class="card-sub">${formatDate(o.data)}</span></div><div class="card-tip">${escapeHtml(o.pontoFraco)} ${cli ? "— relatado por " + escapeHtml(cli.nome) : ""}</div></div>`;
       }).join("")
     : `<div class="empty-state">Nenhum ponto fraco registrado ainda. Adicione numa Observação Competitiva, pela ficha do cliente.</div>`;
   document.querySelectorAll("#pontos-fracos-list .card").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
@@ -4646,7 +4825,7 @@ function renderCompetitivaPage() {
   document.getElementById("pontos-fortes-list").innerHTML = pontosFortes.length
     ? pontosFortes.map(o => {
         const cli = getEntidadeById(o.clientId);
-        return `<div class="card" data-client-id="${o.clientId}"><div class="card-top"><div class="card-name">${escapeHtml(o.concorrente || "Concorrente")}</div><span class="card-sub">${formatDate(o.data)}</span></div><div class="card-tip">${escapeHtml(o.pontoForte)} ${cli ? "— relatado por " + escapeHtml(cli.nome) : ""}</div></div>`;
+        return `<div class="card" data-client-id="${o.clientId}" role="button" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(cli ? cli.nome : "cliente")}"><div class="card-top"><div class="card-name">${escapeHtml(o.concorrente || "Concorrente")}</div><span class="card-sub">${formatDate(o.data)}</span></div><div class="card-tip">${escapeHtml(o.pontoForte)} ${cli ? "— relatado por " + escapeHtml(cli.nome) : ""}</div></div>`;
       }).join("")
     : `<div class="empty-state">Nenhum ponto forte registrado ainda. Adicione numa Observação Competitiva, pela ficha do cliente.</div>`;
   document.querySelectorAll("#pontos-fortes-list .card").forEach(el => el.addEventListener("click", () => openFicha(el.dataset.clientId)));
@@ -4767,7 +4946,7 @@ function renderVisitaFotosPreview() {
   container.innerHTML = currentVisitaFotos.map((f, i) => `
     <div class="visita-foto-thumb" data-idx="${i}">
       <img src="${f.dataUrl}" alt="Foto ${i + 1}">
-      <button type="button" class="btn-remove-foto" title="Remover">&times;</button>
+      <button type="button" class="btn-remove-foto" aria-label="Remover foto ${i + 1}">&times;</button>
     </div>
   `).join("");
   container.querySelectorAll(".btn-remove-foto").forEach(btn => {
@@ -4798,9 +4977,9 @@ function renderVisitaFotosRecomendacoesPreview() {
     <div class="visita-foto-thumb-legenda" data-idx="${i}">
       <div class="foto-img-wrap">
         <img src="${f.dataUrl}" alt="Foto ${i + 1}">
-        <button type="button" class="btn-remove-foto" title="Remover">&times;</button>
+        <button type="button" class="btn-remove-foto" aria-label="Remover foto ${i + 1} das recomendações">&times;</button>
       </div>
-      <input type="text" class="visita-foto-legenda" placeholder="Legenda (opcional)" value="${escapeHtml(f.legenda || "")}">
+      <input type="text" class="visita-foto-legenda" placeholder="Legenda (opcional)" aria-label="Legenda da foto ${i + 1}" value="${escapeHtml(f.legenda || "")}">
     </div>
   `).join("");
   container.querySelectorAll(".btn-remove-foto").forEach(btn => {
@@ -4834,7 +5013,7 @@ function renderVisitaProdutosRows() {
   const container = document.getElementById("visita-produtos-recomendados-list");
   container.innerHTML = currentVisitaProdutos.map((p, i) => `
     <div class="produto-recomendado-row" data-idx="${i}">
-      <button type="button" class="btn-remove-produto" title="Remover">&times;</button>
+      <button type="button" class="btn-remove-produto" aria-label="Remover produto recomendado ${i + 1}">&times;</button>
       <label>Produto<input type="text" class="prod-nome" value="${escapeHtml(p.produto || "")}" placeholder="Ex: Tech Sal 80"></label>
       <label>Categoria<input type="text" class="prod-categoria" value="${escapeHtml(p.categoria || "")}" placeholder="Ex: Suplementação mineral"></label>
       <label>Dose recomendada<input type="text" class="prod-dose" value="${escapeHtml(p.dose || "")}" placeholder="Ex: 80g/cab/dia"></label>
@@ -4891,8 +5070,8 @@ function renderVisitaEstoqueRows() {
       <div class="categoria-card" data-categoria-id="${cat.id}">
         <div style="font-size:0.85rem; font-weight:600; margin-bottom:6px;">${escapeHtml(categoriaRowLabel(cat))}${cat.produtoAtual ? " — " + escapeHtml(cat.produtoAtual) : ""}</div>
         <div class="categoria-animal-row">
-          <input type="number" class="visita-estoque-qtd-animais" min="0" placeholder="Quantidade de animais" value="${escapeHtml(cat.quantidade || "")}">
-          <input type="number" class="visita-estoque-quantidade" min="0" step="any" placeholder="Estoque atual (toneladas)">
+          <input type="number" class="visita-estoque-qtd-animais" min="0" inputmode="numeric" placeholder="Quantidade de animais" aria-label="Quantidade de animais: ${escapeHtml(categoriaRowLabel(cat))}" value="${escapeHtml(cat.quantidade || "")}">
+          <input type="number" class="visita-estoque-quantidade" min="0" step="any" inputmode="decimal" placeholder="Estoque atual (toneladas)" aria-label="Estoque atual em toneladas: ${escapeHtml(categoriaRowLabel(cat))}">
         </div>
       </div>`).join("")
     : `<p class="hint">Nenhuma categoria animal cadastrada ainda — cadastre no Perfil Produtivo antes da visita.</p>`;
@@ -4907,11 +5086,12 @@ function renderVisitaWizardProgress() {
     const n = Number(b.dataset.bubble);
     b.classList.toggle("concluido", n < visitaWizardStep);
     b.classList.toggle("atual", n === visitaWizardStep);
+    if (n === visitaWizardStep) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
   });
   document.getElementById("visita-wizard-label").textContent = `Etapa ${visitaWizardStep} de ${VISITA_WIZARD_STEPS.length} — ${VISITA_WIZARD_STEPS[visitaWizardStep - 1]}`;
 }
 
-function mostrarVisitaWizardStep(step) {
+function mostrarVisitaWizardStep(step, focarPrimeiroCampo) {
   visitaWizardStep = step;
   document.querySelectorAll(".wizard-step").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === step));
   document.getElementById("btn-visita-voltar").classList.toggle("hidden", step === 1);
@@ -4919,6 +5099,13 @@ function mostrarVisitaWizardStep(step) {
   renderVisitaWizardProgress();
   const scrollArea = document.querySelector("main");
   if (scrollArea) scrollArea.scrollTop = 0;
+  // Ao trocar de etapa pelo teclado, o foco vai pro primeiro campo da etapa nova em vez de
+  // ficar num botão que acabou de sumir/mudar de texto.
+  if (focarPrimeiroCampo) {
+    const stepEl = document.querySelector(`.wizard-step[data-step="${step}"]`);
+    const primeiro = stepEl && [...stepEl.querySelectorAll("input:not([type=hidden]), select, textarea, button")].find(el => el.offsetParent !== null && !el.closest(".hidden"));
+    if (primeiro) primeiro.focus();
+  }
 }
 
 function validarVisitaWizardStepAtual() {
@@ -4931,12 +5118,12 @@ function validarVisitaWizardStepAtual() {
 }
 
 document.getElementById("btn-visita-voltar").addEventListener("click", () => {
-  if (visitaWizardStep > 1) mostrarVisitaWizardStep(visitaWizardStep - 1);
+  if (visitaWizardStep > 1) mostrarVisitaWizardStep(visitaWizardStep - 1, true);
 });
 document.getElementById("btn-visita-proximo").addEventListener("click", e => {
   if (visitaWizardStep < VISITA_WIZARD_STEPS.length) {
     e.preventDefault();
-    if (validarVisitaWizardStepAtual()) mostrarVisitaWizardStep(visitaWizardStep + 1);
+    if (validarVisitaWizardStepAtual()) mostrarVisitaWizardStep(visitaWizardStep + 1, true);
   }
 });
 
@@ -4950,6 +5137,9 @@ function activateVisitaRelatorioPanel() {
 }
 
 function voltarDoVisitaRelatorio() {
+  const formVisita = document.getElementById("form-visita");
+  if (formVisita && formVisita.dataset.sujo && !confirm("Sair sem salvar? As alterações deste relatório de visita serão perdidas.")) return;
+  if (formVisita) delete formVisita.dataset.sujo;
   const retorno = visitaRelatorioRetorno;
   visitaRelatorioRetorno = null;
   if (retorno) {
@@ -5151,10 +5341,10 @@ function renderVisitaDocumento(visita) {
   const problemasLi = (visita.problemasIdentificados || "").split("\n").filter(Boolean).map(l => `<li>${escapeHtml(l)}</li>`).join("");
   const compromissosLi = (visita.compromissos || "").split("\n").filter(Boolean).map(l => `<li>${escapeHtml(l)}</li>`).join("");
   const fotosHtml = visita.fotos && visita.fotos.length
-    ? `<div class="visita-doc-fotos">${visita.fotos.map((f, i) => `<div class="visita-doc-foto"><img src="${f.dataUrl}"><div class="cap">Foto ${i + 1}</div></div>`).join("")}</div>`
+    ? `<div class="visita-doc-fotos">${visita.fotos.map((f, i) => `<div class="visita-doc-foto"><img src="${f.dataUrl}" alt="Foto ${i + 1} da situação encontrada" loading="lazy"><div class="cap">Foto ${i + 1}</div></div>`).join("")}</div>`
     : `<p class="hint">Nenhuma foto registrada.</p>`;
   const fotosRecomendacoesHtml = visita.fotosRecomendacoes && visita.fotosRecomendacoes.length
-    ? `<div class="visita-doc-fotos">${visita.fotosRecomendacoes.map((f, i) => `<div class="visita-doc-foto"><img src="${f.dataUrl}"><div class="cap">${escapeHtml(f.legenda) || "Foto " + (i + 1)}</div></div>`).join("")}</div>`
+    ? `<div class="visita-doc-fotos">${visita.fotosRecomendacoes.map((f, i) => `<div class="visita-doc-foto"><img src="${f.dataUrl}" alt="${escapeHtml(f.legenda) || "Foto " + (i + 1) + " das recomendações"}" loading="lazy"><div class="cap">${escapeHtml(f.legenda) || "Foto " + (i + 1)}</div></div>`).join("")}</div>`
     : "";
   const produtosHtml = (visita.produtosRecomendados || []).length
     ? visita.produtosRecomendados.map(p => `
@@ -5252,11 +5442,11 @@ function renderVisitasTabela() {
 
   document.getElementById("visitas-tabela-body").innerHTML = rows.length
     ? rows.map(({ v, client }) => `
-        <tr data-visita-id="${v.id}" style="cursor:pointer">
+        <tr data-visita-id="${v.id}" tabindex="0" aria-label="Ver relatório ${escapeHtml(v.numero)} de ${escapeHtml(client ? client.nome : "-")}" style="cursor:pointer">
           <td>${escapeHtml(v.numero)}</td><td>${escapeHtml(client ? client.nome : "-")}</td>
           <td>${formatDate(v.dataVisita)}</td><td>${escapeHtml((v.objetivos || [])[0] || "-")}</td>
           <td><span class="badge ${v.condicaoGeral === "Crítica" ? "badge-late" : v.condicaoGeral === "Regular" ? "badge-warn" : "badge-ok"}">${escapeHtml(v.condicaoGeral || "-")}</span></td>
-          <td><button type="button" class="btn-secondary btn-duplicar-visita" data-visita-id="${v.id}">Duplicar</button></td>
+          <td><button type="button" class="btn-secondary btn-duplicar-visita" data-visita-id="${v.id}" aria-label="Duplicar relatório ${escapeHtml(v.numero)}">Duplicar</button></td>
         </tr>`).join("")
     : `<tr><td colspan="6">Nenhum relatório de visita encontrado.</td></tr>`;
 
@@ -5421,6 +5611,7 @@ function mostrarRelatorioView(viewId, opts) {
   const painelId = (viewId === "conversao" || viewId === "followups") ? "funil" : viewId;
   document.getElementById("report-" + painelId).classList.add("active");
   currentReportView = painelId;
+  gravarUrl({ tab: "relatorios", rel: viewId }, false);
 
   if (painelId === "cliente") {
     const sel = document.getElementById("relatorio-cliente-select");
@@ -5975,7 +6166,188 @@ document.querySelectorAll("[data-close-modal]").forEach(btn => btn.addEventListe
 // Nenhum modal fecha por clique fora: todos são formulários de cadastro/edição, e um clique
 // perdido do lado de fora descartava silenciosamente o que já tinha sido digitado. Fechar exige
 // um clique explícito no X, em "Cancelar" ou Esc — igual ao #modal-login já fazia.
-function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+// E se o formulário tem alteração não salva (data-sujo, marcado no primeiro input/change),
+// pergunta antes de descartar. Fechar depois de salvar não pergunta: o submit limpa a marca.
+function closeModal(id) {
+  const overlay = document.getElementById(id);
+  const form = overlay.querySelector("form[data-sujo]");
+  if (form && !confirm("Descartar as alterações não salvas?")) return;
+  if (form) delete form.dataset.sujo;
+  overlay.classList.add("hidden");
+}
+
+// ---------- Acessibilidade: modais (foco, armadilha, retorno), teclado em cards, regiões roláveis ----------
+// Tudo aqui é só DOM/ARIA — não toca em state nem em localStorage.
+const FOCAVEIS = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+function visivelPraFoco(el) { return !!(el.offsetParent !== null || el.getClientRects().length) && !el.closest(".hidden, [hidden]"); }
+function focaveisDentro(root) { return [...root.querySelectorAll(FOCAVEIS)].filter(visivelPraFoco); }
+function modalNoTopo() { const abertos = [...document.querySelectorAll(".modal-overlay:not(.hidden)")]; return abertos[abertos.length - 1] || null; }
+
+const modalOrigemFoco = new Map();
+// Último elemento útil que teve foco fora de um modal. Quando um item de menu (FAB, "+ Novo",
+// "Registrar ação") abre um modal, o menu se esconde ANTES do modal aparecer e o foco cai no
+// <body> — sem isso, o modal não saberia pra onde devolver o foco ao fechar.
+let ultimoFocoForaDeModal = null;
+document.addEventListener("focusin", e => {
+  const el = e.target;
+  if (el instanceof Element && el !== document.body && !el.closest(".modal-overlay")) ultimoFocoForaDeModal = el;
+});
+// Pra onde devolver o foco: o próprio elemento de origem se ainda está visível; se ele era um
+// item de menu que fechou, o botão que abre esse menu; senão o mesmo id (re-render) ou o <main>.
+function alvoDeRetornoDeFoco(origem) {
+  const visivel = el => el && el.isConnected && visivelPraFoco(el) && !el.closest(".modal-overlay");
+  if (visivel(origem)) return origem;
+  if (origem && origem.id) { const mesmoId = document.getElementById(origem.id); if (visivel(mesmoId)) return mesmoId; }
+  const gatilhos = [[".ficha-fab-menu", "#ficha-fab-btn"], [".quick-actions-dropdown", "#btn-quick-actions"], [".mbn-mais-painel", "#mbn-mais"]];
+  for (const [menu, gatilho] of gatilhos) if (origem && origem.closest && origem.closest(menu)) { const g = document.querySelector(gatilho); if (visivel(g)) return g; }
+  if (origem && origem.closest && origem.closest(".ficha-action-dropdown")) { const g = origem.closest(".ficha-action-menu") && origem.closest(".ficha-action-menu").querySelector("button"); if (visivel(g)) return g; }
+  return document.getElementById("conteudo");
+}
+function initModalAcessibilidade() {
+  document.querySelectorAll(".modal-overlay").forEach(overlay => {
+    // role/aria-modal/aria-labelledby no container do diálogo, a partir do título já existente
+    const caixa = overlay.querySelector(".modal, .print-preview-modal");
+    const titulo = overlay.querySelector(".modal-header h3, .print-preview-toolbar-title");
+    if (caixa && !caixa.getAttribute("role")) {
+      if (titulo && !titulo.id) titulo.id = overlay.id + "-titulo";
+      caixa.setAttribute("role", "dialog");
+      caixa.setAttribute("aria-modal", "true");
+      if (titulo) caixa.setAttribute("aria-labelledby", titulo.id);
+    }
+    // Marca "sujo" no primeiro input/change; limpa no reset (abrir) e no submit (salvar).
+    overlay.querySelectorAll("form").forEach(form => {
+      form.addEventListener("input", () => { form.dataset.sujo = "1"; });
+      form.addEventListener("change", () => { form.dataset.sujo = "1"; });
+      form.addEventListener("reset", () => { delete form.dataset.sujo; });
+      form.addEventListener("submit", () => {
+        delete form.dataset.sujo;
+        // validação falhou e o modal continua aberto: volta a valer como não salvo
+        setTimeout(() => { if (!overlay.classList.contains("hidden")) form.dataset.sujo = "1"; }, 0);
+      }, true);
+    });
+
+    let visivelAntes = !overlay.classList.contains("hidden");
+    new MutationObserver(() => {
+      const visivel = !overlay.classList.contains("hidden");
+      if (visivel === visivelAntes) return;
+      visivelAntes = visivel;
+      if (visivel) {
+        const ativo = document.activeElement;
+        modalOrigemFoco.set(overlay.id, (ativo && ativo !== document.body && !ativo.closest(".modal-overlay")) ? ativo : ultimoFocoForaDeModal);
+        // O app inteiro atrás do modal fica inerte (sem foco, sem leitor de tela) enquanto houver modal aberto
+        const shell = document.querySelector(".app-shell"); if (shell) shell.inert = true;
+        requestAnimationFrame(() => {
+          const foc = focaveisDentro(overlay);
+          const primeiroCampo = foc.find(el => ["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName) && !el.readOnly) || foc.find(el => !el.classList.contains("btn-close")) || foc[0];
+          if (primeiroCampo) primeiroCampo.focus({ preventScroll: false });
+        });
+      } else {
+        if (!modalNoTopo()) { const shell = document.querySelector(".app-shell"); if (shell) shell.inert = false; }
+        const origem = modalOrigemFoco.get(overlay.id);
+        modalOrigemFoco.delete(overlay.id);
+        const topo = modalNoTopo();
+        if (topo) { const f = focaveisDentro(topo)[0]; if (f) requestAnimationFrame(() => f.focus()); }
+        else { const alvo = alvoDeRetornoDeFoco(origem); if (alvo) requestAnimationFrame(() => alvo.focus()); }
+      }
+    }).observe(overlay, { attributes: true, attributeFilter: ["class"] });
+  });
+
+  // Armadilha de foco: Tab dentro do modal de cima dá a volta, nunca escapa pra página atrás
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Tab") return;
+    const topo = modalNoTopo();
+    if (!topo) return;
+    const foc = focaveisDentro(topo);
+    if (!foc.length) return;
+    const primeiro = foc[0], ultimo = foc[foc.length - 1];
+    const ativo = document.activeElement;
+    if (!topo.contains(ativo)) { e.preventDefault(); primeiro.focus(); return; }
+    if (e.shiftKey && ativo === primeiro) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && ativo === ultimo) { e.preventDefault(); primeiro.focus(); }
+  });
+
+  // Página inteira: avisa antes de sair/recarregar com formulário não salvo (modal aberto ou relatório de visita)
+  window.addEventListener("beforeunload", e => {
+    const sujoEmModal = [...document.querySelectorAll(".modal-overlay:not(.hidden) form[data-sujo]")].length > 0;
+    const visita = document.getElementById("form-visita");
+    const sujoVisita = visita && visita.dataset.sujo && document.getElementById("visita-relatorio").classList.contains("active");
+    if (sujoEmModal || sujoVisita) { e.preventDefault(); e.returnValue = ""; }
+  });
+  const formVisita = document.getElementById("form-visita");
+  if (formVisita) {
+    formVisita.addEventListener("input", () => { formVisita.dataset.sujo = "1"; });
+    formVisita.addEventListener("change", () => { formVisita.dataset.sujo = "1"; });
+    formVisita.addEventListener("reset", () => { delete formVisita.dataset.sujo; });
+  }
+}
+initModalAcessibilidade();
+
+// Cards, linhas de tabela e eventos do calendário são div/tr com click — com tabindex=0 eles
+// entram na ordem de Tab, e aqui Enter/Espaço viram clique (igual a um <button>).
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const el = e.target;
+  if (!(el instanceof Element)) return;
+  if (["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA", "SUMMARY"].includes(el.tagName)) return;
+  if (el.matches('[role="button"][tabindex="0"], tr[tabindex="0"]')) {
+    e.preventDefault();
+    el.click();
+  }
+});
+
+// Regiões com rolagem horizontal (tabelas largas, quadro do pipeline) precisam ser alcançáveis
+// pelo teclado pra rolar com as setas. Reconciliado a cada render via MutationObserver.
+function marcarRegioesRolaveis() {
+  const candidatos = document.querySelectorAll('.kanban, [style*="overflow-x"], table.mini, .copiloto-corpo, .print-preview-scroll');
+  candidatos.forEach(el => {
+    const cs = getComputedStyle(el);
+    const rola = (/(auto|scroll)/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) || (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1);
+    if (rola && !el.hasAttribute("tabindex")) {
+      el.setAttribute("tabindex", "0");
+      if (!el.getAttribute("role")) el.setAttribute("role", "region");
+      if (!el.getAttribute("aria-label")) {
+        const titulo = el.closest(".info-card, .detalhe-section, .panel, .rs-card, .dash-widget, section");
+        const h = titulo && titulo.querySelector("h2, h3, h4, h5");
+        el.setAttribute("aria-label", (h ? h.textContent.trim() + " — " : "") + (el.classList.contains("kanban") ? "quadro do pipeline, rola na horizontal" : "conteúdo com rolagem"));
+      }
+    } else if (!rola && el.getAttribute("role") === "region" && el.getAttribute("tabindex") === "0" && !el.id) {
+      el.removeAttribute("tabindex"); el.removeAttribute("role"); el.removeAttribute("aria-label");
+    }
+  });
+}
+let reconciliarAgendado = false;
+new MutationObserver(() => {
+  if (reconciliarAgendado) return;
+  reconciliarAgendado = true;
+  requestAnimationFrame(() => { reconciliarAgendado = false; marcarRegioesRolaveis(); });
+}).observe(document.body, { childList: true, subtree: true });
+window.addEventListener("resize", () => marcarRegioesRolaveis());
+
+// Erro inline embaixo do campo + foco nele (em vez de só um toast que some): o usuário vê onde
+// está o problema e já pode corrigir. Some sozinho quando o campo muda.
+function marcarErroCampo(id, mensagem) {
+  const campo = document.getElementById(id);
+  if (!campo) { showToast(mensagem); return; }
+  campo.setAttribute("aria-invalid", "true");
+  let erro = document.getElementById("erro-" + id);
+  if (!erro) {
+    erro = document.createElement("span");
+    erro.id = "erro-" + id;
+    erro.className = "campo-erro";
+    erro.setAttribute("role", "alert");
+    (campo.closest("label") || campo.parentElement).appendChild(erro);
+  }
+  erro.textContent = mensagem;
+  campo.setAttribute("aria-describedby", erro.id);
+  campo.focus();
+  const limpar = () => { campo.removeAttribute("aria-invalid"); campo.removeAttribute("aria-describedby"); erro.remove(); campo.removeEventListener("input", limpar); campo.removeEventListener("change", limpar); };
+  campo.addEventListener("input", limpar); campo.addEventListener("change", limpar);
+}
+function limparErrosCampo(form) {
+  if (!form) return;
+  form.querySelectorAll(".campo-erro").forEach(e => e.remove());
+  form.querySelectorAll("[aria-invalid]").forEach(c => { c.removeAttribute("aria-invalid"); c.removeAttribute("aria-describedby"); });
+}
 
 // ============================================================
 // IMPORTAR DADOS (mapeamento JSON externo → schema do CRM)
@@ -6319,6 +6691,9 @@ function boot() {
   renderClientList();
   renderLeadsList();
   renderConsultorList();
+  // Reabre a tela que está na URL (aba, filtros, cliente). No segundo boot (depois do pull
+  // do Supabase) a URL já reflete a tela atual, então isso só re-renderiza o mesmo lugar.
+  aplicarEstadoDaUrl();
 }
 boot();
 initAuthAndSync();

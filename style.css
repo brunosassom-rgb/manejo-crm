@@ -48,11 +48,19 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
   --shadow-md: 0 1px 3px rgba(0,0,0,0.08);
   --shadow-lg: 0 1px 3px rgba(0,0,0,0.08);
+
+  /* Borda de campo de formulário/busca/select — separada de --border (divisórias) porque
+     WCAG 1.4.11 pede 3:1 pra contorno de controle: --border (#E4E7DE) dá 1.25:1 sobre branco.
+     Mesmo tom oliva-acinzentado de --text-faint, só mais claro: 3.74:1 sobre --surface,
+     3.44:1 sobre --bg (medido na auditoria de set/2026). */
+  --border-input: #7F8774;
+  color-scheme: light;
 }
 
 :root[data-theme="dark"], @media (prefers-color-scheme: dark) {}
 
 .theme-dark {
+  color-scheme: dark;
   --bg: #0D0F0D;
   --surface: #16181A;
   --text: #F3F4F6;
@@ -60,6 +68,7 @@
   --text-faint: #848A94; /* era #6B7280 (3.60:1 sobre --surface, abaixo de 4.5) — 5.01:1 */
   --border: #2A2D31;
   --border-soft: #212327;
+  --border-input: #70776A; /* 3.76:1 sobre --surface escuro, 4.10:1 sobre --bg escuro */
   --primary: #6C7A52; /* Alcaparra — tons mais claros do grupo (Orégano+) caem abaixo de 4.5:1 com texto branco nos botões sólidos */
   --primary-hover: #7E8B63; /* Orégano — mais claro que --primary, mesma convenção de hover-clareia já usada neste tema */
   --chart-1: #96A180; /* Alecrim Dourado */
@@ -83,9 +92,31 @@ body {
   color: var(--text);
   font-size: 13px;
   transition: background 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: rgba(108,122,82,0.18); /* toque no celular: realce discreto no verde da marca */
 }
 
 button, input, select, textarea { font-family: inherit; }
+/* Sem atraso de duplo-toque no celular em qualquer coisa clicável */
+button, a, input, select, textarea, label, summary, [role="button"], [tabindex="0"] { touch-action: manipulation; }
+/* <select> com opção longa (nome de cliente, produto) não pode ditar a largura da tela:
+   largura intrínseca = opção mais longa, e isso arrastava filtros e relatórios inteiros
+   pra fora da viewport no celular (medido: select de 1392px numa tela de 390px). */
+select { max-width: 100%; min-width: 0; }
+
+/* Só leitor de tela */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* Pular pro conteúdo: invisível até receber foco pelo teclado */
+.skip-link {
+  position: absolute; left: 12px; top: -100px; z-index: 1000;
+  background: var(--primary); color: #fff; padding: 10px 16px; border-radius: 8px;
+  font-weight: 600; text-decoration: none; box-shadow: var(--shadow-lg);
+}
+.skip-link:focus { top: 12px; outline: 2px solid #fff; outline-offset: 2px; }
+main:focus { outline: none; } /* alvo do skip link: não precisa de anel, o foco segue pro conteúdo */
+
+/* A marca virou o <h1> da página (toda página precisa de um): mesmo visual de antes */
+h1.rail-brand-text { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
 
 ::selection { background: var(--primary); color: #fff; }
 
@@ -252,11 +283,27 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .btn-link:hover { color: var(--primary-hover); }
 
 .search-input, .form input, .form select, .form textarea, .report-controls select, .report-controls input {
-  width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+  width: 100%; padding: 8px 12px; border: 1px solid var(--border-input); border-radius: 6px;
   background: var(--surface); color: var(--text); font-size: 13px; margin-top: 6px;
   text-align: left;
 }
 .search-input { margin: 16px 0; }
+.report-controls, .pipeline-filters { min-width: 0; }
+.report-controls select { flex: 1 1 200px; width: auto; }
+
+/* Erro inline embaixo do campo (marcarErroCampo em app.js) */
+.form label .campo-erro, .campo-erro {
+  display: block; margin-top: 5px; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none;
+  color: var(--late-text);
+}
+.form [aria-invalid="true"], [aria-invalid="true"] { border-color: var(--late-text) !important; }
+
+/* Botão de ação dentro do toast ("Desfazer") */
+.toast-acao {
+  margin-left: 6px; background: transparent; border: 1px solid rgba(255,255,255,0.45); color: #fff;
+  border-radius: 6px; padding: 4px 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.toast-acao:hover { background: rgba(255,255,255,0.12); }
 
 .form { display: flex; flex-direction: column; gap: 14px; max-width: 480px; }
 .form label { display: flex; flex-direction: column; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
@@ -435,9 +482,9 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 
 /* ============ Pipeline (Kanban) ============ */
 .pipeline-filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 18px; }
-.pipeline-filters select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 0.84rem; }
+.pipeline-filters select { padding: 8px 10px; border: 1px solid var(--border-input); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 0.84rem; max-width: min(100%, 420px); }
 
-.kanban { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; }
+.kanban { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; overscroll-behavior-x: contain; }
 .kanban-col { background: var(--rail-bg); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; min-height: 200px; flex: 1 1 0; min-width: 0; }
 .kanban-col-header { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 6px 10px; }
 .kanban-col-header .stage-name { font-size: 0.82rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -474,7 +521,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
    aqui dentro sentam direto sobre o fundo oliva escuro da sidebar (--rail-bg) sem nenhum fundo
    próprio, então herdavam --text/--text-muted (pensados pra --surface) com contraste péssimo
    (~2:1 e ~1.65:1). --sidebar-text/--sidebar-sub já existem prontos pra esse fundo específico. */
-.ficha-left .fnome { font-size: 1.1rem; font-weight: 700; color: var(--sidebar-text-active); }
+.ficha-left .fnome { font-size: 1.1rem; font-weight: 700; color: var(--sidebar-text-active); margin: 0; letter-spacing: normal; text-transform: none; overflow-wrap: anywhere; }
 .ficha-left .card-sub { color: var(--sidebar-sub); }
 .ficha-left .hint { color: var(--sidebar-sub); margin-top: 10px; }
 .ficha-left .fbadge { margin-top: 6px; }
@@ -551,7 +598,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .copiloto-colapsar { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; flex-shrink: 0; }
 .copiloto-colapsar svg { width: 16px; height: 16px; transition: transform 0.15s; }
 .copiloto-painel.recolhido .copiloto-colapsar svg { transform: rotate(180deg); }
-.copiloto-corpo { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.copiloto-corpo { flex: 1; padding: 14px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; }
 .copiloto-vazio { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
 .copiloto-bolha-usuario {
   align-self: flex-end; max-width: 88%; background: var(--primary); color: #fff;
@@ -565,7 +612,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .copiloto-confirmar-acoes button { font-size: 12px; padding: 6px 10px; }
 .copiloto-input-row { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .copiloto-input-row textarea {
-  width: 100%; resize: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  width: 100%; resize: none; border: 1px solid var(--border-input); border-radius: 8px; padding: 8px 10px;
   font-family: inherit; font-size: 12.5px; background: var(--surface-2); color: var(--text); box-sizing: border-box;
 }
 .copiloto-painel.recolhido .copiloto-titulo,
@@ -687,11 +734,10 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .agenda-filter-chip {
   display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px;
   padding: 5px 12px 5px 8px; font-size: 0.76rem; cursor: pointer; user-select: none; color: var(--text-muted);
-  background: var(--surface);
+  background: var(--surface); font-family: inherit; appearance: none;
 }
 .agenda-filter-chip.active { color: var(--text); border-color: var(--text-faint); }
 .agenda-filter-chip .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.agenda-filter-chip input { display: none; }
 
 .agenda-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; margin-top: 12px; }
 .agenda-grid .dash-panel { min-width: 0; }
@@ -735,7 +781,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .day-event-row .dey-sub { font-size: 0.76rem; color: var(--text-muted); margin-top: 1px; }
 
 .agenda-side { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-.agenda-side h4 { margin: 0 0 10px; font-size: 0.85rem; }
+.agenda-side h3 { margin: 0 0 10px; font-size: 0.85rem; text-transform: none; letter-spacing: normal; color: var(--text); }
 
 /* ============ Inteligência Competitiva ============ */
 .radar-wrap { display: flex; justify-content: center; }
@@ -849,7 +895,10 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   /* Sidebar de 220px + conteúdo lado a lado não cabe numa tela estreita — vira uma
      faixa horizontal de pílulas roláveis acima do conteúdo, o mesmo tratamento que
      as abas de relatório já usavam nesta tela antes desta reorganização. */
-  .relatorios-layout { flex-direction: column; }
+  /* align-items:flex-start (herdado do layout de 2 colunas) em direção coluna fazia o conteúdo
+     ter largura "fit-content" = a opção mais longa do <select> de cliente (1215px numa tela de
+     390px) e o relatório inteiro vazava pra direita. Em coluna, tem que esticar. */
+  .relatorios-layout { flex-direction: column; align-items: stretch; }
   .relatorios-menu { width: 100%; flex-direction: row; flex-wrap: wrap; position: static; gap: 6px; }
   .relatorios-menu-group { flex-direction: row; flex-wrap: wrap; align-items: center; margin-top: 0; gap: 6px; }
   .relatorios-menu-label { display: none; }
@@ -937,7 +986,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .pedido-card:hover { border-color: var(--primary); }
 .pedido-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
 .pedido-num { font-weight: 800; font-size: 0.85rem; }
-.pedido-data { font-size: 0.72rem; color: var(--text-faint); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.pedido-data { font-size: 0.72rem; color: var(--text-faint); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .pedido-card-body { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .pedido-produto { font-size: 0.85rem; }
 .pedido-produto .qtd { color: var(--text-muted); font-size: 0.78rem; }
@@ -1034,7 +1083,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 .modal-overlay { position: fixed; inset: 0; background: rgba(26,26,26,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
 .modal-overlay.hidden { display: none; }
 .hidden { display: none !important; }
-.modal { background: var(--surface); border-radius: 8px; padding: 20px 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.modal { background: var(--surface); border-radius: 8px; padding: 20px 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; box-shadow: var(--shadow-lg); }
 .modal-wide { max-width: 760px; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .btn-close { background: transparent; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted); line-height: 1; }
@@ -1051,7 +1100,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 }
 .print-preview-toolbar-title { font-weight: 700; font-size: 0.95rem; color: var(--text); }
 .print-preview-toolbar-actions { display: flex; gap: 10px; }
-.print-preview-scroll { flex: 1; overflow-y: auto; padding: 28px 20px; background: #B9BEAC; }
+.print-preview-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 28px 20px; background: #B9BEAC; }
 .theme-dark .print-preview-scroll { background: #14150F; }
 
 /* Capa, cabeçalho/rodapé corridos (position:fixed, só fazem sentido repetindo por página impressa)
@@ -1329,7 +1378,7 @@ table.mini th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; 
 .wizard-bubble {
   position: relative; z-index: 1; width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700;
-  background: var(--surface); border: 2px solid var(--border); color: var(--text-muted);
+  background: var(--surface); border: 2px solid var(--border-input); color: var(--text-muted);
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .wizard-bubble.atual { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
@@ -1508,10 +1557,12 @@ h2 { font-size: 21px; font-weight: 700; }
   font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
 }
 
-/* Foco acessível */
-:where(button, a, input, select, textarea):focus-visible {
+/* Foco acessível — inclui cards/linhas focáveis (tabindex) e regiões roláveis */
+:where(button, a, input, select, textarea, summary, [tabindex="0"], [role="button"]):focus-visible {
   outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 6px;
 }
+/* Listas longas de cards (Leads/Clientes): o navegador pula o layout do que está fora da tela */
+#leads-list .card, #clientes-list .card { content-visibility: auto; contain-intrinsic-size: auto 120px; }
 
 /* ---------- Logo na barra lateral ---------- */
 .rail-brand { flex-direction: row; align-items: center; gap: 10px; padding: 4px 8px 14px; }
@@ -1622,13 +1673,14 @@ table.mini tbody tr:hover td { background: var(--surface-2); }
    ===================================================================== */
 
 /* ---------- Topo unificado (barra utilitária + navegação), uma faixa só ---------- */
+/* Contorno dos controles na topbar: 0.18 de branco dava 1.6:1 sobre o oliva; 0.5 dá ~3.3:1 */
 .appbar-search input {
-  background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); color: #fff; width: 220px;
+  background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.5); color: #fff; width: 220px;
 }
 .appbar-search input::placeholder { color: var(--sidebar-sub); }
-.appbar-bell { color: var(--sidebar-text); border-color: rgba(255,255,255,0.18); flex-shrink: 0; }
+.appbar-bell { color: var(--sidebar-text); border-color: rgba(255,255,255,0.5); flex-shrink: 0; }
 .appbar-bell:hover { background: var(--sidebar-hover-bg); }
-.theme-toggle { color: var(--sidebar-text); border-color: rgba(255,255,255,0.18); flex-shrink: 0; }
+.theme-toggle { color: var(--sidebar-text); border-color: rgba(255,255,255,0.5); flex-shrink: 0; }
 .theme-toggle:hover { background: var(--sidebar-hover-bg); }
 
 /* ---------- Barra vertical -> navegação horizontal (marca + abas + busca + usuário, tudo numa faixa só) ---------- */
@@ -1791,7 +1843,8 @@ main { max-width: 1400px; margin: 0 auto; padding: 30px 34px 56px; }
 .client-meta .cm-l { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
 .client-meta .cm-v { font-size: 0.82rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 
-.lead-avatar-row { display: flex; align-items: center; gap: 12px; }
+.lead-avatar-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lead-avatar-text { min-width: 0; overflow-wrap: anywhere; }
 .lead-avatar {
   width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff;
   display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
@@ -2035,6 +2088,27 @@ body::after {
 
   .ficha-fab { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
   .toast-stack { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+  .mbn-mais-painel { overscroll-behavior: contain; }
+
+  /* Alvos de toque de 44px (auditoria set/2026). Onde o controle é pequeno de propósito
+     (bolinha de "feito", cadeado, X da foto, pílulas Abrir/WhatsApp), o visual fica igual e a
+     área de toque cresce por um ::before invisível ao redor. */
+  .appbar-bell, .theme-toggle { min-width: 44px; min-height: 44px; }
+  .btn-close { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .calendar-nav-btn { width: 44px; height: 44px; }
+  .ficha-contact-circle { width: 44px; height: 44px; }
+  .roteiro-feito-dot, .roteiro-lock-btn { width: 32px; height: 32px; }
+  .roteiro-feito-dot, .roteiro-lock-btn, .btn-mini, .btn-remove-foto, .btn-remove-produto, .btn-resize-widget { position: relative; }
+  .roteiro-feito-dot::before, .roteiro-lock-btn::before, .btn-resize-widget::before { content: ""; position: absolute; inset: -6px; }
+  .btn-mini { min-height: 32px; display: inline-flex; align-items: center; }
+  .btn-mini::before { content: ""; position: absolute; inset: -6px 0; }
+  .btn-remove-foto, .btn-remove-produto { width: 28px; height: 28px; }
+  .btn-remove-foto::before, .btn-remove-produto::before { content: ""; position: absolute; inset: -8px; }
+
+  /* Funil do dashboard: a barra tinha 220px fixos e deixava 38px pro rótulo ("Prospecção" vazava) */
+  .funil-bar-slot { flex: 0 0 46%; }
+  .funil-bar { max-width: 100%; }
+  .funil-text { flex: 1 1 auto; }
 
   /* Roteiro do dia = a próxima ação: sempre primeiro widget da tela */
   .dash-widget[data-widget-id="roteiro"] { order: -1; }
