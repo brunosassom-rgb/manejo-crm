@@ -1,0 +1,4 @@
+project_id = "wtnxenlaybqzjthxiurd"
+
+[functions.copiloto]
+verify_jwt = true

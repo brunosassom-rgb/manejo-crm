@@ -1143,28 +1143,112 @@ document.getElementById("mbn-mais-perfil").addEventListener("click", () => {
 });
 
 // ---------- Copiloto lateral (painel de conversa fixo, desktop) ----------
-// Sem IA ainda: a captura de texto abre "Registrar Contato" já preenchido, pra revisar e
-// salvar em 1 passo a menos. O gancho pra uma IA de verdade entra bem aqui, mais pra frente.
-document.getElementById("btn-copiloto-colapsar").addEventListener("click", () => {
-  document.getElementById("copiloto-painel").classList.toggle("recolhido");
-});
-document.getElementById("btn-copiloto-enviar").addEventListener("click", () => {
-  const input = document.getElementById("copiloto-input");
-  const texto = input.value.trim();
-  if (!texto) return;
+// Camada 1/2 (roteiro de padrão conhecido — sem custo de IA nenhum): cada entrada
+// aqui é um caso já identificado como repetitivo o bastante pra virar regra fixa,
+// em vez de acionar a IA de novo toda vez. Começa vazio de propósito: ainda não
+// temos uso real suficiente pra saber quais padrões realmente se repetem — a
+// lista cresce conforme formos notando. Formato: { teste: texto => bool,
+// executar: (texto, clientId) => void }; o primeiro que casar vence, e nem chega
+// a sair pra rede.
+const COPILOTO_ROTEIRO_PADRAO = [];
+
+const COPILOTO_FUNCTION_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/copiloto` : "";
+
+function copilotoAdicionarBolha(texto, classe) {
   const corpo = document.getElementById("copiloto-corpo");
   const vazio = corpo.querySelector(".copiloto-vazio");
   if (vazio) vazio.remove();
   const bolha = document.createElement("div");
-  bolha.className = "copiloto-bolha-usuario";
+  bolha.className = classe;
   bolha.textContent = texto;
   corpo.appendChild(bolha);
   corpo.scrollTop = corpo.scrollHeight;
+  return bolha;
+}
+
+// Volta pro comportamento manual (abrir "Registrar Contato" já preenchido) sempre
+// que a IA não estiver configurada ainda, ou a chamada falhar por qualquer motivo —
+// o painel nunca fica travado esperando rede, sempre tem uma saída na mão.
+function copilotoFallbackManual(texto, clientId) {
+  openContatoModal(clientId);
+  document.getElementById("contato-resumo").value = texto;
+}
+
+async function copilotoChamarFuncao(payload) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const resp = await fetch(COPILOTO_FUNCTION_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function copilotoMostrarConfirmacao(resultado, textoOriginal, fichaAtiva) {
+  const bolha = copilotoAdicionarBolha(resultado.mensagem, "copiloto-bolha-ia");
+  const acoes = document.createElement("div");
+  acoes.className = "copiloto-confirmar-acoes";
+  acoes.innerHTML = `<button type="button" class="btn-primary">Confirmar</button><button type="button" class="btn-secondary">Editar manualmente</button>`;
+  bolha.appendChild(acoes);
+  document.getElementById("copiloto-corpo").scrollTop = document.getElementById("copiloto-corpo").scrollHeight;
+
+  const [btnConfirmar, btnEditar] = acoes.querySelectorAll("button");
+  btnConfirmar.addEventListener("click", async () => {
+    acoes.remove();
+    try {
+      const confirmado = await copilotoChamarFuncao({ confirmar: resultado.proposta });
+      copilotoAdicionarBolha(confirmado ? confirmado.mensagem : "Não consegui salvar agora. Tente pelo formulário.", "copiloto-bolha-ia");
+      if (confirmado) {
+        if (currentFichaClientId === resultado.proposta.clientId) { renderFichaLeft(); renderFichaTab(); }
+        renderDashboard();
+      } else {
+        copilotoFallbackManual(textoOriginal, fichaAtiva);
+      }
+    } catch {
+      copilotoAdicionarBolha("Não consegui salvar agora. Tente pelo formulário.", "copiloto-bolha-ia");
+      copilotoFallbackManual(textoOriginal, fichaAtiva);
+    }
+  });
+  btnEditar.addEventListener("click", () => {
+    acoes.remove();
+    copilotoFallbackManual(textoOriginal, fichaAtiva);
+  });
+}
+
+document.getElementById("btn-copiloto-colapsar").addEventListener("click", () => {
+  document.getElementById("copiloto-painel").classList.toggle("recolhido");
+});
+document.getElementById("btn-copiloto-enviar").addEventListener("click", async () => {
+  const input = document.getElementById("copiloto-input");
+  const texto = input.value.trim();
+  if (!texto) return;
+  input.value = "";
+  copilotoAdicionarBolha(texto, "copiloto-bolha-usuario");
 
   const fichaAtiva = document.getElementById("ficha").classList.contains("active") ? currentFichaClientId : undefined;
-  openContatoModal(fichaAtiva);
-  document.getElementById("contato-resumo").value = texto;
-  input.value = "";
+
+  const regraConhecida = COPILOTO_ROTEIRO_PADRAO.find(r => r.teste(texto));
+  if (regraConhecida) { regraConhecida.executar(texto, fichaAtiva); return; }
+
+  if (!sb || !COPILOTO_FUNCTION_URL) { copilotoFallbackManual(texto, fichaAtiva); return; }
+
+  try {
+    const resultado = await copilotoChamarFuncao({ texto, clientIdAtual: fichaAtiva });
+    if (!resultado) { copilotoFallbackManual(texto, fichaAtiva); return; }
+    if (resultado.tipo === "confirmar") copilotoMostrarConfirmacao(resultado, texto, fichaAtiva);
+    else copilotoAdicionarBolha(resultado.mensagem || "Não entendi. Pode reformular?", "copiloto-bolha-ia");
+  } catch {
+    copilotoFallbackManual(texto, fichaAtiva);
+  }
 });
 
 // ---------- Tema escuro ----------

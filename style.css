@@ -552,6 +552,12 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
   align-self: flex-end; max-width: 88%; background: var(--primary); color: #fff;
   padding: 9px 12px; border-radius: 12px 12px 2px 12px; font-size: 13px; line-height: 1.45;
 }
+.copiloto-bolha-ia {
+  align-self: flex-start; max-width: 92%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  padding: 9px 12px; border-radius: 12px 12px 12px 2px; font-size: 13px; line-height: 1.45;
+}
+.copiloto-confirmar-acoes { display: flex; gap: 6px; margin-top: 8px; }
+.copiloto-confirmar-acoes button { font-size: 12px; padding: 6px 10px; }
 .copiloto-input-row { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .copiloto-input-row textarea {
   width: 100%; resize: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;

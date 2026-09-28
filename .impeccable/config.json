@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-09-28T00:14:33.633Z",
+        "reason": "pre-existing fallback in the font stack (Work Sans is the chosen body face; Inter is one of several system fallbacks), established before this session's layout work, not a new choice"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "style.css"
+        ],
+        "createdAt": "2026-09-28T00:14:40.840Z",
+        "reason": "all 11 instances checked individually (lines 577,721,753,861,901,1247,1570,1578,1738,1753,1902): each encodes real semantic meaning already established in earlier tasks this session (follow-up result color, agenda event type, report section tone, kanban stage, alert severity) via a colored left/top border, not decorative filler; none were added by today's Painel de Campo/Copiloto change"
+      }
+    ]
+  }
+}
