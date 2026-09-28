@@ -618,6 +618,12 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .copiloto-painel.recolhido .copiloto-titulo,
 .copiloto-painel.recolhido .copiloto-corpo,
 .copiloto-painel.recolhido .copiloto-input-row { display: none; }
+/* Recolhido = trilha de 48px, mesmo padrão da barra de ícones (.rail-side): só o
+   botão de reabrir, centralizado. Sem isso o cabeçalho continuava com o "M" (26px)
+   + padding 14px dos dois lados, passava de 48px, e o overflow:hidden do painel
+   cortava o botão de reabrir fora da área visível — ele existia, mas era invisível. */
+.copiloto-painel.recolhido .copiloto-head { justify-content: center; padding: 14px 4px; gap: 0; }
+.copiloto-painel.recolhido .copiloto-mark { display: none; }
 @media (max-width: 900px) {
   .copiloto-painel { display: none; }
 }
