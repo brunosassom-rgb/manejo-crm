@@ -490,9 +490,9 @@ function aplicarConfigMarca() {
 
   const nomeEmpresa = cfg.nomeEmpresa || "";
   const hintFornecedores = document.getElementById("hint-fornecedores-casa");
-  if (hintFornecedores) hintFornecedores.textContent = `Fornecedores (${nomeEmpresa || "empresa"} ou concorrentes) são cadastrados aqui — nunca como cliente.`;
+  if (hintFornecedores) hintFornecedores.textContent = `Fornecedores (${nomeEmpresa || "empresa"} ou concorrentes) são cadastrados aqui, nunca como cliente.`;
   const tituloRadar = document.getElementById("titulo-radar-competitivo");
-  if (tituloRadar) tituloRadar.textContent = `Radar — ${nomeEmpresa || "empresa"} vs. concorrência`;
+  if (tituloRadar) tituloRadar.textContent = `Radar: ${nomeEmpresa || "empresa"} vs. concorrência`;
   const hintConcorrencia = document.getElementById("hint-carteira-concorrencia");
   if (hintConcorrencia) hintConcorrencia.textContent = `Todo cliente cujo fornecedor atual não é ${nomeEmpresa || "a empresa"} é tratado como concorrência.`;
   const legendCadastro = document.getElementById("legend-cadastro-empresa");
@@ -697,7 +697,8 @@ function showToast(message, opcoes) {
     el.appendChild(btn);
   }
   stack.appendChild(el);
-  setTimeout(() => el.remove(), acao ? 7000 : 3200);
+  // saída mais rápida que a entrada (esmaece em 160ms), em vez de sumir de uma vez
+  setTimeout(() => { el.classList.add("saindo"); setTimeout(() => el.remove(), 170); }, acao ? 7000 : 3200);
 }
 
 // ---------- Módulo 4 · Ciclo de recompra ----------
@@ -1136,6 +1137,7 @@ function badgeClassForLeadStatus(status) {
 // mandar um link direto pra um cliente. Só navegação: nunca toca em dado salvo.
 // O hash é preservado sempre: o link de recuperação de senha do Supabase chega nele.
 let aplicandoUrl = false;
+let primeiraLeituraUrl = true;
 const URL_TABS = ["dashboard", "pipeline", "clientes", "leads", "agenda", "competitiva", "relatorios", "meus-dados", "ficha"];
 function gravarUrl(params, push) {
   if (aplicandoUrl) return;
@@ -1159,7 +1161,15 @@ function aplicarEstadoDaUrl() {
   const tab = p.get("tab") || "dashboard";
   aplicandoUrl = true;
   try {
-    if (tab === "ficha" && p.get("id") && getEntidadeById(p.get("id"))) { openFicha(p.get("id"), true); return; }
+    if (tab === "ficha" && p.get("id") && getEntidadeById(p.get("id"))) {
+      // Link direto (primeira carga): a aba "ativa" é só o dashboard padrão do HTML, então o fundo
+      // certo é a lista do cliente. Pelo voltar do navegador, mantém a aba que já estava por trás.
+      if (primeiraLeituraUrl) { const antes = aplicandoUrl; aplicandoUrl = true; try { switchMainTab(isLeadId(p.get("id")) ? "leads" : "clientes"); } finally { aplicandoUrl = antes; } }
+      else garantirAbaDeFundo(p.get("id"));
+      primeiraLeituraUrl = false;
+      openFicha(p.get("id"), true); return;
+    }
+    primeiraLeituraUrl = false;
     if (!URL_TABS.includes(tab) || tab === "ficha") { switchMainTab("dashboard"); return; }
     const set = (id, val) => { const el = document.getElementById(id); if (el && val !== null) el.value = val; };
     if (tab === "pipeline") { set("filtro-municipio", p.get("mun")); set("filtro-categoria", p.get("cat")); set("filtro-produto", p.get("prod")); set("filtro-temperatura", p.get("temp")); }
@@ -1173,7 +1183,7 @@ window.addEventListener("popstate", () => aplicarEstadoDaUrl());
 
 // ---------- Navegação principal ----------
 function switchMainTab(tabName, preselectClientId) {
-  if (tabName !== "ficha") fichaNavStack = [];
+  if (tabName !== "ficha") { fichaNavStack = []; fecharDrawerFicha({ restaurarFoco: false, url: false }); }
   document.querySelectorAll(".tab-btn, .mbn-btn").forEach(b => {
     const ativo = b.dataset.tab === tabName;
     b.classList.toggle("active", ativo);
@@ -1313,7 +1323,7 @@ document.getElementById("btn-copiloto-enviar").addEventListener("click", async (
   input.value = "";
   copilotoAdicionarBolha(texto, "copiloto-bolha-usuario");
 
-  const fichaAtiva = document.getElementById("ficha").classList.contains("active") ? currentFichaClientId : undefined;
+  const fichaAtiva = fichaAberta() ? currentFichaClientId : undefined;
 
   const regraConhecida = COPILOTO_ROTEIRO_PADRAO.find(r => r.teste(texto));
   if (regraConhecida) { regraConhecida.executar(texto, fichaAtiva); return; }
@@ -1487,6 +1497,7 @@ document.addEventListener("keydown", e => {
     const abertos = [...document.querySelectorAll(".modal-overlay:not(.hidden):not(#modal-login)")];
     const topo = abertos[abertos.length - 1];
     if (topo) closeModal(topo.id);
+    else if (fichaAberta()) sairDaFicha(currentFichaTipo === "lead" ? "leads" : "clientes");
   }
 });
 
@@ -1911,6 +1922,43 @@ function populatePipelineFilters() {
 }
 ["filtro-municipio", "filtro-categoria", "filtro-produto", "filtro-temperatura"].forEach(id => document.getElementById(id).addEventListener("change", renderPipeline));
 
+// ---------- Movimento (Etapa 2 da revisão de UX) ----------
+// Mola gerada por simulação física (massa 1, visualDuration 0,36s, bounce 0,2; pico 1,3%),
+// amostrada em 27 pontos pra CSS linear(). Sem suporte a linear(), cai num ease-out forte.
+const MOLA_ASSENTAR = "linear(0, 0.0554, 0.187, 0.3332, 0.4784, 0.6194, 0.7283, 0.8153, 0.8865, 0.9338, 0.9667, 0.9898, 1.0026, 1.0095, 1.0127, 1.0131, 1.0119, 1.0102, 1.0082, 1.0062, 1.0046, 1.0032, 1.0021, 1.0013, 1.0007, 1.0003, 1)";
+const SUPORTA_LINEAR = !!(window.CSS && CSS.supports && CSS.supports("animation-timing-function", "linear(0, 1)"));
+function prefereMenosMovimento() { return window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; }
+let kanbanPegada = { dx: 0, dy: 0 };
+
+// Pisca de leve o registro que acabou de ser salvo ou movido (fundo oliva 16% até sumir).
+// Com "reduzir movimento" continua: é só cor, não deslocamento.
+function destacarRegistro(alvo) {
+  requestAnimationFrame(() => {
+    const els = typeof alvo === "string" ? document.querySelectorAll(alvo) : (alvo ? [alvo] : []);
+    els.forEach(el => {
+      if (!el.isConnected || !el.getClientRects().length) return;
+      el.classList.remove("acabou-de-salvar"); void el.offsetWidth; el.classList.add("acabou-de-salvar");
+      el.addEventListener("animationend", () => el.classList.remove("acabou-de-salvar"), { once: true });
+    });
+  });
+}
+
+// Card solto no kanban: a lista é redesenhada inteira, então usa FLIP. Começa no ponto onde foi
+// solto (levantado, levemente inclinado) e assenta na vaga final com a mola. Só transform.
+function assentarCardSolto(clientId, x, y) {
+  const el = document.querySelector(`.kanban-card[data-client-id="${clientId}"]`);
+  if (!el) return;
+  destacarRegistro(el);
+  if (prefereMenosMovimento() || !el.animate) return;
+  const r = el.getBoundingClientRect();
+  el.style.position = "relative"; el.style.zIndex = "2";
+  const anim = el.animate([
+    { transform: `translate(${Math.round(x - r.left)}px, ${Math.round(y - r.top)}px) scale(1.03) rotate(-1.2deg)`, boxShadow: "0 14px 30px rgba(35,40,30,.18)" },
+    { transform: "none", boxShadow: "0 0 0 rgba(35,40,30,0)" }
+  ], { duration: SUPORTA_LINEAR ? 535 : 320, easing: SUPORTA_LINEAR ? MOLA_ASSENTAR : "cubic-bezier(.23,1,.32,1)" });
+  anim.onfinish = anim.oncancel = () => { el.style.position = ""; el.style.zIndex = ""; };
+}
+
 function renderPipeline() {
   populatePipelineFilters();
   const fMun = document.getElementById("filtro-municipio").value;
@@ -1950,7 +1998,13 @@ function renderPipeline() {
   document.getElementById("kanban-board").innerHTML = colunasLead;
 
   document.querySelectorAll(".kanban-card").forEach(card => {
-    card.addEventListener("dragstart", () => card.classList.add("dragging"));
+    card.addEventListener("dragstart", e => {
+      card.classList.add("dragging");
+      // onde o dedo/mouse pegou o card: ao soltar, o card sai desse mesmo ponto em direção à vaga
+      const rc = card.getBoundingClientRect();
+      kanbanPegada = { dx: e.clientX - rc.left, dy: e.clientY - rc.top };
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    });
     card.addEventListener("dragend", () => card.classList.remove("dragging"));
     card.addEventListener("click", e => { if (!card.classList.contains("dragging")) openFicha(card.dataset.clientId); });
   });
@@ -1958,7 +2012,8 @@ function renderPipeline() {
   document.querySelectorAll(".kanban-drop").forEach(drop => {
     if (drop.dataset.nodrop) return;
     drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag-over"); });
-    drop.addEventListener("dragleave", () => drop.classList.remove("drag-over"));
+    // relatedTarget: passar por cima de um card dentro da coluna não apaga o destaque (antes piscava)
+    drop.addEventListener("dragleave", e => { if (!drop.contains(e.relatedTarget)) drop.classList.remove("drag-over"); });
     drop.addEventListener("drop", e => {
       e.preventDefault();
       drop.classList.remove("drag-over");
@@ -1972,6 +2027,7 @@ function renderPipeline() {
         lead.historicoEtapas.push({ etapa: drop.dataset.stage, data: todayStr() });
         saveState();
         renderPipeline();
+        assentarCardSolto(lead.id, e.clientX - kanbanPegada.dx, e.clientY - kanbanPegada.dy);
         // Arrastar é fácil de errar (soltar na coluna do lado) — "Desfazer" devolve o lead
         // e tira a entrada que acabou de entrar no histórico de etapas.
         showToast(`${lead.nome} movido para “${drop.dataset.stage}”.`, { acao: { label: "Desfazer", onClick: () => {
@@ -2193,7 +2249,7 @@ function refreshClientSelects() {
   todasEntidades.forEach(sel => {
     if (!sel) return;
     const current = sel.value;
-    const placeholder = sel.id === "compromisso-cliente" ? `<option value="">— Nenhum —</option>` : "";
+    const placeholder = sel.id === "compromisso-cliente" ? `<option value="">Nenhum</option>` : "";
     sel.innerHTML = placeholder + todasEntidadesSelecionaveis().map(c => `<option value="${c.id}">${escapeHtml(c.nome)}${c.fazenda ? " · " + escapeHtml(c.fazenda) : ""}</option>`).join("");
     if (current) sel.value = current;
   });
@@ -2223,7 +2279,7 @@ function refreshConsultorSelect() {
   ["cliente-consultor-id", "ca-consultor-id"].forEach(id => {
     const sel = document.getElementById(id);
     const current = sel.value;
-    sel.innerHTML = `<option value="">— Nenhum —</option>` + state.consultores.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join("");
+    sel.innerHTML = `<option value="">Nenhum</option>` + state.consultores.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join("");
     sel.value = current;
   });
 }
@@ -2405,11 +2461,11 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
     <div class="categoria-card" data-idx="${i}">
       <div class="categoria-animal-row">
         <select class="cat-tipo" aria-label="Tipo de animal da categoria ${i + 1}">
-          <option value="">— Tipo de animal —</option>
+          <option value="">Tipo de animal…</option>
           ${TIPO_ANIMAL_OPCOES.map(o => `<option value="${o}" ${row.tipoAnimal === o ? "selected" : ""}>${o}</option>`).join("")}
         </select>
         <select class="cat-fase" aria-label="Fase de produção da categoria ${i + 1}" ${!fases.length ? "disabled" : ""}>
-          <option value="">${fases.length ? "— Fase —" : "—"}</option>
+          <option value="">${fases.length ? "Fase…" : "Sem fase"}</option>
           ${fases.map(o => `<option value="${o}" ${row.faseProducao === o ? "selected" : ""}>${o}</option>`).join("")}
         </select>
         <input type="number" class="cat-qty" min="0" inputmode="numeric" placeholder="Quantidade" aria-label="Quantidade de animais da categoria ${i + 1}" value="${escapeHtml(row.quantidade || "")}">
@@ -2417,7 +2473,7 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
       </div>
       <label class="cat-sistema-label">Sistema de produção
         <select class="cat-sistema">
-          <option value="">— Selecione —</option>
+          <option value="">Selecione…</option>
           ${SISTEMA_PRODUCAO_OPCOES.map(o => `<option value="${o}" ${row.sistemaProducao === o ? "selected" : ""}>${o}</option>`).join("")}
         </select>
       </label>
@@ -2433,7 +2489,7 @@ function renderCategoriasAnimaisRowsGeneric(list, containerId, totalId, rerender
           <input type="text" class="cat-prazo" placeholder="Prazo de pagamento" aria-label="Prazo de pagamento da categoria ${i + 1}" value="${escapeHtml(row.prazoPagamento || "")}">
           <select class="cat-frete" aria-label="Tipo de frete da categoria ${i + 1}"><option value="FOB" ${row.tipoFrete === "FOB" ? "selected" : ""}>FOB</option><option value="CIF" ${row.tipoFrete === "CIF" ? "selected" : ""}>CIF</option></select>
           <select class="cat-satisfacao" aria-label="Satisfação com o fornecedor da categoria ${i + 1}">
-            <option value="">— Satisfação —</option>
+            <option value="">Satisfação…</option>
             ${SATISFACAO_FORNECEDOR_OPCOES.map(o => `<option value="${o}" ${row.satisfacao === o ? "selected" : ""}>${o}</option>`).join("")}
           </select>
           <input type="text" class="cat-tempo-uso" placeholder="Há quanto tempo usa" aria-label="Há quanto tempo usa o produto, categoria ${i + 1}" value="${escapeHtml(row.tempoDeUso || "")}">
@@ -2645,6 +2701,7 @@ document.getElementById("form-cliente").addEventListener("submit", e => {
   renderDashboard();
   if (currentFichaClientId === id) { renderFichaLeft(); renderFichaTab(); }
   showToast("Lead salvo.");
+  destacarRegistro(`[data-client-id="${id}"]`);
 });
 
 function openClienteModal(clientId) {
@@ -2819,7 +2876,7 @@ document.getElementById("form-estoque").addEventListener("submit", e => {
 function popularPedidoSelect(selectId, clientId, selectedId) {
   const sel = document.getElementById(selectId);
   const pedidos = pedidosForClient(clientId).slice().reverse();
-  sel.innerHTML = `<option value="">— Nenhum —</option>` + pedidos.map(p => `<option value="${p.id}">${escapeHtml(p.numeroPedidoADM || formatDate(p.dataPedido))} — ${formatDate(p.dataPedido)}</option>`).join("");
+  sel.innerHTML = `<option value="">Nenhum</option>` + pedidos.map(p => `<option value="${p.id}">${escapeHtml(p.numeroPedidoADM || formatDate(p.dataPedido))} — ${formatDate(p.dataPedido)}</option>`).join("");
   sel.value = selectedId || "";
 }
 
@@ -3012,6 +3069,7 @@ document.getElementById("form-pedido").addEventListener("submit", e => {
   if (currentFichaClientId === clientId) { renderFichaLeft(); renderFichaTab(); }
   renderDashboard();
   showToast("Pedido registrado.");
+  destacarRegistro(`[data-pedido-id="${id}"]`);
 
   if (status === "Com ocorrência") {
     showToast("Status “Com ocorrência” — abrindo SAC vinculado.");
@@ -3124,6 +3182,7 @@ document.getElementById("form-contato").addEventListener("submit", e => {
   refreshClientSelects(); renderClientList(); renderLeadsList();
   renderDashboard();
   showToast(contatoId ? "Contato atualizado." : "Contato registrado.");
+  destacarRegistro(`[data-contato-id="${contato.id}"]`);
 });
 
 function openCompromissoModal(clientId) {
@@ -3156,21 +3215,85 @@ let currentFichaSecao = "metricas";
 let currentFichaTipo = "lead";
 let fichaNavStack = [];
 
-function activateFichaPanel() {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "ficha"));
+// ---------- Ficha como painel lateral (Etapa 2 da revisão de UX, 28/09/2026) ----------
+// A ficha não troca mais a página: desliza pela direita sobre a área de conteúdo, com a aba de
+// baixo ainda visível (esmaecida e inerte). Só navegação e DOM; nada aqui toca em state.
+function fichaAberta() { return document.getElementById("ficha").classList.contains("aberta"); }
+function abaDeFundo() { const p = document.querySelector(".tab-panel.active"); return p ? p.id : null; }
+let fichaOrigemFoco = null;
+
+// Posição calculada a partir do <main> real: fica abaixo da barra do topo e à esquerda do
+// Copiloto, qualquer que seja a largura da tela ou o estado recolhido do painel.
+function posicionarDrawerFicha() {
+  const m = document.querySelector("main").getBoundingClientRect();
+  const drawer = document.getElementById("ficha");
+  const fundo = document.getElementById("ficha-backdrop");
+  const largura = window.innerWidth <= 760 ? m.width : Math.min(860, m.width - 32);
+  for (const el of [drawer, fundo]) { el.style.top = m.top + "px"; el.style.height = m.height + "px"; }
+  drawer.style.left = (m.right - largura) + "px";
+  drawer.style.width = largura + "px";
+  fundo.style.left = m.left + "px";
+  fundo.style.width = m.width + "px";
+}
+window.addEventListener("resize", () => { if (fichaAberta()) posicionarDrawerFicha(); });
+document.getElementById("btn-copiloto-colapsar").addEventListener("click", () => {
+  // o painel do Copiloto anima por 150ms; reposiciona quando ele termina de mudar de largura
+  if (fichaAberta()) setTimeout(posicionarDrawerFicha, 170);
+});
+
+function abrirDrawerFicha() {
+  const drawer = document.getElementById("ficha");
+  const jaAberta = fichaAberta();
+  if (!jaAberta) {
+    const ativo = document.activeElement;
+    fichaOrigemFoco = (ativo && ativo !== document.body && !drawer.contains(ativo)) ? ativo : null;
+  }
+  posicionarDrawerFicha();
+  drawer.classList.add("aberta");
+  document.getElementById("ficha-backdrop").classList.add("aberto");
+  document.querySelectorAll(".tab-panel.active").forEach(p => { p.inert = true; });
+  const nav = document.getElementById("mobile-bottom-nav");
+  if (nav && window.innerWidth <= 480) nav.inert = true;
+  drawer.querySelector("#ficha-conteudo").scrollTop = 0;
+  const grade = drawer.querySelector(".ficha-grid"); if (grade) grade.scrollTop = 0;
+  if (!jaAberta) requestAnimationFrame(() => drawer.focus({ preventScroll: true }));
+}
+
+function fecharDrawerFicha({ restaurarFoco = true, url = true } = {}) {
+  if (!fichaAberta()) return;
+  const drawer = document.getElementById("ficha");
+  drawer.classList.remove("aberta");
+  document.getElementById("ficha-backdrop").classList.remove("aberto");
+  document.querySelectorAll(".tab-panel").forEach(p => { p.inert = false; });
+  const nav = document.getElementById("mobile-bottom-nav"); if (nav) nav.inert = false;
+  document.getElementById("ficha-fab").classList.add("hidden");
+  fichaNavStack = [];
+  if (url && abaDeFundo()) gravarUrl(urlParamsDaAbaAtual(abaDeFundo()), true);
+  if (restaurarFoco) {
+    // A lista pode ter sido redesenhada enquanto a ficha estava aberta: procura a mesma linha
+    // pelo id do cliente se o elemento original não existe mais.
+    let alvo = fichaOrigemFoco && fichaOrigemFoco.isConnected ? fichaOrigemFoco : null;
+    if (!alvo && currentFichaClientId) alvo = document.querySelector(`.tab-panel.active [data-client-id="${currentFichaClientId}"]`);
+    if (alvo) requestAnimationFrame(() => alvo.focus({ preventScroll: true }));
+  }
+  fichaOrigemFoco = null;
+}
+document.getElementById("ficha-backdrop").addEventListener("click", () => fecharDrawerFicha());
+
+// Garante uma aba por trás do painel (link direto ?tab=ficha&id=..., ou volta do relatório de visita).
+function garantirAbaDeFundo(clientId, preferida) {
+  const atual = abaDeFundo();
+  if (atual && atual !== "visita-relatorio") return;
+  const alvo = preferida || (isLeadId(clientId) ? "leads" : "clientes");
+  const antes = aplicandoUrl; aplicandoUrl = true;
+  try { switchMainTab(alvo); } finally { aplicandoUrl = antes; }
 }
 
 function openFicha(clientId, isBackNav) {
-  if (!isBackNav) {
-    const activePanel = document.querySelector(".tab-panel.active");
-    if (activePanel && activePanel.id === "ficha") {
-      if (currentFichaClientId && currentFichaClientId !== clientId) {
-        fichaNavStack.push({ tipo: "ficha", id: currentFichaClientId });
-      }
-    } else if (activePanel) {
-      fichaNavStack.push({ tipo: "tab", nome: activePanel.id });
-    }
+  if (!isBackNav && fichaAberta() && currentFichaClientId && currentFichaClientId !== clientId) {
+    fichaNavStack.push({ tipo: "ficha", id: currentFichaClientId });
   }
+  if (!fichaAberta()) garantirAbaDeFundo(clientId);
 
   currentFichaClientId = clientId;
   currentFichaTipo = isLeadId(clientId) ? "lead" : "cliente";
@@ -3188,17 +3311,22 @@ function openFicha(clientId, isBackNav) {
 
   renderFichaLeft();
   renderFichaTab();
-  activateFichaPanel();
+  abrirDrawerFicha();
+  // "← Voltar" quando veio de outra ficha (ex.: cliente indicado), senão "Fechar"
+  const btnVoltar = document.getElementById("btn-ficha-voltar");
+  btnVoltar.textContent = fichaNavStack.length ? "← Voltar" : "Fechar";
+  btnVoltar.setAttribute("aria-label", fichaNavStack.length ? "Voltar para a ficha anterior" : "Fechar ficha");
   gravarUrl({ tab: "ficha", id: clientId }, !isBackNav);
 }
 
 function sairDaFicha(fallbackTab) {
   while (fichaNavStack.length) {
     const anterior = fichaNavStack.pop();
-    if (anterior.tipo === "tab") { switchMainTab(anterior.nome); return; }
     if (anterior.tipo === "ficha" && getEntidadeById(anterior.id)) { openFicha(anterior.id, true); return; }
   }
-  switchMainTab(fallbackTab);
+  const tinhaFundo = abaDeFundo();
+  fecharDrawerFicha();
+  if (!tinhaFundo) switchMainTab(fallbackTab);
 }
 
 function voltarDaFicha() {
@@ -3262,7 +3390,7 @@ function renderFichaLeft() {
 
   container.innerHTML = `
     <div class="ficha-avatar" aria-hidden="true">${initials(entidade.nome)}</div>
-    <h2 class="fnome">${escapeHtml(entidade.nome)}</h2>
+    <h2 class="fnome" id="ficha-titulo">${escapeHtml(entidade.nome)}</h2>
     <div class="card-sub">${escapeHtml(entidade.fazenda || "")}</div>
     ${badge}${classeBadge}
     ${podeAvancarEtapa ? `<button type="button" class="btn-secondary" id="btn-ficha-avancar-etapa" style="width:100%; margin-top:8px;">Avançar para “${escapeHtml(proximaEtapaLead)}”</button>` : ""}
@@ -3670,6 +3798,7 @@ document.getElementById("form-cliente-ativo").addEventListener("submit", e => {
   showToast("Cadastro do cliente salvo.");
   refreshClientSelects(); renderClientList();
   if (currentFichaClientId === cliente.id) { renderFichaLeft(); renderFichaTab(); }
+  destacarRegistro(`[data-client-id="${cliente.id}"]`);
 });
 
 // ---------- Propostas (versionadas por lead) ----------
@@ -4319,7 +4448,7 @@ function openUpsellModal(clientId, upsellId) {
   document.getElementById("upsell-data").value = todayStr();
   document.getElementById("upsell-status").value = "Identificada";
   const catSelect = document.getElementById("upsell-categoria");
-  catSelect.innerHTML = `<option value="">— Selecione —</option>` + TIPO_ANIMAL_OPCOES.map(o => `<option>${o}</option>`).join("");
+  catSelect.innerHTML = `<option value="">Selecione…</option>` + TIPO_ANIMAL_OPCOES.map(o => `<option>${o}</option>`).join("");
   if (upsellId) {
     const u = state.upsells.find(x => x.id === upsellId);
     if (u) {
@@ -5167,7 +5296,7 @@ function voltarDoVisitaRelatorio() {
   const retorno = visitaRelatorioRetorno;
   visitaRelatorioRetorno = null;
   if (retorno) {
-    if (retorno.tipo === "ficha" && getEntidadeById(retorno.id)) { openFicha(retorno.id, true); return; }
+    if (retorno.tipo === "ficha" && getEntidadeById(retorno.id)) { garantirAbaDeFundo(retorno.id, retorno.fundo); openFicha(retorno.id, true); return; }
     if (retorno.tipo === "tab") {
       switchMainTab(retorno.nome);
       if (retorno.nome === "relatorios" && retorno.relatorioView) mostrarRelatorioView(retorno.relatorioView);
@@ -5180,8 +5309,10 @@ document.getElementById("btn-visita-relatorio-voltar").addEventListener("click",
 
 function openVisitaModal(clientId, duplicarDeVisitaId) {
   const activePanel = document.querySelector(".tab-panel.active");
-  if (activePanel && activePanel.id === "ficha") {
-    visitaRelatorioRetorno = { tipo: "ficha", id: currentFichaClientId };
+  if (fichaAberta()) {
+    // lembra a aba que estava por trás do painel, pra voltar exatamente ao mesmo lugar
+    visitaRelatorioRetorno = { tipo: "ficha", id: currentFichaClientId, fundo: activePanel ? activePanel.id : null };
+    fecharDrawerFicha({ restaurarFoco: false, url: false });
   } else if (activePanel && activePanel.id === "relatorios") {
     visitaRelatorioRetorno = { tipo: "tab", nome: "relatorios", relatorioView: currentReportView };
   } else if (activePanel) {
@@ -6720,6 +6851,27 @@ function boot() {
   aplicarEstadoDaUrl();
 }
 boot();
+
+// Esqueleto de carregamento só onde há espera de verdade: aparelho sem nada salvo localmente e
+// com a nuvem configurada (primeiro acesso, ex.: celular novo). Com dados locais o app abre na
+// hora e esqueleto seria encenação. Não toca na sincronização: o boot() que já roda quando a
+// nuvem termina redesenha as listas e apaga o esqueleto sozinho. Se a nuvem não responder (sem
+// login, "Continuar sem entrar", sem rede), em 10s volta pro estado vazio normal.
+function mostrarEsqueletoPrimeiraCarga() {
+  const linhaLead = `<div class="lead-row esq-row" aria-hidden="true"><div class="lr-id"><span class="skeleton esq-av"></span><div class="lr-txt"><span class="skeleton esq-l" style="width:62%"></span><span class="skeleton esq-l esq-fino" style="width:44%"></span></div></div><span class="skeleton esq-l" style="width:70%"></span><span class="skeleton esq-l" style="width:60%;justify-self:end"></span><span class="skeleton esq-l" style="width:55%"></span><span class="skeleton esq-l" style="width:50%"></span></div>`;
+  const aviso = `<span class="sr-only" role="status">Carregando seus dados da nuvem…</span>`;
+  const leads = document.getElementById("leads-list");
+  const clientes = document.getElementById("clientes-list");
+  if (leads) leads.innerHTML = aviso + linhaLead.repeat(6);
+  if (clientes) clientes.innerHTML = aviso + `<div class="client-card-simples esq-row" aria-hidden="true"><span class="skeleton esq-av"></span><span class="skeleton esq-l" style="width:40%"></span></div>`.repeat(5);
+  const roteiro = document.getElementById("roteiro-list");
+  if (roteiro) roteiro.innerHTML = aviso + `<div class="roteiro-items">${`<div class="roteiro-item esq-row" aria-hidden="true"><div class="roteiro-txt"><span class="skeleton esq-l" style="width:58%"></span><span class="skeleton esq-l esq-fino" style="width:80%"></span></div></div>`.repeat(2)}</div>`;
+  setTimeout(() => {
+    if (document.querySelector(".esq-row")) { renderLeadsList(); renderClientList(); renderDashboard(); }
+  }, 10000);
+}
+if (sb && !state.leads.length && !state.clientesAtivos.length) mostrarEsqueletoPrimeiraCarga();
+
 initAuthAndSync();
 
 if ("serviceWorker" in navigator) {

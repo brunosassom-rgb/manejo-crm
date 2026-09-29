@@ -124,7 +124,7 @@
       <div class="section-header">
         <h2>Clientes</h2>
       </div>
-      <p class="hint">Convertidos a partir do Fechamento do funil de Lead — não participam mais do funil de vendas. Para cadastrar um novo contato, use “+ Novo lead” na aba Leads.</p>
+      <p class="hint">Convertidos a partir do Fechamento do funil de Lead. Não participam mais do funil de vendas. Para cadastrar um novo contato, use “+ Novo lead” na aba Leads.</p>
       <div class="clientes-toggle" id="clientes-view-switch" role="group" aria-label="Modo de visualização">
         <button type="button" class="clientes-toggle-btn active" data-view="lista" aria-pressed="true">Lista</button>
         <button type="button" class="clientes-toggle-btn" data-view="matriz" aria-pressed="false">Matriz</button>
@@ -139,7 +139,7 @@
       <div class="section-header">
         <h2>Leads</h2>
       </div>
-      <p class="hint">Prospecção até Fechamento — ainda não convertidos em Cliente Ativo.</p>
+      <p class="hint">Prospecção até Fechamento, ainda não convertidos em Cliente Ativo.</p>
       <input id="busca-lead" type="text" placeholder="Buscar por nome, fazenda, cidade ou região…" class="search-input" aria-label="Buscar lead" autocomplete="off" enterkeyhint="search">
       <div id="leads-list" class="cards"></div>
     </section>
@@ -229,7 +229,7 @@
 
       <div class="competitiva-tabgrid hidden" data-ctab-panel="radar-mapa">
         <div class="panel panel-radar">
-          <h3><span class="panel-ico tone-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span><span id="titulo-radar-competitivo">Radar — Manejo vs. concorrência</span></h3>
+          <h3><span class="panel-ico tone-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span><span id="titulo-radar-competitivo">Radar: Manejo vs. concorrência</span></h3>
           <div class="radar-wrap"><div id="radar-chart"></div></div>
         </div>
 
@@ -445,7 +445,7 @@
             <div class="section-header">
               <h4>Fornecedores</h4>
             </div>
-            <p class="hint" id="hint-fornecedores-casa">Fornecedores (ADM ou concorrentes) são cadastrados aqui — nunca como cliente.</p>
+            <p class="hint" id="hint-fornecedores-casa">Fornecedores (ADM ou concorrentes) são cadastrados aqui, nunca como cliente.</p>
             <div id="fornecedores-list" class="cards" style="margin-bottom:26px"></div>
 
             <h3>Preferências</h3>
@@ -511,9 +511,12 @@
     </section>
 
     <!-- ==================== FICHA DO CLIENTE/LEAD ==================== -->
-    <section id="ficha" class="tab-panel">
-      <div class="section-header" style="margin-bottom:16px;">
-        <button type="button" class="btn-secondary" id="btn-ficha-voltar">&larr; Voltar</button>
+    <!-- Ficha abre como painel lateral sobre a lista (não troca mais a página inteira). A aba de
+         baixo continua ativa e fica inerte enquanto o painel está aberto. Ver abrirDrawerFicha(). -->
+    <div class="ficha-backdrop" id="ficha-backdrop" aria-hidden="true"></div>
+    <section id="ficha" class="tab-panel ficha-drawer" role="dialog" aria-modal="false" aria-labelledby="ficha-titulo" tabindex="-1">
+      <div class="section-header ficha-drawer-head">
+        <button type="button" class="btn-secondary" id="btn-ficha-voltar">Fechar</button>
       </div>
       <div class="ficha-grid">
         <div class="ficha-left" id="ficha-left"></div>
@@ -615,7 +618,7 @@
             <textarea id="visita-produtos-atuais" rows="2"></textarea>
           </label>
           <label style="margin-bottom:2px">Estoque e rebanho por categoria (obrigatório)</label>
-          <p class="hint" style="margin-top:-4px">Confirme a quantidade de animais e conte o estoque atual de todas as categorias — é o que alimenta a previsão de recompra.</p>
+          <p class="hint" style="margin-top:-4px">Confirme a quantidade de animais e conte o estoque atual de todas as categorias. É o que alimenta a previsão de recompra.</p>
           <div id="visita-estoque-categorias-list"></div>
           <label>Condição geral do rebanho/instalação
             <select id="visita-condicao-geral">
@@ -625,7 +628,7 @@
               <option>Crítica</option>
             </select>
           </label>
-          <label>Fotos (até 10 — câmera ou galeria)
+          <label>Fotos (até 10, câmera ou galeria)
             <input type="file" id="visita-fotos-input" accept="image/*" capture="environment" multiple>
           </label>
           <div id="visita-fotos-preview" class="visita-fotos-grid"></div>
@@ -672,7 +675,7 @@
         </div>
 
         <div class="wizard-step" data-step="6">
-          <p class="hint" style="margin-top:0">Dados Internos — não aparecem no PDF do cliente</p>
+          <p class="hint" style="margin-top:0">Dados internos: não aparecem no PDF do cliente</p>
           <label>Percepção do vendedor (uso interno)
             <textarea id="visita-percepcao-vendedor" rows="2"></textarea>
           </label>
@@ -698,7 +701,7 @@
           </label>
           <label id="visita-atualizar-etapa-label">Atualizar etapa no funil
             <select id="visita-atualizar-etapa">
-              <option value="">— Não alterar —</option>
+              <option value="">Não alterar</option>
               <option>Prospecção</option>
               <option>Diagnóstico</option>
               <option>Proposta enviada</option>
@@ -733,7 +736,7 @@
         </button>
       </div>
       <div class="copiloto-corpo" id="copiloto-corpo" aria-live="polite">
-        <div class="copiloto-vazio">Anote aqui o que aconteceu com um cliente. Por enquanto isso já abre um registro de contato pronto pra você revisar e salvar — em breve uma IA vai entender e organizar isso sozinha.</div>
+        <div class="copiloto-vazio">Anote aqui o que aconteceu com um cliente. Por enquanto isso já abre um registro de contato pronto pra você revisar e salvar. Em breve uma IA vai entender e organizar isso sozinha.</div>
       </div>
       <div class="copiloto-input-row">
         <textarea id="copiloto-input" rows="2" placeholder="Ex: liguei pro Roberto da Montanha Encantada, ele quer aumentar o pedido…" aria-label="Anotação para o assistente"></textarea>
@@ -841,7 +844,7 @@
           </label>
           <label>Consultor/Nutricionista vinculado
             <select id="cliente-consultor-id">
-              <option value="">— Nenhum —</option>
+              <option value="">Nenhum</option>
             </select>
           </label>
           <p class="hint" style="grid-column:1/-1;">Cadastre ou edite os dados completos do consultor/nutricionista (empresa, WhatsApp, vínculo com concorrente) na seção Consultores / Nutricionistas, em Configurações.</p>
@@ -874,27 +877,27 @@
         <fieldset>
           <legend>Qualificação BANT</legend>
           <p class="hint" style="grid-column:1/-1;">Ajuda a decidir se vale investir tempo neste lead antes de avançar no funil.</p>
-          <label>Budget — disposição para investir
+          <label>Budget: disposição para investir
             <select id="cliente-bant-budget">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Investe</option><option>Intermediário</option><option>Vê como custo</option><option>Desconhecido</option>
             </select>
           </label>
-          <label>Authority — com quem estou falando
+          <label>Authority: com quem estou falando
             <select id="cliente-bant-authority">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Decisor final</option><option>Influenciador</option><option>Técnico sem poder de decisão</option><option>Desconhecido</option>
             </select>
           </label>
-          <label>Need — existe problema reconhecido
+          <label>Need: existe problema reconhecido
             <select id="cliente-bant-need">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Sim, com problema claro</option><option>Sim, com problema vago</option><option>Não identificado</option>
             </select>
           </label>
-          <label>Timing — momento certo para compra
+          <label>Timing: momento certo para compra
             <select id="cliente-bant-timing">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Urgente agora</option><option>Próximos 30 dias</option><option>Próximos 90 dias</option><option>Sem prazo definido</option>
             </select>
           </label>
@@ -957,10 +960,10 @@
         </fieldset>
         <fieldset>
           <legend>Próximo passo</legend>
-          <p class="hint" style="grid-column:1/-1; margin:0 0 4px;">Todo lead precisa ter um próximo passo — o sistema bloqueia salvar sem isso.</p>
+          <p class="hint" style="grid-column:1/-1; margin:0 0 4px;">Todo lead precisa ter um próximo passo. O sistema não salva sem ele.</p>
           <label>Tipo de ação
             <select id="cliente-proximo-passo-tipo">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Visita presencial</option><option>Ligação</option><option>Envio de proposta</option>
               <option>Envio de material</option><option>Follow-up WhatsApp</option><option>Aguardar retorno do cliente</option><option>Outro</option>
             </select>
@@ -988,7 +991,7 @@
           <legend>Status especial (opcional)</legend>
           <label>Status especial
             <select id="cliente-status-especial">
-              <option value="">— Nenhum —</option>
+              <option value="">Nenhum</option>
               <option>Aguardando formulação interna</option><option>Aguardando cadastro</option><option>Aguardando decisão do dono</option>
               <option>Bloqueado por consultor</option><option>Em teste de produto</option><option>Outro</option>
             </select>
@@ -1106,7 +1109,7 @@
           </label>
           <label>Consultor/Nutricionista vinculado
             <select id="ca-consultor-id">
-              <option value="">— Nenhum —</option>
+              <option value="">Nenhum</option>
             </select>
           </label>
         </fieldset>
@@ -1446,7 +1449,7 @@
             <input type="date" id="sac-data" required>
           </label>
           <label>Pedido vinculado
-            <select id="sac-pedido"><option value="">— Nenhum —</option></select>
+            <select id="sac-pedido"><option value="">Nenhum</option></select>
           </label>
           <label>Status
             <select id="sac-status">
@@ -1486,7 +1489,7 @@
           </label>
           <label>Impacto no relacionamento
             <select id="sac-impacto">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Neutro</option><option>Cliente compreendeu</option><option>Cliente insatisfeito</option>
             </select>
           </label>
@@ -1601,7 +1604,7 @@
           <input type="text" id="upsell-produto">
         </label>
         <label>Categoria animal alvo
-          <select id="upsell-categoria"><option value="">— Selecione —</option></select>
+          <select id="upsell-categoria"><option value="">Selecione…</option></select>
         </label>
         <label>Volume potencial adicional (toneladas)
           <input type="number" id="upsell-volume" min="0" step="any" inputmode="decimal">
@@ -1674,7 +1677,7 @@
           </label>
           <label>Resultado do contato
             <select id="contato-resultado">
-              <option value="">— Selecione —</option>
+              <option value="">Selecione…</option>
               <option>Avançou</option><option>Manteve</option><option>Regrediu</option><option>Sem resposta</option>
             </select>
           </label>
@@ -1717,7 +1720,7 @@
         <button type="button" class="btn-close" aria-label="Fechar" data-close-modal="modal-compromisso">&times;</button>
       </div>
       <form id="form-compromisso" class="form" autocomplete="off">
-        <label>Cliente (opcional — deixe em branco para viagens/reuniões internas)
+        <label>Cliente (opcional; deixe em branco para viagens e reuniões internas)
           <select id="compromisso-cliente"></select>
         </label>
         <label>Tipo
@@ -1784,7 +1787,7 @@
 
       <!-- Pedir link para definir/redefinir senha -->
       <form id="form-login-recuperar" class="form hidden">
-        <p class="hint">Digite seu e-mail — vamos mandar um link para você definir (ou redefinir) sua senha.</p>
+        <p class="hint">Digite seu e-mail e vamos mandar um link para você definir (ou redefinir) sua senha.</p>
         <label>E-mail
           <input type="email" id="login-recuperar-email" required placeholder="voce@empresa.com" autocomplete="email" inputmode="email" spellcheck="false">
         </label>

@@ -767,7 +767,7 @@ h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacin
 .calendar-evt[draggable="true"] { cursor: grab; }
 .calendar-evt[draggable="true"]:active { cursor: grabbing; }
 .evt-visita { background: var(--primary); }
-.evt-ligacao { background: #6B7280; }
+.evt-ligacao { background: var(--text-muted); }
 .evt-followup { background: var(--urgent); }
 .evt-vencido { background: #a8441f; }
 .evt-pedido { background: var(--primary); }
@@ -2289,8 +2289,8 @@ body::after { animation: none; }
 
 /* Dia fora do mês na agenda: esmaece pela cor, não por opacidade (2.15:1 para 4.47:1) */
 .calendar-cell.out { opacity: 1; background: var(--surface-2); }
-.calendar-cell.out .calendar-daynum { color: #77786F; }
-.theme-dark .calendar-cell.out .calendar-daynum { color: #7C8174; }
+.calendar-cell.out .calendar-daynum { color: var(--text-faint); }
+.theme-dark .calendar-cell.out .calendar-daynum { color: var(--text-faint); }
 
 /* Etapa 1, correções da rodada de inspeção */
 .kpi-card { align-items: flex-start; }
@@ -2299,3 +2299,102 @@ body::after { animation: none; }
 .alert-dot.today { background: var(--warn-text); }
 .alert-dot.upcoming { background: var(--ok-text); }
 @media (max-width: 760px) { .lr-l { font-size: 12px; } }
+
+/* =====================================================================
+   ============  v6 · Etapa 2 da revisão de UX (28/09/2026)  ===========
+   Ficha em painel lateral + movimento (emil-design-eng): só transform e
+   opacity, curvas próprias, saída mais rápida que entrada, nada anima em
+   ação de teclado, "reduzir movimento" deixa só as mudanças de cor.
+   ===================================================================== */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entradas e respostas ao toque */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);   /* painel lateral (curva de gaveta estilo iOS) */
+}
+
+/* ---------- Ficha em painel lateral ---------- */
+/* Posição (top/left/width/height) vem de posicionarDrawerFicha() em app.js, medida do <main>. */
+#ficha.ficha-drawer {
+  display: flex; flex-direction: column; position: fixed; z-index: 59;
+  background: var(--bg); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  padding: 14px 18px 0; overflow: hidden; animation: none; outline: none;
+  transform: translateX(100%); visibility: hidden;
+  transition: transform 200ms var(--ease-drawer), visibility 0s linear 200ms;
+}
+#ficha.ficha-drawer.aberta {
+  transform: translateX(0); visibility: visible;
+  transition: transform 280ms var(--ease-drawer), visibility 0s;
+}
+.ficha-backdrop {
+  position: fixed; z-index: 58; background: rgba(18, 20, 15, 0.26);
+  opacity: 0; visibility: hidden;
+  transition: opacity 200ms var(--ease-out), visibility 0s linear 200ms;
+}
+.ficha-backdrop.aberto { opacity: 1; visibility: visible; transition: opacity 280ms var(--ease-out), visibility 0s; }
+.theme-dark .ficha-backdrop { background: rgba(0, 0, 0, 0.45); }
+.ficha-drawer-head { flex-shrink: 0; margin-bottom: 12px; }
+#ficha.ficha-drawer .ficha-grid {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  grid-template-columns: 230px minmax(0, 1fr); border-radius: 8px 8px 0 0; border-bottom: 0;
+}
+#ficha.ficha-drawer .ficha-left { border-radius: 8px 0 0 0; }
+#ficha.ficha-drawer .ficha-right { border-radius: 0 8px 0 0; }
+@media (max-width: 980px) {
+  #ficha.ficha-drawer .ficha-grid { grid-template-columns: minmax(0, 1fr); }
+  #ficha.ficha-drawer .ficha-left { border-radius: 8px 8px 0 0; }
+  #ficha.ficha-drawer .ficha-right { border-radius: 0; }
+}
+@media (max-width: 760px) {
+  #ficha.ficha-drawer { border-left: 0; box-shadow: none; padding: 12px 12px 0; }
+}
+
+/* ---------- Resposta ao toque: o botão "afunda" 3% ---------- */
+.btn-primary, .btn-secondary, .btn-mini, .ficha-fab-item, .toast-acao, .acao-card {
+  transition: transform 120ms var(--ease-out), background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.btn-primary:active, .btn-secondary:active, .btn-mini:active, .ficha-fab-item:active, .toast-acao:active, .acao-card:active {
+  transform: scale(0.97);
+}
+.lead-row:active, .client-card-simples:active { background: var(--border-soft); }
+
+/* ---------- Kanban: arrasto ---------- */
+.kanban-card { transition: opacity 140ms var(--ease-out), border-color 150ms ease; }
+.kanban-card.dragging { opacity: 0.35; }                 /* a vaga de origem fica marcada, o card "está na mão" */
+.kanban-drop { transition: background-color 120ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .kanban-card { cursor: grab; }
+  .kanban-card:active { cursor: grabbing; }
+}
+
+/* ---------- Registro recém-salvo pisca de leve ---------- */
+@keyframes salvo { from { background-color: color-mix(in srgb, var(--primary) 16%, var(--surface)); } }
+.acabou-de-salvar { animation: salvo 900ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .acabou-de-salvar { animation: salvo 900ms ease-out !important; }   /* só cor, sem deslocamento: fica */
+}
+
+/* ---------- Avisos (toast): entram com ease-out, saem mais rápido ---------- */
+.toast { animation: toast-in 240ms var(--ease-out); transition: opacity 160ms ease, transform 160ms ease; }
+.toast.saindo { opacity: 0; transform: translateY(4px); }
+
+/* ---------- Esqueleto de carregamento (só na primeira carga da nuvem) ---------- */
+.skeleton { animation: skeleton-wave 1.2s linear infinite; border-radius: 4px; }
+.esq-l { display: block; height: 11px; }
+.esq-fino { height: 9px; margin-top: 6px; }
+.esq-av { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; }
+.esq-row { pointer-events: none; }
+.roteiro-item.esq-row .roteiro-txt { display: block; }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* ---------- Débitos antigos (detector da Impeccable) ---------- */
+/* Rótulos de formulário em caixa alta com espaçamento largo: difíceis de ler em 91 campos */
+.form label, .form-grid legend {
+  text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+}
+/* Faixa colorida de 3px no topo de painel arredondado: vira borda normal */
+.competitiva-tabgrid .panel { border-top: 1px solid var(--border); }
+/* Texto funcional abaixo de 11px */
+.bell-badge, .appbar-bell .bell-badge { font-size: 11px; }
+.bars-chart .bar-label, .bars-chart .bar-value, .calendar-dow, .matriz-selo, .calendar-evt,
+.sparkline-bars .bar .bar-label, .stat-tile .stat-label { font-size: 11px; }
+@media (max-width: 480px) { .mbn-btn .mbn-label { font-size: 11px; } }
+.esq-row .lr-txt { flex: 1; }   /* sem isso a coluna do nome encolhia a 0 e as barras sumiam */
