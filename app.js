@@ -5018,7 +5018,7 @@ function renderWeekView(events, body) {
     const isToday = dateStr === todayStr();
     const dayEvents = events.filter(e => e.data === dateStr).sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
     return `<div class="calendar-cell calendar-week-col ${isToday ? "today" : ""}" data-date="${dateStr}">
-      ${dayEvents.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}${e.clientId ? ` role="button" tabindex="0" aria-label="${escapeHtml(e.label)}, ${formatDate(dateStr)}. Abrir ficha"` : ""}>${e.hora ? escapeHtml(e.hora) + " " : ""}${escapeHtml(e.label)}</div>`).join("") || `<span class="hint" style="font-size:0.68rem;">-</span>`}
+      ${dayEvents.map(e => `<div class="calendar-evt evt-${e.classe}" title="${escapeHtml(e.label)}" data-client-id="${e.clientId || ""}"${e.id ? ` data-compromisso-id="${e.id}" draggable="true"` : ""}${e.clientId ? ` role="button" tabindex="0" aria-label="${escapeHtml(e.label)}, ${formatDate(dateStr)}. Abrir ficha"` : ""}>${e.hora ? escapeHtml(e.hora) + " " : ""}${escapeHtml(e.label)}</div>`).join("") || `<span class="hint" style="font-size:var(--fs-11);">-</span>`}
     </div>`;
   }).join("");
 
@@ -5151,7 +5151,7 @@ function renderCarteiraFornecedor() {
           : classe === "concorrente" ? `<span class="badge badge-late">Concorrente</span>`
           : `<span class="badge badge-neutral">Sem informação</span>`;
         return `<tr data-client-id="${entidade.id}" tabindex="0" aria-label="Abrir ficha de ${escapeHtml(entidade.nome)}" style="cursor:pointer">
-          <td>${escapeHtml(entidade.nome)} <span class="badge badge-neutral" style="font-size:0.65rem;">${tipo}</span></td>
+          <td>${escapeHtml(entidade.nome)} <span class="badge badge-neutral" style="font-size:var(--fs-11);">${tipo}</span></td>
           <td>${escapeHtml(categoriaRowLabel(cat))}</td>
           <td>${escapeHtml(entidade.municipio || "-")}</td>
           <td>${escapeHtml(cat.fornecedorAtual)} ${classificacao}</td>
@@ -5346,7 +5346,7 @@ function renderRadar() {
       <polygon points="${pointsFor(concorrente)}" fill="#a8441f22" stroke="#a8441f" stroke-width="2"/>
       <polygon points="${pointsFor(minha)}" fill="#5f703855" stroke="#5f7038" stroke-width="2"/>
     </svg>
-    <div style="display:flex; gap:16px; justify-content:center; font-size:0.78rem; margin-top:6px;">
+    <div style="display:flex; gap:16px; justify-content:center; font-size:var(--fs-12); margin-top:6px;">
       <span><span style="display:inline-block;width:10px;height:10px;background:#5f7038;border-radius:2px;margin-right:5px;"></span>Minha empresa</span>
       <span><span style="display:inline-block;width:10px;height:10px;background:#a8441f;border-radius:2px;margin-right:5px;"></span>${escapeHtml(nomeConcorrente)}</span>
     </div>
@@ -5540,7 +5540,7 @@ function renderVisitaEstoqueRows() {
   container.innerHTML = categorias.length
     ? categorias.map(cat => `
       <div class="categoria-card" data-categoria-id="${cat.id}">
-        <div style="font-size:0.85rem; font-weight:600; margin-bottom:6px;">${escapeHtml(categoriaRowLabel(cat))}${cat.produtoAtual ? " — " + escapeHtml(cat.produtoAtual) : ""}</div>
+        <div style="font-size:var(--fs-13); font-weight:600; margin-bottom:6px;">${escapeHtml(categoriaRowLabel(cat))}${cat.produtoAtual ? " — " + escapeHtml(cat.produtoAtual) : ""}</div>
         <div class="categoria-animal-row">
           <input type="number" class="visita-estoque-qtd-animais" min="0" inputmode="numeric" placeholder="Quantidade de animais" aria-label="Quantidade de animais: ${escapeHtml(categoriaRowLabel(cat))}" value="${escapeHtml(cat.quantidade || "")}">
           <input type="number" class="visita-estoque-quantidade" min="0" step="any" inputmode="decimal" placeholder="Estoque atual (toneladas)" aria-label="Estoque atual em toneladas: ${escapeHtml(categoriaRowLabel(cat))}">
@@ -6009,7 +6009,7 @@ function renderVisitasWidget() {
   const meta = state.metaVisitasMes || 0;
   const pct = meta > 0 ? Math.min(Math.round((count / meta) * 100), 100) : 0;
   document.getElementById("visitas-widget-body").innerHTML = `
-    <div class="kpi-value">${count}<span style="font-size:1rem; color:var(--text-muted);"> / ${meta}</span></div>
+    <div class="kpi-value">${count}<span style="font-size:var(--fs-16); color:var(--text-muted);"> / ${meta}</span></div>
     <div class="kpi-label" style="margin-bottom:8px;">Visitas realizadas vs. meta do mês</div>
     <div class="rank-track"><div class="rank-fill" style="width:${pct}%; background:${pct >= 100 ? "var(--ok-text)" : "var(--chart-1)"}"></div></div>
   `;
@@ -6159,7 +6159,7 @@ function renderRelatoriosOverviewTiles() {
     </button>
     <button type="button" class="relatorios-tile" data-relview="visitas">
       <h4><span class="panel-ico tone-gold">${ICONS.mapPin}</span>Visitas × meta do mês</h4>
-      <div class="kpi-value">${visitasCount}<span style="font-size:1rem; color:var(--text-muted);"> / ${metaVisitas}</span></div>
+      <div class="kpi-value">${visitasCount}<span style="font-size:var(--fs-16); color:var(--text-muted);"> / ${metaVisitas}</span></div>
       <div class="rank-track"><div class="rank-fill" style="width:${pctVisitas}%; background:${pctVisitas >= 100 ? "var(--ok-text)" : "var(--chart-1)"}"></div></div>
     </button>
   `;

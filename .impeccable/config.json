@@ -26,6 +26,15 @@
         ],
         "createdAt": "2026-09-28T02:36:52.469Z",
         "reason": "conferi as 3 ocorrencias (competitiva-tabgrid, rs-card, kanban-col) e visualmente por screenshot: borda de 3px com raio de 12px renderiza limpa, sem serrilhado, e e o padrao consistente de faixa colorida por categoria ja usado e aprovado em varias telas ao longo da sessao, nenhuma delas nova"
+      },
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-09-29T13:38:40.034Z",
+        "reason": "unico caso restante e div.app-shell: coluna de altura fixa (100vh) com o main rolando por dentro; overflow hidden evita rolagem dupla. Medido em 29/09/2026 (1280 e 390, todas as abas, ficha e menu da ficha): nenhum elemento posicionado passa da borda, nada e cortado. A trava html/body foi removida no mesmo dia. Se surgir popover novo, medir de novo antes de confiar nesta excecao."
       }
     ]
   }
