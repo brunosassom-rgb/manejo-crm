@@ -2398,3 +2398,135 @@ body::after { animation: none; }
 .sparkline-bars .bar .bar-label, .stat-tile .stat-label { font-size: 11px; }
 @media (max-width: 480px) { .mbn-btn .mbn-label { font-size: 11px; } }
 .esq-row .lr-txt { flex: 1; }   /* sem isso a coluna do nome encolhia a 0 e as barras sumiam */
+
+/* ============================================================
+   v7 · Baralho do dia (celular, até 480px)
+   Uma ação por vez, do tamanho da tela, resolvida com o polegar.
+   A carta de cima é o único objeto elevado da tela.
+   ============================================================ */
+.baralho, .baralho-voltar { display: none; }
+:root { --wa-text: #1E7A48; }            /* 5.1:1 na carta clara */
+.theme-dark { --wa-text: #6CC08E; }      /* o #1E7A48 dava 3.2:1 na carta escura */
+
+@media (max-width: 480px) {
+  #dashboard:not(.painel-completo) > .section-header,
+  #dashboard:not(.painel-completo) > .dash-canvas { display: none; }
+  #dashboard:not(.painel-completo) > .baralho { display: flex; flex-direction: column; gap: 14px; }
+  #dashboard.painel-completo > .baralho-voltar { display: inline-flex; align-items: center; margin: -4px 0 6px; }
+
+  .baralho-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .baralho-topo h2 { margin: 0; font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .baralho-conta { font-size: 15px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  /* A pilha reserva 48px embaixo: duas faixas de 24px onde as cartas seguintes espiam com o nome. */
+  .baralho-pilha { position: relative; height: calc(min(48dvh, 420px) + 48px); min-height: 340px; margin-bottom: 2px; }
+  .baralho.lista-aberta .baralho-pilha, .baralho.lista-aberta .baralho-acoes { display: none; }
+
+  .carta {
+    position: absolute; inset: 0 0 48px 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    transform-origin: 50% 100%;
+  }
+  .carta-espera { display: flex; flex-direction: column; gap: 10px; padding: 22px 20px 20px; overflow: hidden; }
+  .carta-espera.n1 { transform: translateY(24px) scale(0.96); }
+  .carta-espera.n2 { transform: translateY(48px) scale(0.92); }
+  .carta-faixa {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 24px; padding: 0 20px;
+    display: flex; align-items: center; gap: 10px; background: var(--surface-2); border-top: 1px solid var(--border-soft);
+    transition: opacity 150ms ease;
+  }
+  .carta-faixa-nome { min-width: 0; flex: 1; font-size: 13px; font-weight: 600; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .baralho-pilha:has(.carta-topo.arrastando) .n1 .carta-faixa { opacity: 0; }
+
+  .carta-topo {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 22px 20px 20px; overflow: hidden;
+    box-shadow: 0 14px 30px -12px rgba(35, 40, 30, 0.30), 0 2px 6px rgba(35, 40, 30, 0.06);
+    touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab;
+  }
+  .carta-topo.arrastando { cursor: grabbing; }
+
+  .carta-cliente {
+    margin: 0; text-transform: none; font-size: 26px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; color: var(--text);
+    text-wrap: balance; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .carta-tipo { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-muted); }
+  .carta-prazo { margin: 2px 0 0; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; }
+  .carta-prazo.late { color: var(--late-text); }
+  .carta-prazo.today { color: var(--warn-text); }
+  .carta-prazo.breve { color: var(--text); }
+
+  .carta-urg { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .carta-urg::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .carta-urg.late { color: var(--late-text); }
+  .carta-urg.today { color: var(--warn-text); }
+  .carta-urg.breve { color: var(--text-muted); }
+
+  .carta-msg {
+    margin: 2px 0 0; min-height: 0; font-size: 16px; line-height: 1.5; color: var(--text);
+    display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .carta-pe { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .carta-lugar { min-width: 0; font-size: 15px; font-weight: 600; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .carta-wa {
+    flex: none; color: var(--wa-text);
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+    border: 1px solid var(--border-input); border-radius: 8px;
+    font-size: 15px; font-weight: 600; text-decoration: none;
+  }
+  .carta-wa svg { width: 18px; height: 18px; }
+
+  .carta-carimbo {
+    position: absolute; top: 16px; padding: 4px 10px;
+    border: 2px solid currentColor; border-radius: 6px; background: var(--surface);
+    font-size: 15px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    pointer-events: none;
+  }
+  /* Cada selo fica na borda que continua na tela enquanto a carta anda. */
+  .carta-carimbo.feito { left: 16px; color: var(--ok-text); opacity: var(--carimbo-feito, 0); transform: rotate(-8deg); }
+  .carta-carimbo.adiar { right: 16px; color: var(--warn-text); opacity: var(--carimbo-adiar, 0); transform: rotate(8deg); }
+
+  .baralho-acoes { display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 10px; }
+  .baralho-acoes[hidden] { display: none; }
+  .baralho-btn { min-height: 56px; padding: 0 10px; font-size: 16px; font-weight: 700; border-radius: 8px; }
+  .baralho-btn.btn-secondary { border-color: var(--border-input); }
+  .baralho-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .baralho-links { display: flex; align-items: center; gap: 12px; }
+  .baralho-link {
+    background: none; border: none; cursor: pointer; min-height: 44px; padding: 0 2px;
+    color: var(--primary-text); font-size: 15px; font-weight: 600;
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .baralho-link[hidden] { display: none; }
+  #baralho-ver-painel { margin-left: auto; }
+
+  .baralho-lista { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+  .baralho-lista[hidden] { display: none; }
+  .baralho-lista-item {
+    width: 100%; min-height: 56px; padding: 10px 2px;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome urg" "tipo urg"; column-gap: 12px;
+    background: none; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0;
+    text-align: left; color: var(--text); cursor: pointer;
+  }
+  .bli-nome { grid-area: nome; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bli-tipo { grid-area: tipo; font-size: 13px; color: var(--text-muted); }
+  .baralho-lista-item .carta-urg { grid-area: urg; align-self: center; }
+
+  .baralho-vazio {
+    position: absolute; inset: 0 0 48px 0; display: flex; flex-direction: column; justify-content: center; gap: 8px;
+    padding: 24px 22px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  }
+  .baralho-vazio:focus { outline: none; }  /* alvo de foco programático, não é controle */
+  /* No baralho os avisos vão pro topo: embaixo cobririam Adiar, Abrir e Feito. */
+  body:has(#dashboard.active:not(.painel-completo)) .toast-stack { top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto; }
+  .baralho-vazio-titulo { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .baralho-vazio-quando { margin: 10px 0 0; font-size: 20px; font-weight: 700; color: var(--text); }
+  .baralho-vazio-desc { margin: 0; font-size: 17px; line-height: 1.45; color: var(--text); }
+  .baralho-vazio-cli { margin: 0; font-size: 15px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .baralho-vazio .baralho-abrir-prox { align-self: flex-start; }
+  .toast[data-baralho] span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Painel completo no celular: a bolinha de feito virava um oval pelo min-height geral de botão. */
+  .roteiro-feito-dot, .roteiro-lock-btn { min-height: 0; min-width: 0; padding: 0; aspect-ratio: 1; align-self: center; }
+}

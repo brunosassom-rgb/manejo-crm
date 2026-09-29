@@ -1344,7 +1344,7 @@ document.getElementById("btn-copiloto-enviar").addEventListener("click", async (
 function applyTheme() {
   const dark = localStorage.getItem("crm-theme") === "dark";
   document.body.classList.toggle("theme-dark", dark);
-  document.getElementById("theme-toggle").textContent = dark ? "Light" : "Dark";
+  document.getElementById("theme-toggle").textContent = dark ? "Claro" : "Escuro";
   ["theme-toggle", "btn-toggle-dark-settings"].forEach(id => { const b = document.getElementById(id); if (b) b.setAttribute("aria-pressed", String(dark)); });
 }
 function toggleTheme() {
@@ -1710,7 +1710,7 @@ function computeVolumeRanking() {
     .filter(r => r.volume > 0).sort((a, b) => b.volume - a.volume);
 }
 
-function renderDashboard() {
+function renderDashboard(opcoes) {
   const clientesAtivos = state.clientesAtivos;
   const leadsPipeline = state.leads.filter(l => l.status === "Ativo").length;
 
@@ -1829,15 +1829,7 @@ function renderDashboard() {
 
   // ---- Roteiro do dia (worklist acionável) ----
   if (document.getElementById("roteiro-list")) {
-    const hoje = todayStr();
-    const acionaveis = computeAlerts()
-      .filter(a => a.severidade === "late" || a.severidade === "today" || a.tipo === "Recompra próxima" || a.tipo === "Estoque baixo" || a.tipo === "Visita em atraso")
-      .filter(a => !isRoteiroDispensadoHoje(a));
-    const visitasHoje = (state.compromissos || []).filter(c => c.data === hoje && !c.feito).map(c => {
-      const cli = c.clientId ? getEntidadeById(c.clientId) : null;
-      return { compromissoId: c.id, clientId: c.clientId || null, clientName: cli ? cli.nome : (c.descricao || "Compromisso"), tipo: "Agenda de hoje", mensagem: `${c.descricao || "Compromisso"}${c.hora ? " · " + c.hora : ""}`, severidade: "today" };
-    });
-    const itens = [...visitasHoje, ...acionaveis];
+    const itens = itensRoteiroDoDia();
     const head = `<div class="roteiro-head"><span class="roteiro-count">${itens.length} ${itens.length === 1 ? "ação para hoje" : "ações para hoje"}</span></div>`;
     document.getElementById("roteiro-list").innerHTML = head + (itens.length
       ? `<div class="roteiro-items">` + itens.slice(0, 12).map(a => {
@@ -1901,7 +1893,334 @@ function renderDashboard() {
   }
 
   if (document.getElementById("visitas-widget-body")) renderVisitasWidget();
+  renderBaralho({ subir: !!(opcoes && opcoes.subirBaralho) });
   refreshBellBadge();
+}
+
+// Itens acionáveis de hoje: compromissos de hoje (por hora) + alertas que pedem ação. Fonte única
+// pro Roteiro do dia (computador) e pro Baralho do dia (celular), pra os dois nunca divergirem.
+function itensRoteiroDoDia() {
+  const hoje = todayStr();
+  const acionaveis = computeAlerts()
+    .filter(a => a.severidade === "late" || a.severidade === "today" || a.tipo === "Recompra próxima" || a.tipo === "Estoque baixo" || a.tipo === "Visita em atraso")
+    .filter(a => !isRoteiroDispensadoHoje(a));
+  const visitasHoje = (state.compromissos || []).filter(c => c.data === hoje && !c.feito)
+    .sort((a, b) => (a.hora || "99").localeCompare(b.hora || "99"))
+    .map(c => {
+      const cli = c.clientId ? getEntidadeById(c.clientId) : null;
+      return { compromissoId: c.id, clientId: c.clientId || null, clientName: cli ? cli.nome : (c.descricao || "Compromisso"), tipo: "Agenda de hoje", mensagem: `${c.descricao || "Compromisso"}${c.hora ? " · " + c.hora : ""}`, severidade: "today", hora: c.hora || "", descricao: c.descricao || "" };
+    });
+  return [...visitasHoje, ...acionaveis];
+}
+
+// ============================================================
+// BARALHO DO DIA (celular, até 480px): uma ação por vez, resolvida com o polegar.
+// Os botões são o caminho principal; arrastar a carta para o lado é atalho.
+// Direita = Feito, esquerda = Adiar. Mesmos itens e mesma lógica do Roteiro do dia.
+// ============================================================
+let baralhoPrimeiro = null;      // chave do item que o Bruno puxou pro topo pela lista
+let baralhoOcupado = false;      // trava enquanto uma carta está saindo
+let baralhoPainelCompleto = false;
+
+function chaveItemBaralho(a) { return a.compromissoId ? "c:" + a.compromissoId : `a:${a.clientId || ""}|${a.tipo}`; }
+
+function itensDoBaralho() {
+  const itens = itensRoteiroDoDia();
+  if (baralhoPrimeiro) {
+    const i = itens.findIndex(a => chaveItemBaralho(a) === baralhoPrimeiro);
+    if (i > 0) itens.unshift(itens.splice(i, 1)[0]);
+  }
+  return itens;
+}
+
+function urgenciaDoItem(a) {
+  if (a.severidade === "late") return { cls: "late", txt: "Atrasado" };
+  if (a.severidade === "today") return { cls: "today", txt: "Hoje" };
+  return { cls: "breve", txt: "Em breve" };
+}
+
+// Prazo em destaque: "Hoje às 08:30", "171 dias sem visita"… ou a própria urgência quando a
+// mensagem do alerta não traz um prazo separável. O resto da mensagem vira o motivo.
+function prazoDaCarta(a) {
+  const u = urgenciaDoItem(a);
+  if (a.compromissoId) {
+    return { cls: u.cls, prazo: a.hora ? `Hoje às ${a.hora}` : "Hoje", motivo: a.clientId ? (a.descricao || "") : "" };
+  }
+  const m = a.mensagem || "";
+  const i = m.lastIndexOf(" — ");
+  if (i > 0 && /\d/.test(m.slice(i + 3))) {
+    const depois = m.slice(i + 3).replace(/\.$/, "");
+    return { cls: u.cls, prazo: depois.charAt(0).toUpperCase() + depois.slice(1), motivo: m.slice(0, i) + "." };
+  }
+  return { cls: u.cls, prazo: u.txt, motivo: m };
+}
+
+function cartaBaralhoHtml(a, espera) {
+  const u = urgenciaDoItem(a);
+  const p = prazoDaCarta(a);
+  const wa = waLinkForClient(a.clientId);
+  const ent = a.clientId ? getEntidadeById(a.clientId) : null;
+  const lugar = ent && (ent.municipio || "").trim();
+  return `<h3 class="carta-cliente">${escapeHtml(a.clientName)}</h3>
+    <p class="carta-tipo">${escapeHtml(a.tipo)}</p>
+    <p class="carta-prazo ${p.cls}">${escapeHtml(p.prazo)}</p>
+    ${p.motivo ? `<p class="carta-msg">${escapeHtml(p.motivo)}</p>` : ""}
+    ${wa || lugar ? `<div class="carta-pe">` : ""}
+    ${wa ? `<a class="carta-wa" href="${wa}" target="_blank" rel="noopener" aria-label="WhatsApp de ${escapeHtml(a.clientName)} (abre em nova aba)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.51 3.58 1.38 5.07L2 22l5.07-1.38A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>WhatsApp</a>` : ""}
+    ${lugar ? `<span class="carta-lugar">${escapeHtml(lugar)}</span>` : ""}
+    ${wa || lugar ? `</div>` : ""}
+    ${espera
+      ? `<div class="carta-faixa"><span class="carta-faixa-nome">${escapeHtml(a.clientName)}</span><span class="carta-urg ${u.cls}">${u.txt}</span></div>`
+      : `<span class="carta-carimbo feito" aria-hidden="true">Feito</span><span class="carta-carimbo adiar" aria-hidden="true">Adiar</span>`}`;
+}
+
+function proximoCompromisso() {
+  const hoje = todayStr();
+  return (state.compromissos || []).filter(c => !c.feito && c.data > hoje)
+    .sort((a, b) => (a.data + (a.hora || "99")).localeCompare(b.data + (b.hora || "99")))[0] || null;
+}
+
+function baralhoVazioHtml() {
+  const prox = proximoCompromisso();
+  if (!prox) return `<div class="baralho-vazio" tabindex="-1"><p class="baralho-vazio-titulo">Tudo em dia.</p><p class="baralho-vazio-desc">Nenhum compromisso marcado nos próximos dias.</p></div>`;
+  const cli = prox.clientId ? getEntidadeById(prox.clientId) : null;
+  const quando = dataRelativa(prox.data, true);
+  return `<div class="baralho-vazio" tabindex="-1">
+    <p class="baralho-vazio-titulo">Tudo em dia.</p>
+    <p class="baralho-vazio-quando">${escapeHtml(quando.charAt(0).toUpperCase() + quando.slice(1))}${prox.hora ? " às " + escapeHtml(prox.hora) : ""}</p>
+    <p class="baralho-vazio-desc">${escapeHtml(prox.descricao || "Compromisso")}</p>
+    ${cli ? `<p class="baralho-vazio-cli">${escapeHtml(cli.nome)}</p><button type="button" class="baralho-link baralho-abrir-prox" data-client-id="${escapeHtml(prox.clientId)}">Abrir cliente</button>` : ""}
+  </div>`;
+}
+
+function renderBaralho(opcoes) {
+  const raiz = document.getElementById("baralho");
+  if (!raiz) return;
+  document.getElementById("dashboard").classList.toggle("painel-completo", baralhoPainelCompleto);
+  const itens = itensDoBaralho();
+  const pilha = document.getElementById("baralho-pilha");
+  const conta = document.getElementById("baralho-conta");
+  const acoes = document.getElementById("baralho-acoes");
+  conta.textContent = itens.length ? (itens.length === 1 ? "falta 1" : `faltam ${itens.length}`) : "";
+
+  if (!itens.length) {
+    const tinhaFoco = acoes.contains(document.activeElement);
+    pilha.innerHTML = baralhoVazioHtml();
+    acoes.hidden = true;
+    if (tinhaFoco) pilha.firstElementChild.focus();
+  } else {
+    acoes.hidden = false;
+    const topo = itens[0];
+    const fundo = itens.slice(1, 3);
+    // As de trás levam o conteúdo real (a próxima aparece de verdade quando a de cima sai),
+    // mas ficam inertes: nada nelas recebe foco nem é lido.
+    pilha.innerHTML =
+      fundo.map((a, i) => `<div class="carta carta-espera n${i + 1}" aria-hidden="true" inert>${cartaBaralhoHtml(a, true)}</div>`).reverse().join("") +
+      `<article class="carta carta-topo" id="carta-topo" aria-label="${escapeHtml(topo.tipo)}: ${escapeHtml(topo.clientName)}">${cartaBaralhoHtml(topo)}</article>`;
+    acoes.querySelector('[data-acao="abrir"]').disabled = !topo.clientId;
+    ligarArrastoCarta(document.getElementById("carta-topo"));
+    if (opcoes && opcoes.subir) subirCartaTopo();
+  }
+
+  const lista = document.getElementById("baralho-lista");
+  lista.innerHTML = itens.map(a => `<li><button type="button" class="baralho-lista-item" data-chave="${escapeHtml(chaveItemBaralho(a))}">
+      <span class="bli-nome">${escapeHtml(a.clientName)}</span><span class="bli-tipo">${escapeHtml(a.tipo)}</span>
+      <span class="carta-urg ${urgenciaDoItem(a).cls}">${urgenciaDoItem(a).txt}</span></button></li>`).join("");
+  document.getElementById("baralho-ver-lista").hidden = itens.length < 2;
+  if (itens.length < 2) fecharListaBaralho();
+}
+
+// A carta de trás sobe para o topo com mola (mesma mola do kanban).
+function subirCartaTopo() {
+  const c = document.getElementById("carta-topo");
+  if (!c || !c.animate) return;
+  if (prefereMenosMovimento()) { c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "ease-out" }); return; }
+  c.animate([{ transform: "translateY(24px) scale(0.96)" }, { transform: "none" }],
+    { duration: SUPORTA_LINEAR ? 535 : 320, easing: SUPORTA_LINEAR ? MOLA_ASSENTAR : "cubic-bezier(0.23, 1, 0.32, 1)" });
+}
+
+// Tira a carta pela direita (feito) ou esquerda (adiar); depois aplica a ação.
+function despacharCarta(direcao, semAnimacao) {
+  if (baralhoOcupado) return;
+  const carta = document.getElementById("carta-topo");
+  const item = itensDoBaralho()[0];
+  if (!carta || !item) return;
+  const aplicar = () => { baralhoOcupado = false; aplicarAcaoBaralho(item, direcao === 1 ? "feito" : "adiar", !semAnimacao); };
+  if (semAnimacao || !carta.animate) { aplicar(); return; }
+  baralhoOcupado = true;
+  try { if (navigator.vibrate) navigator.vibrate(10); } catch (_) {}
+  const reduz = prefereMenosMovimento();
+  const atual = getComputedStyle(carta).transform;
+  const w = carta.offsetWidth || 320;
+  const quadros = reduz
+    ? [{ opacity: 1 }, { opacity: 0 }]
+    : [{ transform: atual === "none" ? "none" : atual, opacity: 1 }, { transform: `translateX(${direcao * w * 1.25}px) rotate(${direcao * 16}deg)`, opacity: 0.4 }];
+  const anim = carta.animate(quadros, { duration: reduz ? 150 : 220, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards" });
+  anim.onfinish = aplicar;
+  anim.oncancel = aplicar;
+}
+
+function aplicarAcaoBaralho(item, acao, animar) {
+  let desfazer, msg;
+  if (acao === "feito") {
+    if (item.compromissoId) {
+      const comp = state.compromissos.find(c => c.id === item.compromissoId);
+      if (comp) { comp.feito = true; desfazer = () => { comp.feito = false; }; }
+    } else {
+      const antes = (state.roteiroDispensados || []).slice();
+      marcarRoteiroDispensadoHoje(item.clientId, item.tipo);
+      desfazer = () => { state.roteiroDispensados = antes; };
+    }
+    msg = `Feito: ${item.clientName}.`;
+  } else {
+    if (item.compromissoId) {
+      const comp = state.compromissos.find(c => c.id === item.compromissoId);
+      if (comp) {
+        const dataAntes = comp.data;
+        comp.data = ajustarParaDiaUtil(addDays(todayStr(), 1));
+        desfazer = () => { comp.data = dataAntes; };
+        msg = `Adiado para ${dataRelativa(comp.data, true).toLowerCase()}.`;
+      }
+    } else {
+      const antes = (state.roteiroDispensados || []).slice();
+      marcarRoteiroDispensadoHoje(item.clientId, item.tipo);
+      desfazer = () => { state.roteiroDispensados = antes; };
+      msg = "Volta amanhã, se ainda valer.";
+    }
+  }
+  if (baralhoPrimeiro === chaveItemBaralho(item)) baralhoPrimeiro = null;
+  saveState();
+  renderDashboard({ subirBaralho: animar });
+  // Um aviso por vez: cada ação troca o anterior, pra não empilhar sobre a tela.
+  document.querySelectorAll("#toast-stack .toast[data-baralho]").forEach(el => el.remove());
+  showToast(msg || "Pronto.", { acao: { label: "Desfazer", onClick: () => { if (desfazer) desfazer(); saveState(); renderDashboard(); } } });
+  const ultimo = document.getElementById("toast-stack").lastElementChild;
+  if (ultimo) ultimo.dataset.baralho = "1";
+}
+
+// Arrasto horizontal com o dedo (ou mouse). Vertical fica com a rolagem da página.
+function ligarArrastoCarta(carta) {
+  let inicio = null;
+  const LIMIAR = 0.33;
+  const soltar = () => {
+    if (!inicio) return;
+    const { dx, ativo, rastro } = inicio;
+    inicio = null;
+    carta.classList.remove("arrastando");
+    if (!ativo) return;
+    // Peteleco: velocidade nos ~100ms antes do último movimento, e o dedo soltou logo depois
+    // (segurar parado e soltar não conta). Arrasto lento e curto volta com a mola.
+    const ult = rastro[rastro.length - 1];
+    const ref = rastro.find(p => ult.t - p.t <= 100) || ult;
+    const vel = ult === ref ? 0 : (ult.dx - ref.dx) / (ult.t - ref.t);
+    const peteleco = performance.now() - ult.t < 80 && Math.abs(vel) > 0.45 && Math.sign(vel) === Math.sign(dx) && Math.abs(dx) > 40;
+    if (Math.abs(dx) > carta.offsetWidth * LIMIAR || peteleco) {
+      despacharCarta(dx > 0 ? 1 : -1);
+    } else {
+      const de = carta.style.transform;
+      carta.style.transform = "";
+      carta.style.setProperty("--carimbo-feito", 0); carta.style.setProperty("--carimbo-adiar", 0);
+      if (carta.animate && !prefereMenosMovimento()) {
+        carta.animate([{ transform: de || "none" }, { transform: "none" }],
+          { duration: SUPORTA_LINEAR ? 535 : 300, easing: SUPORTA_LINEAR ? MOLA_ASSENTAR : "cubic-bezier(0.23, 1, 0.32, 1)" });
+      }
+    }
+  };
+  carta.addEventListener("pointerdown", (e) => {
+    if (inicio || baralhoOcupado || !e.isPrimary || e.button !== 0) return;
+    if (e.target.closest("a, button")) return;
+    inicio = { x: e.clientX, y: e.clientY, dx: 0, ativo: false, id: e.pointerId, rastro: [] };
+  });
+  carta.addEventListener("pointermove", (e) => {
+    if (!inicio || e.pointerId !== inicio.id) return;
+    const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
+    if (!inicio.ativo) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { inicio = null; return; }
+      if (Math.abs(dx) < 8) return;
+      inicio.ativo = true;
+      try { carta.setPointerCapture(e.pointerId); } catch (_) {}
+      carta.classList.add("arrastando");
+    }
+    inicio.dx = dx;
+    inicio.rastro.push({ dx, t: performance.now() });
+    if (inicio.rastro.length > 12) inicio.rastro.shift();
+    const giro = Math.max(-12, Math.min(12, dx * 0.05));
+    carta.style.transform = `translateX(${dx}px) rotate(${giro}deg)`;
+    const p = Math.min(1, Math.abs(dx) / (carta.offsetWidth * LIMIAR));
+    carta.style.setProperty("--carimbo-feito", dx > 0 ? p : 0);
+    carta.style.setProperty("--carimbo-adiar", dx < 0 ? p : 0);
+  });
+  carta.addEventListener("pointerup", soltar);
+  carta.addEventListener("pointercancel", soltar);
+}
+
+function abrirListaBaralho() {
+  const lista = document.getElementById("baralho-lista");
+  const btn = document.getElementById("baralho-ver-lista");
+  lista.hidden = false;
+  document.getElementById("baralho").classList.add("lista-aberta");
+  btn.setAttribute("aria-expanded", "true");
+  btn.textContent = "Fechar lista";
+}
+function fecharListaBaralho() {
+  const lista = document.getElementById("baralho-lista");
+  const btn = document.getElementById("baralho-ver-lista");
+  if (!lista || !btn) return;
+  lista.hidden = true;
+  document.getElementById("baralho").classList.remove("lista-aberta");
+  btn.setAttribute("aria-expanded", "false");
+  btn.textContent = "Ver lista";
+}
+
+// No celular a busca é estreita: "Buscar cliente, fazenda, cidade…" aparecia cortado.
+function ajustarPlaceholderBusca() {
+  const campo = document.getElementById("global-search");
+  if (!campo || !window.matchMedia) return;
+  const mq = matchMedia("(max-width: 480px)");
+  const aplicar = () => { campo.placeholder = mq.matches ? "Buscar" : "Buscar cliente, fazenda, cidade…"; };
+  aplicar();
+  if (mq.addEventListener) mq.addEventListener("change", aplicar);
+}
+
+function iniciarBaralho() {
+  const raiz = document.getElementById("baralho");
+  if (!raiz || raiz.dataset.ligado) return; // boot() roda de novo a cada sincronização
+  raiz.dataset.ligado = "1";
+  ajustarPlaceholderBusca();
+  document.getElementById("baralho-acoes").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-acao]");
+    if (!b) return;
+    // Clique vindo do teclado (detail 0) não anima: ação repetida não pode parecer lenta.
+    const teclado = e.detail === 0;
+    if (b.dataset.acao === "feito") despacharCarta(1, teclado);
+    else if (b.dataset.acao === "adiar") despacharCarta(-1, teclado);
+    else if (b.dataset.acao === "abrir") { const it = itensDoBaralho()[0]; if (it && it.clientId) openFicha(it.clientId); }
+  });
+  document.getElementById("baralho-pilha").addEventListener("click", (e) => {
+    const b = e.target.closest(".baralho-abrir-prox");
+    if (b) openFicha(b.dataset.clientId);
+  });
+  document.getElementById("baralho-ver-lista").addEventListener("click", () => {
+    if (document.getElementById("baralho-lista").hidden) abrirListaBaralho(); else fecharListaBaralho();
+  });
+  document.getElementById("baralho-lista").addEventListener("click", (e) => {
+    const b = e.target.closest(".baralho-lista-item");
+    if (!b) return;
+    baralhoPrimeiro = b.dataset.chave;
+    fecharListaBaralho();
+    renderBaralho({ subir: true });
+    document.querySelector('#baralho-acoes [data-acao="feito"]').focus();
+  });
+  document.getElementById("baralho-ver-painel").addEventListener("click", () => {
+    baralhoPainelCompleto = true;
+    renderBaralho();
+    document.getElementById("baralho-voltar").focus();
+  });
+  document.getElementById("baralho-voltar").addEventListener("click", () => {
+    baralhoPainelCompleto = false;
+    renderBaralho();
+    document.getElementById("baralho-ver-painel").focus();
+  });
 }
 
 // ============================================================
@@ -6841,6 +7160,7 @@ function boot() {
   refreshClientSelects();
   refreshConsultorSelect();
   refreshFornecedorSelects();
+  iniciarBaralho();
   renderDashboardCanvas();
   renderDashboard();
   renderClientList();
